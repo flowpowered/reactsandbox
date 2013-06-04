@@ -1,0 +1,34 @@
+Input:
+    # Sensitivity of the mouse for looking around.
+    MouseSensitivity: 0.1
+    # Speed of the camera for moving about.
+    CameraSpeed: 0.4
+Appearance:
+    # Title of the render window.
+    WindowTitle: Sandbox
+    # Window sise in width and height.
+    WindowSize: 1200, 800
+    # Field of view in degrees. Avoid values >= 180.
+    FieldOfView: 75
+    # Back ground color in RGB floats.
+    BackgroundColor: 0.2, 0.2, 0.2
+    # Model color in RGB floats.
+    ModelColor: 1, 0.1, 0.1
+    # Diffuse intensity in each RGB floats component.
+    DiffuseIntensity: 0.9
+    # Specular intensity in each RGB floats component.
+    SpecularIntensity: 0.3
+    # Ambient light intensity in each floats RGB component.
+    AmbientIntensity: 0.1
+    # How much distance affects light intensity.
+    LightAttenuation: 0.2
+Model:
+    # Position of the model in floats.
+    ModelPosition: -15, -15, -15
+    # The size of the noise sample in floats. Also the model size.
+    ModelSize: 30, 30, 30
+    # The noise sampling rate. 2 samples per unit as default.
+    MeshResolution: 0.5
+Plugin:
+    # The local path to the plugin which will provide the noise.
+    Path: plugin.jar
