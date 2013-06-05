@@ -63,8 +63,8 @@ public class OpenGL32Model {
 	private int vertexIndexBufferID = 0;
 	// Properties
 	private final Vector3 position = new Vector3(0, 0, 0);
-	private final Quaternion rotation = new Quaternion();
-	private final Matrix4x4 matrix = new Matrix4x4();
+	private final Quaternion rotation = Quaternion.identity();
+	private final Matrix4x4 matrix = Matrix4x4.identity();
 	private boolean updateMatrix = true;
 	private Color modelColor = new Color(1, 0.1f, 0.1f, 1);
 

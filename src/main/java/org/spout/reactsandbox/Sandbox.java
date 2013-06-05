@@ -46,8 +46,8 @@ public class Sandbox {
 	// Constants
 	private static final String WINDOW_TITLE = "React Sandbox";
 	// Settings
-	private static float mouseSensitivity = 0.1f;
-	private static float cameraSpeed = 0.4f;
+	private static float mouseSensitivity = 0.08f;
+	private static float cameraSpeed = 0.2f;
 	private static int windowWidth = 1200;
 	private static int windowHeight = 800;
 	private static float fieldOfView = 75;
@@ -62,7 +62,7 @@ public class Sandbox {
 		try {
 			deploy();
 			loadConfiguration();
-			System.out.print("Starting up");
+			System.out.println("Starting up");
 			OpenGL32Renderer.create(WINDOW_TITLE, windowWidth, windowHeight, fieldOfView);
 			final OpenGL32Model model = new OpenGL32Model();
 			MeshGenerator.generateCuboidMesh(model, new Vector3(3, 3, 3));
@@ -74,8 +74,9 @@ public class Sandbox {
 				final long start = System.nanoTime();
 				processInput();
 				OpenGL32Renderer.render();
-				Thread.sleep(Math.max(50 - Math.round((System.nanoTime() - start) / 1000000d), 0));
+				Thread.sleep(Math.max(20 - Math.round((System.nanoTime() - start) / 1000000d), 0));
 			}
+			System.out.println("Shutting down");
 			Mouse.setGrabbed(false);
 			OpenGL32Renderer.destroy();
 		} catch (Exception ex) {
@@ -100,11 +101,13 @@ public class Sandbox {
 			Mouse.setGrabbed(mouseGrabbed);
 		}
 		if (mouseGrabbed) {
-			cameraYaw += Mouse.getDY() * mouseSensitivity;
-			cameraPitch -= Mouse.getDX() * mouseSensitivity;
+			cameraYaw -= Mouse.getDY() * mouseSensitivity;
+			cameraYaw %= 360;
+			cameraPitch += Mouse.getDX() * mouseSensitivity;
+			cameraPitch %= 360;
 			final Quaternion yaw = MathHelper.angleAxisToQuaternion(cameraYaw, 1, 0, 0);
 			final Quaternion pitch = MathHelper.angleAxisToQuaternion(cameraPitch, 0, 1, 0);
-			OpenGL32Renderer.cameraRotation(Quaternion.multiply(pitch, yaw));
+			OpenGL32Renderer.cameraRotation(Quaternion.multiply(yaw, pitch));
 		}
 		final Vector3 right = OpenGL32Renderer.cameraRight();
 		final Vector3 up = OpenGL32Renderer.cameraUp();

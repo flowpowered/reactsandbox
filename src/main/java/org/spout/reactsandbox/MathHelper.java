@@ -44,10 +44,10 @@ public class MathHelper {
 
 	public static Matrix4x4 asTranslationMatrix(Vector3 v) {
 		return new Matrix4x4(
-				0, 0, 0, v.getX(),
-				0, 0, 0, v.getY(),
-				0, 0, 0, v.getZ(),
-				0, 0, 0, 0);
+				1, 0, 0, v.getX(),
+				0, 1, 0, v.getY(),
+				0, 0, 1, v.getZ(),
+				0, 0, 0, 1);
 	}
 
 	public static float[] asArray(Matrix4x4 m) {
@@ -67,7 +67,7 @@ public class MathHelper {
 	}
 
 	public static Quaternion angleAxisToQuaternion(float angle, float x, float y, float z) {
-		final float halfAngle = angle / 2;
+		final float halfAngle = (float) (Math.toRadians(angle) / 2);
 		final float q = (float) (Math.sin(halfAngle) / Math.sqrt(x * x + y * y + z * z));
 		return new Quaternion(x * q, y * q, z * q, (float) Math.cos(halfAngle));
 	}

@@ -73,11 +73,11 @@ public class OpenGL32Renderer {
 	private static int lightPositionLocation;
 	private static int lightAttenuationLocation;
 	// Camera
-	private static final Matrix4x4 projectionMatrix = new Matrix4x4();
+	private static final Matrix4x4 projectionMatrix = Matrix4x4.identity();
 	private static final Vector3 cameraPosition = new Vector3(0, 0, 0);
-	private static final Quaternion cameraRotation = new Quaternion();
-	private static final Matrix4x4 cameraRotationMatrix = new Matrix4x4();
-	private static final Matrix4x4 cameraMatrix = new Matrix4x4();
+	private static final Quaternion cameraRotation = Quaternion.identity();
+	private static final Matrix4x4 cameraRotationMatrix = Matrix4x4.identity();
+	private static final Matrix4x4 cameraMatrix = Matrix4x4.identity();
 	private static boolean updateCameraMatrix = true;
 	// Lighting
 	private static final Vector3 lightPosition = new Vector3(0, 0, 0);
@@ -149,8 +149,8 @@ public class OpenGL32Renderer {
 		projectionMatrix.set(0, 0, x_scale);
 		projectionMatrix.set(1, 1, y_scale);
 		projectionMatrix.set(2, 2, -(far_plane + near_plane) / frustum_length);
-		projectionMatrix.set(2, 3, -1);
-		projectionMatrix.set(3, 2, -(2 * near_plane * far_plane) / frustum_length);
+		projectionMatrix.set(3, 2, -1);
+		projectionMatrix.set(2, 3, -(2 * near_plane * far_plane) / frustum_length);
 	}
 
 	private static void createShaders() {

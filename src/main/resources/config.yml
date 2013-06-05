@@ -1,10 +1,10 @@
 Input:
     # Sensitivity of the mouse for looking around.
-    MouseSensitivity: 0.1
+    MouseSensitivity: 0.08
     # Speed of the camera for moving about.
-    CameraSpeed: 0.4
+    CameraSpeed: 0.2
 Appearance:
-    # Window sise in width and height.
+    # Window size in width and height.
     WindowSize: 1200, 800
     # Field of view in degrees. Avoid values >= 180.
     FieldOfView: 75

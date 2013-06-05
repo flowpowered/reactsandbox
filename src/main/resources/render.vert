@@ -20,6 +20,12 @@ void main() {
 
     gl_Position = projectionMatrix * cameraMatrix * vec4(modelPosition, 1);
 
+    vec3 viewDirection = normalize(vec3(inverse(cameraMatrix) * vec4(0, 0, 0, 1)) - modelPosition);
+
+    if (dot(modelNormal, viewDirection) < 0) {
+        modelNormal = -modelNormal;
+    }
+
     vec3 lightDifference = lightPosition - modelPosition;
     float lightDistance = length(lightDifference);
     vec3 lightDirection = lightDifference / lightDistance;
@@ -29,10 +35,7 @@ void main() {
         clamp(dot(modelNormal, lightDirection), 0, 1);
 
     specular = modelColor * distanceIntensity *
-        pow(clamp(dot(
-            reflect(-lightDirection, modelNormal),
-            normalize(vec3(inverse(cameraMatrix) * vec4(0, 0, 0, 1)) - modelPosition)
-        ), 0, 1), 2);
+        pow(clamp(dot(reflect(-lightDirection, modelNormal), viewDirection), 0, 1), 2);
 
     ambient = modelColor;
 }
