@@ -46,8 +46,8 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.OpenGLException;
 import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.glu.GLU;
-import org.lwjgl.util.vector.Matrix;
 
+import org.spout.physics.math.Matrix4x4;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Vector3;
 
@@ -73,14 +73,14 @@ public class OpenGL32Renderer {
 	private static int lightPositionLocation;
 	private static int lightAttenuationLocation;
 	// Camera
-	private static final Matrix projectionMatrix = new Matrix(4);
-	private static Vector3 cameraPosition = new Vector3(0, 0, 0);
-	private static Quaternion cameraRotation = new Quaternion();
-	private static Matrix cameraRotationMatrix = new Matrix(4);
-	private static Matrix cameraMatrix = new Matrix(4);
+	private static final Matrix4x4 projectionMatrix = new Matrix4x4();
+	private static final Vector3 cameraPosition = new Vector3(0, 0, 0);
+	private static final Quaternion cameraRotation = new Quaternion();
+	private static final Matrix4x4 cameraRotationMatrix = new Matrix4x4();
+	private static final Matrix4x4 cameraMatrix = new Matrix4x4();
 	private static boolean updateCameraMatrix = true;
 	// Lighting
-	private static Vector3 lightPosition = new Vector3(0, 0, 0);
+	private static final Vector3 lightPosition = new Vector3(0, 0, 0);
 	private static float diffuseIntensity = 0.9f;
 	private static float specularIntensity = 1;
 	private static float ambientIntensity = 0.1f;
@@ -126,10 +126,10 @@ public class OpenGL32Renderer {
 		windowWidth = width;
 		windowHeight = height;
 		final PixelFormat pixelFormat = new PixelFormat();
-		final ContextAttribs contextAtrributes = new ContextAttribs(3, 2).withProfileCore(true);
+		final ContextAttribs contextAttributes = new ContextAttribs(3, 2).withProfileCore(true);
 		Display.setDisplayMode(new DisplayMode(width, height));
 		Display.setTitle(title);
-		Display.create(pixelFormat, contextAtrributes);
+		Display.create(pixelFormat, contextAttributes);
 		GL11.glViewport(0, 0, width, height);
 		GL11.glClearColor(backgroundColor.getRed() / 255f, backgroundColor.getGreen() / 255f,
 				backgroundColor.getBlue() / 255f, backgroundColor.getAlpha() / 255f);
@@ -200,11 +200,11 @@ public class OpenGL32Renderer {
 		models.clear();
 	}
 
-	private static Matrix cameraMatrix() {
+	private static Matrix4x4 cameraMatrix() {
 		if (updateCameraMatrix) {
-			cameraRotationMatrix = Matrix.createRotation(4, cameraRotation);
-			final Matrix cameraPositionMatrix = Matrix.createTranslation(4, cameraPosition);
-			cameraMatrix = cameraRotationMatrix.mul(cameraPositionMatrix);
+			cameraRotationMatrix.set(MathHelper.asRotationMatrix(cameraRotation));
+			final Matrix4x4 cameraPositionMatrix = MathHelper.asTranslationMatrix(cameraPosition);
+			cameraMatrix.set(Matrix4x4.multiply(cameraRotationMatrix, cameraPositionMatrix));
 			updateCameraMatrix = false;
 		}
 		return cameraMatrix;
@@ -212,11 +212,11 @@ public class OpenGL32Renderer {
 
 	private static void shaderData() {
 		final FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
-		matrixBuffer.put(cameraMatrix().toArray());
+		matrixBuffer.put(MathHelper.asArray(cameraMatrix()));
 		matrixBuffer.flip();
 		GL20.glUniformMatrix4(cameraMatrixLocation, false, matrixBuffer);
 		matrixBuffer.clear();
-		matrixBuffer.put(projectionMatrix.toArray());
+		matrixBuffer.put(MathHelper.asArray(projectionMatrix));
 		matrixBuffer.flip();
 		GL20.glUniformMatrix4(projectionMatrixLocation, false, matrixBuffer);
 		GL20.glUniform1f(diffuseIntensityLocation, diffuseIntensity);
@@ -229,7 +229,7 @@ public class OpenGL32Renderer {
 
 	private static void shaderData(OpenGL32Model model) {
 		final FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
-		matrixBuffer.put(model.matrix().toArray());
+		matrixBuffer.put(MathHelper.asArray(model.matrix()));
 		matrixBuffer.flip();
 		GL20.glUniformMatrix4(modelMatrixLocation, false, matrixBuffer);
 		GL20.glUniform4f(modelColorLocation,
@@ -267,7 +267,7 @@ public class OpenGL32Renderer {
 	}
 
 	/**
-	 * Returns true if the Doxel display has been created.
+	 * Returns true if the render display has been created.
 	 *
 	 * @return True if the display and rendering resources have been creates, false if other wise.
 	 */
@@ -312,7 +312,7 @@ public class OpenGL32Renderer {
 	 * @param position The camera position.
 	 */
 	public static void cameraPosition(Vector3 position) {
-		cameraPosition = position;
+		cameraPosition.set(position);
 		updateCameraMatrix = true;
 	}
 
@@ -332,7 +332,7 @@ public class OpenGL32Renderer {
 	 * @param rotation The camera rotation.
 	 */
 	public static void cameraRotation(Quaternion rotation) {
-		cameraRotation = rotation;
+		cameraRotation.set(rotation);
 		updateCameraMatrix = true;
 	}
 
@@ -396,7 +396,7 @@ public class OpenGL32Renderer {
 	 * @param position The light position.
 	 */
 	public static void lightPosition(Vector3 position) {
-		lightPosition = position;
+		lightPosition.set(position);
 	}
 
 	/**
@@ -502,7 +502,7 @@ public class OpenGL32Renderer {
 		final int shaderID = GL20.glCreateShader(type);
 		GL20.glShaderSource(shaderID, shaderSource);
 		GL20.glCompileShader(shaderID);
-		if (GL20.glGetShader(shaderID, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
+		if (GL20.glGetShaderi(shaderID, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
 			throw new OpenGLException("OPEN GL ERROR: Could not compile shader \"" + name + "\"\n"
 					+ GL20.glGetShaderInfoLog(shaderID, 1000));
 		}
@@ -511,9 +511,9 @@ public class OpenGL32Renderer {
 	}
 
 	private static Vector3 toCamera(Vector3 v) {
-		final Matrix inverted = cameraRotationMatrix.invert();
+		final Matrix4x4 inverted = cameraRotationMatrix.getInverse();
 		if (inverted != null) {
-			return inverted.transform(v);
+			return MathHelper.transform(inverted, v);
 		}
 		return v;
 	}

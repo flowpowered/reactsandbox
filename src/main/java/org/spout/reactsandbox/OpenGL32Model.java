@@ -41,9 +41,9 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 
-import org.spout.jreactphysics3d.visuals.math.Matrix;
-import org.spout.jreactphysics3d.visuals.math.Quaternion;
-import org.spout.jreactphysics3d.visuals.math.Vector3;
+import org.spout.physics.math.Matrix4x4;
+import org.spout.physics.math.Quaternion;
+import org.spout.physics.math.Vector3;
 
 public class OpenGL32Model {
 	// Vertex info
@@ -62,9 +62,9 @@ public class OpenGL32Model {
 	private int normalsBufferID = 0;
 	private int vertexIndexBufferID = 0;
 	// Properties
-	private Vector3 position = new Vector3(0, 0, 0);
-	private Quaternion rotation = new Quaternion();
-	private Matrix matrix = new Matrix(4);
+	private final Vector3 position = new Vector3(0, 0, 0);
+	private final Quaternion rotation = new Quaternion();
+	private final Matrix4x4 matrix = new Matrix4x4();
 	private boolean updateMatrix = true;
 	private Color modelColor = new Color(1, 0.1f, 0.1f, 1);
 
@@ -143,11 +143,11 @@ public class OpenGL32Model {
 	 *
 	 * @return The model matrix.
 	 */
-	protected Matrix matrix() {
+	protected Matrix4x4 matrix() {
 		if (updateMatrix) {
-			final Matrix rotationMatrix = Matrix.createRotation(4, rotation);
-			final Matrix positionMatrix = Matrix.createTranslation(4, position);
-			matrix = rotationMatrix.mul(positionMatrix);
+			final Matrix4x4 rotationMatrix = MathHelper.asRotationMatrix(rotation);
+			final Matrix4x4 positionMatrix = MathHelper.asTranslationMatrix(position);
+			matrix.set(Matrix4x4.multiply(rotationMatrix, positionMatrix));
 			updateMatrix = false;
 		}
 		return matrix;
@@ -240,7 +240,7 @@ public class OpenGL32Model {
 	 * @param position The model position.
 	 */
 	public void position(Vector3 position) {
-		this.position = position;
+		this.position.set(position);
 		updateMatrix = true;
 	}
 
@@ -260,7 +260,7 @@ public class OpenGL32Model {
 	 * @param rotation The model rotation.
 	 */
 	public void rotation(Quaternion rotation) {
-		this.rotation = rotation;
+		this.rotation.set(rotation);
 		updateMatrix = true;
 	}
 
