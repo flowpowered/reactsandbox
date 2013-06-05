@@ -15,6 +15,9 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<buildNumber>0</buildNumber>
+		<mainClass>${project.groupId}.${project.artifactId}.Sandbox</mainClass>
+		<lwjglVersion>2.9.0</lwjglVersion>
+		<reactVersion>0.0.1-SNAPSHOT</reactVersion>
 	</properties>
 
 	<!-- Organization information -->
@@ -29,16 +32,34 @@
 			<name>Spout License Version 1</name>
 			<url>http://spout.in/licensev1</url>
 			<distribution>repo</distribution>
-			<comments>GNU Lesser General Public License Version 3, but with a provision that files are released under the MIT license 180 days after they are published.
-			</comments>
+			<comments>GNU Lesser General Public License Version 3, but with a provision that files are released under the MIT license 180 days after they are published.</comments>
 		</license>
 	</licenses>
+
+	<!-- Source code access -->
+	<scm>
+		<connection>scm:git:git://github.com/SpoutDev/ReactSandbox.git</connection>
+		<developerConnection>scm:git:git@github.com:SpoutDev/ReactSandbox.git</developerConnection>
+		<url>https://github.com/SpoutDev/ReactSandbox</url>
+	</scm>
+
+	<!-- Continous integration -->
+	<ciManagement>
+		<system>travis</system>
+		<url>https://travis-ci.org/SpoutDev/ReactSandbox</url>
+	</ciManagement>
+
+	<!-- Issue management -->
+	<issueManagement>
+		<system>jira</system>
+		<url>http://spoutdev.atlassian.net/browse/REACT</url>
+	</issueManagement>
 
 	<!-- Dependency repositories -->
 	<repositories>
 		<repository>
 			<id>spout-repo</id>
-			<url>http://repo.spout.org</url>
+			<url>http://nexus.spout.org/content/groups/public</url>
 			<snapshots>
 				<enabled>true</enabled>
 				<updatePolicy>always</updatePolicy>
@@ -50,15 +71,33 @@
 	<dependencies>
 		<!-- Include in final JAR -->
 		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.3</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.lwjgl.lwjgl</groupId>
 			<artifactId>lwjgl</artifactId>
-			<version>2.8.4</version>
+			<version>${lwjglVersion}</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.lwjgl.lwjgl</groupId>
 			<artifactId>lwjgl_util</artifactId>
-			<version>2.8.4</version>
+			<version>${lwjglVersion}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.spout</groupId>
+			<artifactId>react</artifactId>
+			<version>${reactVersion}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.yaml</groupId>
+			<artifactId>snakeyaml</artifactId>
+			<version>1.12</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -68,43 +107,23 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.yaml</groupId>
-			<artifactId>snakeyaml</artifactId>
-			<version>1.11</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.3</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.spout</groupId>
-			<artifactId>react</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.1</version>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 
-	<!-- Build plugin repositories -->
-	<pluginRepositories>
-		<pluginRepository>
-			<id>spout-repo</id>
-			<url>http://repo.spout.org</url>
-		</pluginRepository>
-	</pluginRepositories>
-
 	<!-- Build configuration -->
 	<build>
-		<defaultGoal>clean install</defaultGoal>
+		<defaultGoal>clean package</defaultGoal>
 
 		<!-- Resources to include -->
 		<resources>
 			<!-- Static resources -->
 			<resource>
 				<filtering>false</filtering>
-				<directory>${project.basedir}</directory>
+				<directory>.</directory>
 				<targetPath>.</targetPath>
 				<includes>
 					<include>LICENSE.txt</include>
@@ -112,7 +131,7 @@
 			</resource>
 			<resource>
 				<filtering>false</filtering>
-				<directory>${project.basedir}/src/main/resources</directory>
+				<directory>src/main/resources</directory>
 				<targetPath>.</targetPath>
 				<includes>
 					<include>**/*</include>
@@ -139,7 +158,7 @@
 							<quiet>true</quiet>
 							<encoding>UTF-8</encoding>
 							<strictCheck>true</strictCheck>
-							<header>${project.basedir}/HEADER.txt</header>
+							<header>HEADER.txt</header>
 							<mapping>
 								<java>SLASHSTAR_STYLE</java>
 							</mapping>
@@ -163,7 +182,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.0</version>
+				<version>3.1</version>
 				<configuration>
 					<source>1.6</source>
 					<target>1.6</target>
@@ -175,6 +194,19 @@
 					<showDeprecation>true</showDeprecation>
 				</configuration>
 			</plugin>
+			<!-- JAR creation plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>${mainClass}</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
 			<!-- Dependency addition plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -183,27 +215,7 @@
 				<executions>
 					<execution>
 						<configuration>
-							<filters>
-								<filter>
-									<artifact>*:*</artifact>
-									<excludes>
-										<exclude>lib/**</exclude>
-										<exclude>templates/**</exclude>
-										<exclude>META-INF/*.xml</exclude>
-										<exclude>META-INF/*.txt</exclude>
-										<exclude>**/LICENSE</exclude>
-										<exclude>**/NOTICE</exclude>
-										<exclude>**/DEPENDENCIES</exclude>
-										<exclude>**/*.java</exclude>
-									</excludes>
-								</filter>
-								<filter>
-									<artifact>org.spout:*</artifact>
-									<includes>
-										<include>**</include>
-									</includes>
-								</filter>
-							</filters>
+							<minimizeJar>true</minimizeJar>
 						</configuration>
 						<phase>package</phase>
 						<goals>
