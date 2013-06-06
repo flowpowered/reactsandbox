@@ -65,7 +65,7 @@ public class Sandbox {
 			System.out.println("Starting up");
 			OpenGL32Renderer.create(WINDOW_TITLE, windowWidth, windowHeight, fieldOfView);
 			final OpenGL32Model model = new OpenGL32Model();
-			MeshGenerator.generateCuboidMesh(model, new Vector3(3, 3, 3));
+			MeshGenerator.generateSphericalMesh(model, 3);
 			model.color(defaultModelColor);
 			model.create();
 			OpenGL32Renderer.addModel(model);
@@ -181,8 +181,6 @@ public class Sandbox {
 					(Map<String, Object>) new Yaml().load(new FileInputStream("config.yml"));
 			final Map<String, Object> inputConfig = (Map<String, Object>) config.get("Input");
 			final Map<String, Object> appearanceConfig = (Map<String, Object>) config.get("Appearance");
-			final Map<String, Object> modelConfig = (Map<String, Object>) config.get("Model");
-			final Map<String, Object> noiseSourceConfig = (Map<String, Object>) config.get("Plugin");
 			mouseSensitivity = ((Number) inputConfig.get("MouseSensitivity")).floatValue();
 			cameraSpeed = ((Number) inputConfig.get("CameraSpeed")).floatValue();
 			final String[] windowSize = ((String) appearanceConfig.get("WindowSize")).split(",");
