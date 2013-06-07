@@ -36,7 +36,7 @@ import gnu.trove.list.TIntList;
 import org.spout.physics.math.Vector3;
 
 public class MeshGenerator {
-	public static void generateCuboidMesh(OpenGL32Model destination, Vector3 size) {
+	public static void generateCuboid(OpenGL32Solid destination, Vector3 size) {
 		/*
 		^
 		| y
@@ -138,7 +138,7 @@ public class MeshGenerator {
 		addAll(indices, 20, 22, 21, 20, 23, 22);
 	}
 
-	public static void generateSphericalMesh(OpenGL32Model destination, float radius) {
+	public static void generateSphere(OpenGL32Solid destination, float radius) {
 		// Octahedron positions
 		final Vector3 v0 = new Vector3(0.0f, -1.0f, 0.0f);
 		final Vector3 v1 = new Vector3(1.0f, 0.0f, 0.0f);
@@ -195,7 +195,7 @@ public class MeshGenerator {
 		}
 	}
 
-	public static void generateCylindricalMesh(OpenGL32Model destination, float radius, float height) {
+	public static void generateCylinder(OpenGL32Solid destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cylinder in the middle
 		final float halfHeight = height / 2;
 		// Center positions in the top and bottom faces
@@ -264,7 +264,7 @@ public class MeshGenerator {
 		}
 	}
 
-	public static void generateConicalMesh(OpenGL32Model destination, float radius, float height) {
+	public static void generateCone(OpenGL32Solid destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cone in the middle
 		final float halfHeight = height / 2;
 		// Apex of the cone
@@ -288,11 +288,11 @@ public class MeshGenerator {
 		final TIntList indices = destination.indices();
 		// Add all the faces section by section, turning around the y axis
 		int index = 0;
-		final int rimsSize = rim.size();
-		for (int i = 0; i < rimsSize; i++) {
+		final int rimSize = rim.size();
+		for (int i = 0; i < rimSize; i++) {
 			// Two adjacent rim vertices
 			final Vector3 b0 = rim.get(i);
-			final Vector3 b1 = rim.get(i == rimsSize - 1 ? 0 : i + 1);
+			final Vector3 b1 = rim.get(i == rimSize - 1 ? 0 : i + 1);
 			// Side normal
 			final Vector3 n = Vector3.subtract(top, b0).cross(Vector3.subtract(b1, b0)).normalize();
 			// Bottom triangle

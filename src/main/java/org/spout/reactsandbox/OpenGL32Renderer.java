@@ -27,15 +27,9 @@
 package org.spout.reactsandbox;
 
 import java.awt.Color;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.ContextAttribs;
 import org.lwjgl.opengl.Display;
@@ -54,24 +48,15 @@ import org.spout.physics.math.Vector3;
 public class OpenGL32Renderer {
 	// States
 	private static boolean created = false;
-	// Renderer data
+	// Window size
 	private static int windowWidth;
 	private static int windowHeight;
-	private static int vertexShaderID = 0;
-	private static int fragmentShaderID = 0;
-	private static int programID = 0;
-	// OpenGL32Model data
-	private static final List<OpenGL32Model> models = new ArrayList<OpenGL32Model>();
-	// Shader data
-	private static int modelMatrixLocation;
-	private static int cameraMatrixLocation;
-	private static int projectionMatrixLocation;
-	private static int modelColorLocation;
-	private static int diffuseIntensityLocation;
-	private static int specularIntensityLocation;
-	private static int ambientIntensityLocation;
-	private static int lightPositionLocation;
-	private static int lightAttenuationLocation;
+	// Model data
+	private static final List<OpenGL32Solid> solids = new ArrayList<OpenGL32Solid>();
+	private static final List<OpenGL32Wireframe> wireframes = new ArrayList<OpenGL32Wireframe>();
+	// Shaders
+	private static OpenGL32Program solidShaders;
+	private static OpenGL32Program wireframeShaders;
 	// Camera
 	private static final Matrix4x4 projectionMatrix = Matrix4x4.identity();
 	private static final Vector3 cameraPosition = new Vector3(0, 0, 0);
@@ -91,7 +76,7 @@ public class OpenGL32Renderer {
 	}
 
 	/**
-	 * Create the render window and basic resources. This excludes the model.
+	 * Creates the render window and basic resources. This excludes the models.
 	 *
 	 * @param title The title of the render window.
 	 * @param windowWidth The width of the render window.
@@ -154,24 +139,12 @@ public class OpenGL32Renderer {
 	}
 
 	private static void createShaders() {
-		vertexShaderID = loadShader("Vertex Shader", OpenGL32Renderer.class.getResourceAsStream("/render.vert"),
-				GL20.GL_VERTEX_SHADER);
-		fragmentShaderID = loadShader("Fragment Shader", OpenGL32Renderer.class.getResourceAsStream("/render.frag"),
-				GL20.GL_FRAGMENT_SHADER);
-		programID = GL20.glCreateProgram();
-		GL20.glAttachShader(programID, vertexShaderID);
-		GL20.glAttachShader(programID, fragmentShaderID);
-		GL20.glLinkProgram(programID);
-		modelMatrixLocation = GL20.glGetUniformLocation(programID, "modelMatrix");
-		cameraMatrixLocation = GL20.glGetUniformLocation(programID, "cameraMatrix");
-		projectionMatrixLocation = GL20.glGetUniformLocation(programID, "projectionMatrix");
-		modelColorLocation = GL20.glGetUniformLocation(programID, "modelColor");
-		diffuseIntensityLocation = GL20.glGetUniformLocation(programID, "diffuseIntensity");
-		specularIntensityLocation = GL20.glGetUniformLocation(programID, "specularIntensity");
-		ambientIntensityLocation = GL20.glGetUniformLocation(programID, "ambientIntensity");
-		lightPositionLocation = GL20.glGetUniformLocation(programID, "lightPosition");
-		lightAttenuationLocation = GL20.glGetUniformLocation(programID, "lightAttenuation");
-		GL20.glValidateProgram(programID);
+		solidShaders = OpenGL32Program.create(
+				OpenGL32Renderer.class.getResourceAsStream("/solid.vert"),
+				OpenGL32Renderer.class.getResourceAsStream("/solid.frag"));
+		wireframeShaders = OpenGL32Program.create(
+				OpenGL32Renderer.class.getResourceAsStream("/wireframe.vert"),
+				OpenGL32Renderer.class.getResourceAsStream("/wireframe.frag"));
 		checkForOpenGLError("createShaders");
 	}
 
@@ -184,80 +157,88 @@ public class OpenGL32Renderer {
 
 	private static void destroyShaders() {
 		GL20.glUseProgram(0);
-		GL20.glDetachShader(programID, vertexShaderID);
-		GL20.glDetachShader(programID, fragmentShaderID);
-		GL20.glDeleteShader(vertexShaderID);
-		GL20.glDeleteShader(fragmentShaderID);
-		GL20.glDeleteProgram(programID);
+		solidShaders.destroy();
+		wireframeShaders.destroy();
 		checkForOpenGLError("destroyShaders");
 	}
 
 	private static void destroyModels() {
-		for (OpenGL32Model model : models) {
-			model.destroy();
+		for (OpenGL32Solid solid : solids) {
+			solid.destroy();
 		}
-		models.clear();
+		solids.clear();
+		for (OpenGL32Wireframe wireframe : wireframes) {
+			wireframe.destroy();
+		}
+		wireframes.clear();
 	}
 
 	private static Matrix4x4 cameraMatrix() {
 		if (updateCameraMatrix) {
-			cameraRotationMatrix.set(MathHelper.asRotationMatrix(cameraRotation));
-			final Matrix4x4 cameraPositionMatrix = MathHelper.asTranslationMatrix(cameraPosition);
+			cameraRotationMatrix.set(SandboxUtil.asRotationMatrix(cameraRotation));
+			final Matrix4x4 cameraPositionMatrix = SandboxUtil.asTranslationMatrix(cameraPosition);
 			cameraMatrix.set(Matrix4x4.multiply(cameraRotationMatrix, cameraPositionMatrix));
 			updateCameraMatrix = false;
 		}
 		return cameraMatrix;
 	}
 
-	private static void shaderData() {
-		final FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
-		matrixBuffer.put(MathHelper.asArray(cameraMatrix()));
-		matrixBuffer.flip();
-		GL20.glUniformMatrix4(cameraMatrixLocation, false, matrixBuffer);
-		matrixBuffer.clear();
-		matrixBuffer.put(MathHelper.asArray(projectionMatrix));
-		matrixBuffer.flip();
-		GL20.glUniformMatrix4(projectionMatrixLocation, false, matrixBuffer);
-		GL20.glUniform1f(diffuseIntensityLocation, diffuseIntensity);
-		GL20.glUniform1f(specularIntensityLocation, specularIntensity);
-		GL20.glUniform1f(ambientIntensityLocation, ambientIntensity);
-		GL20.glUniform3f(lightPositionLocation, lightPosition.getX(), lightPosition.getY(), lightPosition.getZ());
-		GL20.glUniform1f(lightAttenuationLocation, lightAttenuation);
-		checkForOpenGLError("preRender");
+	private static void wireframeShadersData() {
+		wireframeShaders.setUniform("cameraMatrix", cameraMatrix());
+		wireframeShaders.setUniform("projectionMatrix", projectionMatrix);
+		checkForOpenGLError("preRenderWireframe");
 	}
 
-	private static void shaderData(OpenGL32Model model) {
-		final FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
-		matrixBuffer.put(MathHelper.asArray(model.matrix()));
-		matrixBuffer.flip();
-		GL20.glUniformMatrix4(modelMatrixLocation, false, matrixBuffer);
-		GL20.glUniform4f(modelColorLocation,
-				model.color().getRed() / 255f, model.color().getGreen() / 255f,
-				model.color().getBlue() / 255f, model.color().getAlpha() / 255f);
+	private static void solidShadersData() {
+		solidShaders.setUniform("cameraMatrix", cameraMatrix());
+		solidShaders.setUniform("projectionMatrix", projectionMatrix);
+		solidShaders.setUniform("diffuseIntensity", diffuseIntensity);
+		solidShaders.setUniform("specularIntensity", specularIntensity);
+		solidShaders.setUniform("diffuseIntensity", diffuseIntensity);
+		solidShaders.setUniform("lightPosition", lightPosition);
+		solidShaders.setUniform("lightAttenuation", lightAttenuation);
+		checkForOpenGLError("preRenderSolid");
+	}
+
+	private static void wireframeShadersData(OpenGL32Wireframe wireframe) {
+		wireframeShaders.setUniform("modelMatrix", wireframe.matrix());
+		wireframeShaders.setUniform("modelColor", wireframe.color());
+		checkForOpenGLError("preRenderModel");
+	}
+
+	private static void solidShadersData(OpenGL32Solid solid) {
+		solidShaders.setUniform("modelMatrix", solid.matrix());
+		solidShaders.setUniform("modelColor", solid.color());
 		checkForOpenGLError("preRenderModel");
 	}
 
 	/**
-	 * Displays the models with to the render window.
+	 * Displays the models to the render window.
 	 *
-	 * @throws IllegalStateException If the display wasn't created first or if no models were added.
+	 * @throws IllegalStateException If the display wasn't created first or if no solids were added.
 	 */
 	protected static void render() {
 		if (!created) {
 			throw new IllegalStateException("Display needs to be created first.");
 		}
-		if (models.isEmpty()) {
-			throw new IllegalStateException("At least one model needs to be created first.");
-		}
 		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-		GL20.glUseProgram(programID);
-		shaderData();
-		for (OpenGL32Model model : models) {
-			if (!model.created()) {
+		GL20.glUseProgram(wireframeShaders.getID());
+		wireframeShadersData();
+		for (OpenGL32Wireframe wireframe : wireframes) {
+			if (!wireframe.isCreated()) {
 				continue;
 			}
-			shaderData(model);
-			model.render();
+			wireframeShadersData(wireframe);
+			wireframe.render();
+		}
+		GL20.glUseProgram(solidShaders.getID());
+		solidShadersData();
+		for (OpenGL32Solid solid : solids) {
+			if (!solid.isCreated()) {
+				continue;
+			}
+			solidShadersData(solid);
+			solid.render();
 		}
 		GL20.glUseProgram(0);
 		Display.sync(60);
@@ -270,7 +251,7 @@ public class OpenGL32Renderer {
 	 *
 	 * @return True if the display and rendering resources have been creates, false if other wise.
 	 */
-	public static boolean created() {
+	public static boolean isCreated() {
 		return created;
 	}
 
@@ -281,8 +262,16 @@ public class OpenGL32Renderer {
 	 * @param model The model to add
 	 */
 	public static void addModel(OpenGL32Model model) {
-		if (!models.contains(model)) {
-			models.add(model);
+		if (model instanceof OpenGL32Solid) {
+			if (!solids.contains(model)) {
+				solids.add((OpenGL32Solid) model);
+			}
+		} else if (model instanceof OpenGL32Wireframe) {
+			if (!wireframes.contains(model)) {
+				wireframes.add((OpenGL32Wireframe) model);
+			}
+		} else {
+			throw new IllegalArgumentException("Unknown model type. Valid types: solid, wireframe");
 		}
 	}
 
@@ -292,7 +281,13 @@ public class OpenGL32Renderer {
 	 * @param model The model to remove
 	 */
 	public static void removeModel(OpenGL32Model model) {
-		models.remove(model);
+		if (model instanceof OpenGL32Solid) {
+			solids.remove(model);
+		} else if (model instanceof OpenGL32Wireframe) {
+			wireframes.remove(model);
+		} else {
+			throw new IllegalArgumentException("Unknown model type. Valid types: solid, wireframe");
+		}
 	}
 
 	/**
@@ -485,34 +480,10 @@ public class OpenGL32Renderer {
 		}
 	}
 
-	private static int loadShader(String name, InputStream shaderRessource, int type) {
-		final StringBuilder shaderSource = new StringBuilder();
-		try {
-			final BufferedReader reader = new BufferedReader(new InputStreamReader(shaderRessource));
-			String line;
-			while ((line = reader.readLine()) != null) {
-				shaderSource.append(line).append("\n");
-			}
-			reader.close();
-			shaderRessource.close();
-		} catch (IOException e) {
-			System.out.println("IO exception: " + e.getMessage());
-		}
-		final int shaderID = GL20.glCreateShader(type);
-		GL20.glShaderSource(shaderID, shaderSource);
-		GL20.glCompileShader(shaderID);
-		if (GL20.glGetShaderi(shaderID, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
-			throw new OpenGLException("OPEN GL ERROR: Could not compile shader \"" + name + "\"\n"
-					+ GL20.glGetShaderInfoLog(shaderID, 1000));
-		}
-		checkForOpenGLError("loadShader");
-		return shaderID;
-	}
-
 	private static Vector3 toCamera(Vector3 v) {
 		final Matrix4x4 inverted = cameraRotationMatrix.getInverse();
 		if (inverted != null) {
-			return MathHelper.transform(inverted, v);
+			return SandboxUtil.transform(inverted, v);
 		}
 		return v;
 	}

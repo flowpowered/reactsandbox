@@ -26,13 +26,21 @@
  */
 package org.spout.reactsandbox;
 
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+
+import gnu.trove.list.TFloatList;
+import gnu.trove.list.TIntList;
+
+import org.lwjgl.BufferUtils;
+
 import org.spout.physics.math.Matrix3x3;
 import org.spout.physics.math.Matrix4x4;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Vector3;
 import org.spout.physics.math.Vector4;
 
-public class MathHelper {
+public class SandboxUtil {
 	public static Matrix4x4 asRotationMatrix(Quaternion q) {
 		final Matrix3x3 m3 = q.getMatrix();
 		return new Matrix4x4(
@@ -70,5 +78,19 @@ public class MathHelper {
 		final float halfAngle = (float) (Math.toRadians(angle) / 2);
 		final float q = (float) (Math.sin(halfAngle) / Math.sqrt(x * x + y * y + z * z));
 		return new Quaternion(x * q, y * q, z * q, (float) Math.cos(halfAngle));
+	}
+
+	public static FloatBuffer toBuffer(TFloatList floats) {
+		final FloatBuffer floatsBuffer = BufferUtils.createFloatBuffer(floats.size());
+		floatsBuffer.put(floats.toArray());
+		floatsBuffer.flip();
+		return floatsBuffer;
+	}
+
+	public static IntBuffer toBuffer(TIntList ints) {
+		final IntBuffer intsBuffer = BufferUtils.createIntBuffer(ints.size());
+		intsBuffer.put(ints.toArray());
+		intsBuffer.flip();
+		return intsBuffer;
 	}
 }

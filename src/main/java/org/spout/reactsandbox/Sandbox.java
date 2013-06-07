@@ -64,11 +64,17 @@ public class Sandbox {
 			loadConfiguration();
 			System.out.println("Starting up");
 			OpenGL32Renderer.create(WINDOW_TITLE, windowWidth, windowHeight, fieldOfView);
-			final OpenGL32Model model = new OpenGL32Model();
-			MeshGenerator.generateConicalMesh(model, 4, 8);
-			model.color(defaultModelColor);
-			model.create();
-			OpenGL32Renderer.addModel(model);
+			final OpenGL32Solid solid = new OpenGL32Solid();
+			MeshGenerator.generateCone(solid, 4, 8);
+			solid.color(defaultModelColor);
+			solid.create();
+			OpenGL32Renderer.addModel(solid);
+			final OpenGL32Wireframe wireframe = new OpenGL32Wireframe();
+			wireframe.positions().add(new float[]{-4, -4, -4, 4, 4, 4});
+			wireframe.indices().add(new int[]{0, 1});
+			wireframe.color(new Color(0.1f, 1, 0.1f));
+			wireframe.create();
+			OpenGL32Renderer.addModel(wireframe);
 			Mouse.setGrabbed(true);
 			while (!Display.isCloseRequested()) {
 				final long start = System.nanoTime();
@@ -105,8 +111,8 @@ public class Sandbox {
 			cameraYaw %= 360;
 			cameraPitch += Mouse.getDX() * mouseSensitivity;
 			cameraPitch %= 360;
-			final Quaternion yaw = MathHelper.angleAxisToQuaternion(cameraYaw, 1, 0, 0);
-			final Quaternion pitch = MathHelper.angleAxisToQuaternion(cameraPitch, 0, 1, 0);
+			final Quaternion yaw = SandboxUtil.angleAxisToQuaternion(cameraYaw, 1, 0, 0);
+			final Quaternion pitch = SandboxUtil.angleAxisToQuaternion(cameraPitch, 0, 1, 0);
 			OpenGL32Renderer.cameraRotation(Quaternion.multiply(yaw, pitch));
 		}
 		final Vector3 right = OpenGL32Renderer.cameraRight();
