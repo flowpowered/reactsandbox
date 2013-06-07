@@ -198,7 +198,7 @@ public class MeshGenerator {
 	public static void generateCylindricalMesh(OpenGL32Model destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cylinder in the middle
 		final float halfHeight = height / 2;
-		// Center positions of the top and bottom faces
+		// Center positions in the top and bottom faces
 		final Vector3 top = new Vector3(0, halfHeight, 0);
 		final Vector3 bottom = new Vector3(0, -halfHeight, 0);
 		// The normals for the triangles of the top and bottom faces
@@ -255,6 +255,56 @@ public class MeshGenerator {
 			addAll(indices, index++, index++, index++);
 			// Side triangle 2
 			addVector(positions, t1);
+			addVector(normals, n);
+			addVector(positions, b0);
+			addVector(normals, n);
+			addVector(positions, b1);
+			addVector(normals, n);
+			addAll(indices, index++, index++, index++);
+		}
+	}
+
+	public static void generateConicalMesh(OpenGL32Model destination, float radius, float height) {
+		// 0,0,0 will be halfway up the cone in the middle
+		final float halfHeight = height / 2;
+		// Apex of the cone
+		final Vector3 top = new Vector3(0, halfHeight, 0);
+		// Center position in the bottom face
+		final Vector3 bottom = new Vector3(0, -halfHeight, 0);
+		// The normals for the triangles for the bottom face
+		final Vector3 bottomNormal = new Vector3(0, -1, 0);
+		// The positions at the bottom rim of the cone
+		final List<Vector3> rim = new ArrayList<Vector3>();
+		for (int angle = 0; angle < 360; angle += 15) {
+			final double angleRads = Math.toRadians(angle);
+			rim.add(new Vector3(
+					radius * (float) Math.cos(angleRads),
+					-halfHeight,
+					radius * (float) -Math.sin(angleRads)));
+		}
+		// Model data buffers
+		final TFloatList positions = destination.positions();
+		final TFloatList normals = destination.normals();
+		final TIntList indices = destination.indices();
+		// Add all the faces section by section, turning around the y axis
+		int index = 0;
+		final int rimsSize = rim.size();
+		for (int i = 0; i < rimsSize; i++) {
+			// Two adjacent rim vertices
+			final Vector3 b0 = rim.get(i);
+			final Vector3 b1 = rim.get(i == rimsSize - 1 ? 0 : i + 1);
+			// Side normal
+			final Vector3 n = Vector3.subtract(top, b0).cross(Vector3.subtract(b1, b0)).normalize();
+			// Bottom triangle
+			addVector(positions, b0);
+			addVector(normals, bottomNormal);
+			addVector(positions, bottom);
+			addVector(normals, bottomNormal);
+			addVector(positions, b1);
+			addVector(normals, bottomNormal);
+			addAll(indices, index++, index++, index++);
+			// Side triangle
+			addVector(positions, top);
 			addVector(normals, n);
 			addVector(positions, b0);
 			addVector(normals, n);
