@@ -36,7 +36,7 @@ import gnu.trove.list.TIntList;
 import org.spout.physics.math.Vector3;
 
 public class MeshGenerator {
-	public static void generateCuboidMesh(OpenGL32Model dest, Vector3 size) {
+	public static void generateCuboidMesh(OpenGL32Model destination, Vector3 size) {
 		/*
 		^
 		| y
@@ -73,9 +73,9 @@ public class MeshGenerator {
 		final Vector3 nyN = new Vector3(0, -1, 0);
 		final Vector3 nzN = new Vector3(0, 0, -1);
 		// model data buffers
-		final TFloatList positions = dest.positions();
-		final TFloatList normals = dest.normals();
-		final TIntList indices = dest.indices();
+		final TFloatList positions = destination.positions();
+		final TFloatList normals = destination.normals();
+		final TIntList indices = destination.indices();
 		// face x
 		addVector(positions, p2);
 		addVector(normals, nx);
@@ -85,7 +85,7 @@ public class MeshGenerator {
 		addVector(normals, nx);
 		addVector(positions, p1);
 		addVector(normals, nx);
-		addAll(indices, 0, 1, 2, 0, 2, 3);
+		addAll(indices, 0, 2, 1, 0, 3, 2);
 		// face y
 		addVector(positions, p4);
 		addVector(normals, ny);
@@ -95,7 +95,7 @@ public class MeshGenerator {
 		addVector(normals, ny);
 		addVector(positions, p7);
 		addVector(normals, ny);
-		addAll(indices, 4, 5, 6, 4, 6, 7);
+		addAll(indices, 4, 6, 5, 4, 7, 6);
 		// face z
 		addVector(positions, p3);
 		addVector(normals, nz);
@@ -105,7 +105,7 @@ public class MeshGenerator {
 		addVector(normals, nz);
 		addVector(positions, p2);
 		addVector(normals, nz);
-		addAll(indices, 8, 9, 10, 8, 10, 11);
+		addAll(indices, 8, 10, 9, 8, 11, 10);
 		// face -x
 		addVector(positions, p0);
 		addVector(normals, nxN);
@@ -115,7 +115,7 @@ public class MeshGenerator {
 		addVector(normals, nxN);
 		addVector(positions, p3);
 		addVector(normals, nxN);
-		addAll(indices, 12, 13, 14, 12, 14, 15);
+		addAll(indices, 12, 14, 13, 12, 15, 14);
 		// face -y
 		addVector(positions, p0);
 		addVector(normals, nyN);
@@ -125,7 +125,7 @@ public class MeshGenerator {
 		addVector(normals, nyN);
 		addVector(positions, p1);
 		addVector(normals, nyN);
-		addAll(indices, 16, 17, 18, 16, 18, 19);
+		addAll(indices, 16, 18, 17, 16, 19, 18);
 		// face -z
 		addVector(positions, p1);
 		addVector(normals, nzN);
@@ -135,10 +135,10 @@ public class MeshGenerator {
 		addVector(normals, nzN);
 		addVector(positions, p0);
 		addVector(normals, nzN);
-		addAll(indices, 20, 21, 22, 20, 22, 23);
+		addAll(indices, 20, 22, 21, 20, 23, 22);
 	}
 
-	public static void generateSphericalMesh(OpenGL32Model dest, float radius) {
+	public static void generateSphericalMesh(OpenGL32Model destination, float radius) {
 		// Octahedron positions
 		final Vector3 v0 = new Vector3(0.0f, -1.0f, 0.0f);
 		final Vector3 v1 = new Vector3(1.0f, 0.0f, 0.0f);
@@ -178,9 +178,9 @@ public class MeshGenerator {
 			triangle.v2.normalize().multiply(radius);
 		}
 		// Model data buffers
-		final TFloatList positions = dest.positions();
-		final TFloatList normals = dest.normals();
-		final TIntList indices = dest.indices();
+		final TFloatList positions = destination.positions();
+		final TFloatList normals = destination.normals();
+		final TIntList indices = destination.indices();
 		// Add the triangle faces to the data buffers
 		int index = 0;
 		for (Triangle triangle : triangles) {
@@ -191,6 +191,75 @@ public class MeshGenerator {
 			addVector(normals, normal);
 			addVector(normals, normal);
 			addVector(normals, normal);
+			addAll(indices, index++, index++, index++);
+		}
+	}
+
+	public static void generateCylindricalMesh(OpenGL32Model destination, float radius, float height) {
+		// 0,0,0 will be halfway up the cylinder in the middle
+		final float halfHeight = height / 2;
+		// Center positions of the top and bottom faces
+		final Vector3 top = new Vector3(0, halfHeight, 0);
+		final Vector3 bottom = new Vector3(0, -halfHeight, 0);
+		// The normals for the triangles of the top and bottom faces
+		final Vector3 topNormal = new Vector3(0, 1, 0);
+		final Vector3 bottomNormal = new Vector3(0, -1, 0);
+		// The positions at the rims of the cylinders
+		final List<Vector3> rims = new ArrayList<Vector3>();
+		for (int angle = 0; angle < 360; angle += 15) {
+			final double angleRads = Math.toRadians(angle);
+			rims.add(new Vector3(
+					radius * (float) Math.cos(angleRads),
+					halfHeight,
+					radius * (float) -Math.sin(angleRads)));
+		}
+		// Model data buffers
+		final TFloatList positions = destination.positions();
+		final TFloatList normals = destination.normals();
+		final TIntList indices = destination.indices();
+		// Add all the faces section by section, turning around the y axis
+		int index = 0;
+		final int rimsSize = rims.size();
+		for (int i = 0; i < rimsSize; i++) {
+			// Two adjacent rim vertices for the top
+			final Vector3 t0 = rims.get(i);
+			final Vector3 t1 = rims.get(i == rimsSize - 1 ? 0 : i + 1);
+			// Same for the bottom
+			final Vector3 b0 = new Vector3(t0.getX(), -t0.getY(), t0.getZ());
+			final Vector3 b1 = new Vector3(t1.getX(), -t1.getY(), t1.getZ());
+			// Side normal
+			final Vector3 n = Vector3.subtract(t1, t0).cross(Vector3.subtract(b0, t0)).normalize();
+			// Top triangle
+			addVector(positions, t0);
+			addVector(normals, topNormal);
+			addVector(positions, t1);
+			addVector(normals, topNormal);
+			addVector(positions, top);
+			addVector(normals, topNormal);
+			addAll(indices, index++, index++, index++);
+			// Bottom triangle
+			addVector(positions, b0);
+			addVector(normals, bottomNormal);
+			addVector(positions, bottom);
+			addVector(normals, bottomNormal);
+			addVector(positions, b1);
+			addVector(normals, bottomNormal);
+			addAll(indices, index++, index++, index++);
+			// Side triangle 1
+			addVector(positions, t1);
+			addVector(normals, n);
+			addVector(positions, t0);
+			addVector(normals, n);
+			addVector(positions, b0);
+			addVector(normals, n);
+			addAll(indices, index++, index++, index++);
+			// Side triangle 2
+			addVector(positions, t1);
+			addVector(normals, n);
+			addVector(positions, b0);
+			addVector(normals, n);
+			addVector(positions, b1);
+			addVector(normals, n);
 			addAll(indices, index++, index++, index++);
 		}
 	}

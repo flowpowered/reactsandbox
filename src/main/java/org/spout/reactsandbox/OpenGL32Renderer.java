@@ -178,7 +178,6 @@ public class OpenGL32Renderer {
 	private static void destroyDisplay() {
 		GL11.glDisable(GL11.GL_DEPTH_TEST);
 		GL11.glDepthMask(false);
-		GL11.glDisable(GL11.GL_CULL_FACE);
 		checkForOpenGLError("destroyDisplay");
 		Display.destroy();
 	}

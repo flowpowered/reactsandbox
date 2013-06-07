@@ -65,7 +65,7 @@ public class Sandbox {
 			System.out.println("Starting up");
 			OpenGL32Renderer.create(WINDOW_TITLE, windowWidth, windowHeight, fieldOfView);
 			final OpenGL32Model model = new OpenGL32Model();
-			MeshGenerator.generateSphericalMesh(model, 3);
+			MeshGenerator.generateCylindricalMesh(model, 4, 8);
 			model.color(defaultModelColor);
 			model.create();
 			OpenGL32Renderer.addModel(model);
