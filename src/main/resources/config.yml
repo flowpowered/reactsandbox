@@ -11,12 +11,12 @@ Appearance:
     # Back ground color in RGB float components.
     BackgroundColor: 0.2, 0.2, 0.2
     # Model color in RGB floats.
-    ModelColor: 1, 0.1, 0.1
+    ModelColor: 0.8, 0.1, 0.1
     # Diffuse intensity in each RGB float component.
-    DiffuseIntensity: 0.9
+    DiffuseIntensity: 0.8
     # Specular intensity in each RGB float component.
-    SpecularIntensity: 0.3
+    SpecularIntensity: 0.2
     # Ambient light intensity in each float RGB component.
-    AmbientIntensity: 0.1
+    AmbientIntensity: 0.3
     # How much distance affects light intensity.
-    LightAttenuation: 0.2
+    LightAttenuation: 0.03

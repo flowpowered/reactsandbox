@@ -40,7 +40,7 @@ public abstract class OpenGL32Model {
 	protected final Quaternion rotation = Quaternion.identity();
 	protected final Matrix4x4 matrix = Matrix4x4.identity();
 	protected boolean updateMatrix = true;
-	protected Color modelColor = new Color(1, 0.1f, 0.1f, 1);
+	protected Color modelColor = new Color(0.8f, 0.1f, 0.1f, 1);
 
 	public abstract void create();
 

@@ -66,11 +66,11 @@ public class OpenGL32Renderer {
 	private static boolean updateCameraMatrix = true;
 	// Lighting
 	private static final Vector3 lightPosition = new Vector3(0, 0, 0);
-	private static float diffuseIntensity = 0.9f;
-	private static float specularIntensity = 1;
-	private static float ambientIntensity = 0.1f;
+	private static float diffuseIntensity = 0.8f;
+	private static float specularIntensity = 0.2f;
+	private static float ambientIntensity = 0.3f;
 	private static Color backgroundColor = new Color(0.2f, 0.2f, 0.2f, 0);
-	private static float lightAttenuation = 0.9f;
+	private static float lightAttenuation = 0.03f;
 
 	private OpenGL32Renderer() {
 	}
@@ -194,7 +194,7 @@ public class OpenGL32Renderer {
 		solidShaders.setUniform("projectionMatrix", projectionMatrix);
 		solidShaders.setUniform("diffuseIntensity", diffuseIntensity);
 		solidShaders.setUniform("specularIntensity", specularIntensity);
-		solidShaders.setUniform("diffuseIntensity", diffuseIntensity);
+		solidShaders.setUniform("ambientIntensity", ambientIntensity);
 		solidShaders.setUniform("lightPosition", lightPosition);
 		solidShaders.setUniform("lightAttenuation", lightAttenuation);
 		checkForOpenGLError("preRenderSolid");
