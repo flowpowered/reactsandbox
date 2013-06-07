@@ -35,22 +35,28 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.OpenGLException;
 
+/**
+ * Represents a shader for OpenGL 3.2. After being constructed, the program needs to be created in
+ * the OpenGL context with {@link #create(java.io.InputStream, int)}. This class is meant to be used
+ * by the {@link OpenGL32Program} class.
+ */
 public class OpenGL32Shader {
-	private final int id;
+	// State
+	private boolean created = false;
+	// ID
+	private int id;
 
-	private OpenGL32Shader(int id) {
-		this.id = id;
-	}
-
-	public int getID() {
-		return id;
-	}
-
-	public void destroy() {
-		GL20.glDeleteShader(id);
-	}
-
-	public static OpenGL32Shader create(InputStream shaderResource, int type) {
+	/**
+	 * Creates a new shader in the OpenGL context from the input stream for the shaders.
+	 *
+	 * @param shaderResource The shader input stream
+	 * @param type The type of shader, either {@link GL20#GL_VERTEX_SHADER} or {@link
+	 * GL20#GL_FRAGMENT_SHADER}
+	 */
+	public void create(InputStream shaderResource, int type) {
+		if (created) {
+			throw new IllegalStateException("Shader has already been created.");
+		}
 		final StringBuilder shaderSource = new StringBuilder();
 		try {
 			final BufferedReader reader = new BufferedReader(new InputStreamReader(shaderResource));
@@ -63,13 +69,35 @@ public class OpenGL32Shader {
 		} catch (IOException e) {
 			System.out.println("IO exception: " + e.getMessage());
 		}
-		final int shaderID = GL20.glCreateShader(type);
-		GL20.glShaderSource(shaderID, shaderSource);
-		GL20.glCompileShader(shaderID);
-		if (GL20.glGetShaderi(shaderID, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
-			throw new OpenGLException("OPEN GL ERROR: Could not compile shader\n" + GL20.glGetShaderInfoLog(shaderID, 1000));
+		final int id = GL20.glCreateShader(type);
+		GL20.glShaderSource(id, shaderSource);
+		GL20.glCompileShader(id);
+		if (GL20.glGetShaderi(id, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
+			throw new OpenGLException("OPEN GL ERROR: Could not compile shader\n" + GL20.glGetShaderInfoLog(id, 1000));
 		}
 		OpenGL32Renderer.checkForOpenGLError("loadShader");
-		return new OpenGL32Shader(shaderID);
+		this.id = id;
+		created = true;
+	}
+
+	/**
+	 * Destroys this shader by deleting the OpenGL shader.
+	 */
+	public void destroy() {
+		if (!created) {
+			throw new IllegalStateException("Shader has not been created yet.");
+		}
+		GL20.glDeleteShader(id);
+		id = 0;
+		created = false;
+	}
+
+	/**
+	 * Gets the ID for this shader as assigned by OpenGL.
+	 *
+	 * @return The ID
+	 */
+	public int getID() {
+		return id;
 	}
 }

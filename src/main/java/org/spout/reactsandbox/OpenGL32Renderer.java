@@ -45,6 +45,14 @@ import org.spout.physics.math.Matrix4x4;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Vector3;
 
+/**
+ * This is a static renderer using the OpenGL 3.2 graphics API. To create a new render window, use
+ * {@link #create(String, int, int, float)}. To add and remove models, use {@link
+ * #addModel(OpenGL32Model)} and {@link #removeModel(OpenGL32Model)}. The camera position and
+ * rotation can be modified. The light diffuse intensity, specular intensity, ambient intensity,
+ * position and attenuation can also be controlled. When done, use {@link #destroy()} to destroy the
+ * render window.
+ */
 public class OpenGL32Renderer {
 	// States
 	private static boolean created = false;
@@ -55,8 +63,8 @@ public class OpenGL32Renderer {
 	private static final List<OpenGL32Solid> solids = new ArrayList<OpenGL32Solid>();
 	private static final List<OpenGL32Wireframe> wireframes = new ArrayList<OpenGL32Wireframe>();
 	// Shaders
-	private static OpenGL32Program solidShaders;
-	private static OpenGL32Program wireframeShaders;
+	private static final OpenGL32Program solidShaders = new OpenGL32Program();
+	private static final OpenGL32Program wireframeShaders = new OpenGL32Program();
 	// Camera
 	private static final Matrix4x4 projectionMatrix = Matrix4x4.identity();
 	private static final Vector3 cameraPosition = new Vector3(0, 0, 0);
@@ -78,15 +86,15 @@ public class OpenGL32Renderer {
 	/**
 	 * Creates the render window and basic resources. This excludes the models.
 	 *
-	 * @param title The title of the render window.
-	 * @param windowWidth The width of the render window.
-	 * @param windowHeight The height of the render window.
-	 * @param fieldOfView The field of view in degrees. 75 is suggested.
+	 * @param title The title of the render window
+	 * @param windowWidth The width of the render window
+	 * @param windowHeight The height of the render window
+	 * @param fieldOfView The field of view in degrees. 75 is suggested
 	 */
 	public static void create(String title, int windowWidth, int windowHeight, float fieldOfView)
 			throws LWJGLException {
 		if (created) {
-			throw new IllegalStateException("Rendered has already been created.");
+			throw new IllegalStateException("Renderer has already been created.");
 		}
 		createDisplay(title, windowWidth, windowHeight);
 		createProjection(fieldOfView);
@@ -99,7 +107,7 @@ public class OpenGL32Renderer {
 	 */
 	public static void destroy() {
 		if (!created) {
-			throw new IllegalStateException("Rendered has not been created yet.");
+			throw new IllegalStateException("Renderer has not been created yet.");
 		}
 		destroyModels();
 		destroyShaders();
@@ -139,11 +147,9 @@ public class OpenGL32Renderer {
 	}
 
 	private static void createShaders() {
-		solidShaders = OpenGL32Program.create(
-				OpenGL32Renderer.class.getResourceAsStream("/solid.vert"),
+		solidShaders.create(OpenGL32Renderer.class.getResourceAsStream("/solid.vert"),
 				OpenGL32Renderer.class.getResourceAsStream("/solid.frag"));
-		wireframeShaders = OpenGL32Program.create(
-				OpenGL32Renderer.class.getResourceAsStream("/wireframe.vert"),
+		wireframeShaders.create(OpenGL32Renderer.class.getResourceAsStream("/wireframe.vert"),
 				OpenGL32Renderer.class.getResourceAsStream("/wireframe.frag"));
 		checkForOpenGLError("createShaders");
 	}
@@ -212,11 +218,6 @@ public class OpenGL32Renderer {
 		checkForOpenGLError("preRenderModel");
 	}
 
-	/**
-	 * Displays the models to the render window.
-	 *
-	 * @throws IllegalStateException If the display wasn't created first or if no solids were added.
-	 */
 	protected static void render() {
 		if (!created) {
 			throw new IllegalStateException("Display needs to be created first.");
@@ -276,7 +277,7 @@ public class OpenGL32Renderer {
 	}
 
 	/**
-	 * Removes a model from the list
+	 * Removes a model from the list.
 	 *
 	 * @param model The model to remove
 	 */
@@ -293,7 +294,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Gets the camera position.
 	 *
-	 * @return The camera position.
+	 * @return The camera position
 	 */
 	public static Vector3 cameraPosition() {
 		updateCameraMatrix = true;
@@ -303,7 +304,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Sets the camera position.
 	 *
-	 * @param position The camera position.
+	 * @param position The camera position
 	 */
 	public static void cameraPosition(Vector3 position) {
 		cameraPosition.set(position);
@@ -313,7 +314,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Gets the camera rotation.
 	 *
-	 * @return The camera rotation.
+	 * @return The camera rotation
 	 */
 	public static Quaternion cameraRotation() {
 		updateCameraMatrix = true;
@@ -323,7 +324,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Sets the camera rotation.
 	 *
-	 * @param rotation The camera rotation.
+	 * @param rotation The camera rotation
 	 */
 	public static void cameraRotation(Quaternion rotation) {
 		cameraRotation.set(rotation);
@@ -333,7 +334,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Gets the vector representing the right direction for the camera.
 	 *
-	 * @return The camera's right direction vector.
+	 * @return The camera's right direction vector
 	 */
 	public static Vector3 cameraRight() {
 		return toCamera(new Vector3(1, 0, 0));
@@ -342,7 +343,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Gets the vector representing the up direction for the camera.
 	 *
-	 * @return The camera's up direction vector.
+	 * @return The camera's up direction vector
 	 */
 	public static Vector3 cameraUp() {
 		return toCamera(new Vector3(0, 1, 0));
@@ -351,7 +352,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Gets the vector representing the forward direction for the camera.
 	 *
-	 * @return The camera's forward direction vector.
+	 * @return The camera's forward direction vector
 	 */
 	public static Vector3 cameraForward() {
 		return toCamera(new Vector3(0, 0, 1));
@@ -360,7 +361,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Gets the background color.
 	 *
-	 * @return The background color.
+	 * @return The background color
 	 */
 	public static Color backgroundColor() {
 		return backgroundColor;
@@ -369,7 +370,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Sets the background color.
 	 *
-	 * @param color The background color.
+	 * @param color The background color
 	 */
 	public static void backgroundColor(Color color) {
 		backgroundColor = color;
@@ -378,7 +379,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Gets the light position.
 	 *
-	 * @return The light position.
+	 * @return The light position
 	 */
 	public static Vector3 lightPosition() {
 		return lightPosition;
@@ -387,7 +388,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Sets the light position.
 	 *
-	 * @param position The light position.
+	 * @param position The light position
 	 */
 	public static void lightPosition(Vector3 position) {
 		lightPosition.set(position);
@@ -396,7 +397,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Sets the diffuse intensity.
 	 *
-	 * @param intensity The diffuse intensity.
+	 * @param intensity The diffuse intensity
 	 */
 	public static void diffuseIntensity(float intensity) {
 		diffuseIntensity = intensity;
@@ -405,7 +406,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Gets the diffuse intensity.
 	 *
-	 * @return The diffuse intensity.
+	 * @return The diffuse intensity
 	 */
 	public static float diffuseIntensity() {
 		return diffuseIntensity;
@@ -414,7 +415,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Sets the specular intensity.
 	 *
-	 * @param intensity specular The intensity.
+	 * @param intensity specular The intensity
 	 */
 	public static void specularIntensity(float intensity) {
 		specularIntensity = intensity;
@@ -423,7 +424,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Gets specular intensity.
 	 *
-	 * @return The specular intensity.
+	 * @return The specular intensity
 	 */
 	public static float specularIntensity() {
 		return specularIntensity;
@@ -432,7 +433,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Sets the ambient intensity.
 	 *
-	 * @param intensity The ambient intensity.
+	 * @param intensity The ambient intensity
 	 */
 	public static void ambientIntensity(float intensity) {
 		ambientIntensity = intensity;
@@ -441,7 +442,7 @@ public class OpenGL32Renderer {
 	/**
 	 * Gets the ambient intensity.
 	 *
-	 * @return The ambient intensity.
+	 * @return The ambient intensity
 	 */
 	public static float ambientIntensity() {
 		return ambientIntensity;
@@ -449,9 +450,9 @@ public class OpenGL32Renderer {
 
 	/**
 	 * Gets the light distance attenuation factor. In other terms, how much distance affects light
-	 * intensity. Larger values affect it more. 0.9 is the default value.
+	 * intensity. Larger values affect it more. 0.03 is the default value.
 	 *
-	 * @return The light distance attenuation factor.
+	 * @return The light distance attenuation factor
 	 */
 	public static float lightAttenuation() {
 		return lightAttenuation;
@@ -459,20 +460,14 @@ public class OpenGL32Renderer {
 
 	/**
 	 * Sets the light distance attenuation factor. In other terms, how much distance affects light
-	 * intensity. Larger values affect it more. 0.12 is the default value.
+	 * intensity. Larger values affect it more. 0.03 is the default value.
 	 *
-	 * @param attenuation The light distance attenuation factor.
+	 * @param attenuation The light distance attenuation factor
 	 */
 	public static void lightAttenuation(float attenuation) {
 		lightAttenuation = attenuation;
 	}
 
-	/**
-	 * Checks for an OpenGL exception. If one is found, this method will throw a {@link
-	 * org.lwjgl.opengl.OpenGLException} which can be caught and handled.
-	 *
-	 * @param stage The rendering stage at which this method is being called.
-	 */
 	protected static void checkForOpenGLError(String stage) {
 		final int errorValue = GL11.glGetError();
 		if (errorValue != GL11.GL_NO_ERROR) {

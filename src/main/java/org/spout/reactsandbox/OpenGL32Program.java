@@ -30,6 +30,7 @@ import java.awt.Color;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -40,16 +41,40 @@ import org.lwjgl.opengl.GL20;
 import org.spout.physics.math.Matrix4x4;
 import org.spout.physics.math.Vector3;
 
+/**
+ * Represents a program for OpenGL 3.2. A program is a composed of a vertex shader and a fragment
+ * shader. After being constructed, the program needs to be created in the OpenGL context with
+ * {@link #create(java.io.InputStream, java.io.InputStream)}.
+ */
 public class OpenGL32Program {
-	private final int id;
-	private final OpenGL32Shader vert;
-	private final OpenGL32Shader frag;
+	// State
+	private boolean created = false;
+	// ID
+	private int id;
+	// Shaders
+	private final OpenGL32Shader vert = new OpenGL32Shader();
+	private final OpenGL32Shader frag = new OpenGL32Shader();
+	// Map of the uniform name and IDs
 	private final Map<String, Integer> uniforms = new HashMap<String, Integer>();
 
-	private OpenGL32Program(int id, OpenGL32Shader vert, OpenGL32Shader frag) {
-		this.id = id;
-		this.vert = vert;
-		this.frag = frag;
+	/**
+	 * Creates a new program in the OpenGL context from the input streams for the vertex and fragment
+	 * shaders.
+	 *
+	 * @param vertShader The vertex shader input stream
+	 * @param fragShader The fragment shader input stream
+	 */
+	public void create(InputStream vertShader, InputStream fragShader) {
+		if (created) {
+			throw new IllegalStateException("Program has already been created.");
+		}
+		vert.create(vertShader, GL20.GL_VERTEX_SHADER);
+		frag.create(fragShader, GL20.GL_FRAGMENT_SHADER);
+		id = GL20.glCreateProgram();
+		GL20.glAttachShader(id, vert.getID());
+		GL20.glAttachShader(id, frag.getID());
+		GL20.glLinkProgram(id);
+		GL20.glValidateProgram(id);
 		final int uniformCount = GL20.glGetProgrami(id, GL20.GL_ACTIVE_UNIFORMS);
 		for (int i = 0; i < uniformCount; i++) {
 			final ByteBuffer nameBuffer = BufferUtils.createByteBuffer(256);
@@ -64,53 +89,98 @@ public class OpenGL32Program {
 			final String name = new String(nameBytes).trim();
 			uniforms.put(name, GL20.glGetUniformLocation(id, name));
 		}
+		created = true;
 	}
 
-	public static OpenGL32Program create(InputStream vertShader, InputStream fragShader) {
-		final OpenGL32Shader vert = OpenGL32Shader.create(vertShader, GL20.GL_VERTEX_SHADER);
-		final OpenGL32Shader frag = OpenGL32Shader.create(fragShader, GL20.GL_FRAGMENT_SHADER);
-		final int id = GL20.glCreateProgram();
-		GL20.glAttachShader(id, vert.getID());
-		GL20.glAttachShader(id, frag.getID());
-		GL20.glLinkProgram(id);
-		GL20.glValidateProgram(id);
-		return new OpenGL32Program(id, vert, frag);
+	/**
+	 * Destroys this program by deleting the OpenGL shaders program.
+	 */
+	public void destroy() {
+		if (!created) {
+			throw new IllegalStateException("Program has not been created yet.");
+		}
+		GL20.glDetachShader(id, vert.getID());
+		GL20.glDetachShader(id, frag.getID());
+		vert.destroy();
+		frag.destroy();
+		GL20.glDeleteProgram(id);
+		id = 0;
+		uniforms.clear();
+		created = false;
 	}
 
+	/**
+	 * Gets the ID for this program as assigned by OpenGL.
+	 *
+	 * @return The ID
+	 */
 	public int getID() {
 		return id;
 	}
 
+	/**
+	 * Sets a uniform float in the shader to the desired value.
+	 *
+	 * @param name The name of the uniform to set
+	 * @param f The float value
+	 */
 	public void setUniform(String name, float f) {
+		if (!uniforms.containsKey(name)) {
+			throw new IllegalArgumentException("The uniform name could not be found in the program");
+		}
 		GL20.glUniform1f(uniforms.get(name), f);
 	}
 
+	/**
+	 * Sets a uniform {@link org.spout.physics.math.Vector3} in the shader to the desired value.
+	 *
+	 * @param name The name of the uniform to set
+	 * @param v The vector value
+	 */
 	public void setUniform(String name, Vector3 v) {
+		if (!uniforms.containsKey(name)) {
+			throw new IllegalArgumentException("The uniform name could not be found in the program");
+		}
 		GL20.glUniform3f(uniforms.get(name), v.getX(), v.getY(), v.getZ());
 	}
 
+	/**
+	 * Sets a uniform {@link org.spout.physics.math.Matrix4x4} in the shader to the desired value.
+	 *
+	 * @param name The name of the uniform to set
+	 * @param m The matrix value
+	 */
 	public void setUniform(String name, Matrix4x4 m) {
+		if (!uniforms.containsKey(name)) {
+			throw new IllegalArgumentException("The uniform name could not be found in the program");
+		}
 		final FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
 		buffer.put(SandboxUtil.asArray(m));
 		buffer.flip();
 		GL20.glUniformMatrix4(uniforms.get(name), false, buffer);
 	}
 
+	/**
+	 * Sets a uniform {@link java.awt.Color} in the shader to the desired value.
+	 *
+	 * @param name The name of the uniform to set
+	 * @param c The color value
+	 */
 	public void setUniform(String name, Color c) {
+		if (!uniforms.containsKey(name)) {
+			throw new IllegalArgumentException("The uniform name could not be found in the program");
+		}
 		GL20.glUniform4f(uniforms.get(name),
 				c.getRed() / 255f, c.getGreen() / 255f,
 				c.getBlue() / 255f, c.getAlpha() / 255f);
 	}
 
+	/**
+	 * Returns an immutable set containing all of the uniform names for this program.
+	 *
+	 * @return A set of all the uniform names
+	 */
 	public Set<String> getUniformNames() {
-		return uniforms.keySet();
-	}
-
-	public void destroy() {
-		GL20.glDetachShader(id, vert.getID());
-		GL20.glDetachShader(id, frag.getID());
-		vert.destroy();
-		frag.destroy();
-		GL20.glDeleteProgram(id);
+		return Collections.unmodifiableSet(uniforms.keySet());
 	}
 }
