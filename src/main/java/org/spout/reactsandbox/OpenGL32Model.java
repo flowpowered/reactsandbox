@@ -32,6 +32,12 @@ import org.spout.physics.math.Matrix4x4;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Vector3;
 
+/**
+ * An abstract model for OpenGL 3.2. There are currently two possible implementations: solid and
+ * wireframe. A solid model has a surface made up of smaller triangles. A wireframe is made out of
+ * lines, and is only the outline of the shape. Each model has it's own position, rotation and
+ * color. The {@link OpenGL32Renderer} should always be created before the models.
+ */
 public abstract class OpenGL32Model {
 	// State
 	protected boolean created = false;
@@ -42,8 +48,14 @@ public abstract class OpenGL32Model {
 	protected boolean updateMatrix = true;
 	protected Color modelColor = new Color(0.8f, 0.1f, 0.1f, 1);
 
+	/**
+	 * Creates the model. It can now be rendered.
+	 */
 	public abstract void create();
 
+	/**
+	 * Releases the model resources. It can not longer be rendered.
+	 */
 	public abstract void destroy();
 
 	protected abstract void render();
@@ -51,17 +63,12 @@ public abstract class OpenGL32Model {
 	/**
 	 * Returns true if the display was created and is ready for rendering, false if otherwise.
 	 *
-	 * @return True if the model can be rendered, false if not.
+	 * @return True if the model can be rendered, false if not
 	 */
 	public boolean isCreated() {
 		return created;
 	}
 
-	/**
-	 * Returns the model's matrix; updating it if necessary.
-	 *
-	 * @return The model matrix.
-	 */
 	protected Matrix4x4 matrix() {
 		if (updateMatrix) {
 			final Matrix4x4 rotationMatrix = SandboxUtil.asRotationMatrix(rotation);
@@ -75,7 +82,7 @@ public abstract class OpenGL32Model {
 	/**
 	 * Gets the model color.
 	 *
-	 * @return The model color.
+	 * @return The model color
 	 */
 	public Color color() {
 		return modelColor;
@@ -84,7 +91,7 @@ public abstract class OpenGL32Model {
 	/**
 	 * Sets the model color.
 	 *
-	 * @param color The model color.
+	 * @param color The model color
 	 */
 	public void color(Color color) {
 		modelColor = color;
@@ -93,7 +100,7 @@ public abstract class OpenGL32Model {
 	/**
 	 * Gets the model position.
 	 *
-	 * @return The model position.
+	 * @return The model position
 	 */
 	public Vector3 position() {
 		updateMatrix = true;
@@ -103,7 +110,7 @@ public abstract class OpenGL32Model {
 	/**
 	 * Sets the model position.
 	 *
-	 * @param position The model position.
+	 * @param position The model position
 	 */
 	public void position(Vector3 position) {
 		this.position.set(position);
@@ -113,7 +120,7 @@ public abstract class OpenGL32Model {
 	/**
 	 * Gets the model rotation.
 	 *
-	 * @return The model rotation.
+	 * @return The model rotation
 	 */
 	public Quaternion rotation() {
 		updateMatrix = true;
@@ -123,7 +130,7 @@ public abstract class OpenGL32Model {
 	/**
 	 * Sets the model rotation.
 	 *
-	 * @param rotation The model rotation.
+	 * @param rotation The model rotation
 	 */
 	public void rotation(Quaternion rotation) {
 		this.rotation.set(rotation);

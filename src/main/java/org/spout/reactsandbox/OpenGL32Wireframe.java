@@ -36,6 +36,14 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 
+/**
+ * Represents a model for OpenGL 3.2. It is made out of lines. After constructing a new model, use
+ * {@link #positions()} to add position data and {@link #indices()} to specify the rendering
+ * indices. Then use {@link #create()} to create model in the current OpenGL context. It can now be
+ * added to the {@link OpenGL32Renderer}. Use {@link #destroy()} to free the model's OpenGL
+ * resources. This doesn't delete the mesh. Use {@link #deleteMesh()} for that. Make sure you add
+ * the mesh before creating the model.
+ */
 public class OpenGL32Wireframe extends OpenGL32Model {
 	// Vertex info
 	private static final byte POSITION_COMPONENT_COUNT = 3;
@@ -50,9 +58,6 @@ public class OpenGL32Wireframe extends OpenGL32Model {
 
 	/**
 	 * Creates the wireframe from it's mesh. It can now be rendered.
-	 *
-	 * @throws IllegalStateException If the display wasn't created first. If the wireframe has already
-	 * been created.
 	 */
 	@Override
 	public void create() {
@@ -127,19 +132,20 @@ public class OpenGL32Wireframe extends OpenGL32Model {
 	}
 
 	/**
-	 * Returns the list of indices used by OpenGL to draw to pick the order of vertices to draw the
-	 * object. Use it to add mesh data.
+	 * Returns the list of indices used by OpenGL to pick the vertices to draw the object with in the
+	 * correct order. Use it to add mesh data.
 	 *
-	 * @return The indices list.
+	 * @return The indices list
 	 */
 	public TIntList indices() {
 		return indices;
 	}
 
 	/**
-	 * Returns the list of three component positions (x, y, z) for rendering. Use it to add mesh data.
+	 * Returns the list of vertex positions, which are the groups of three successive floats starting
+	 * at 0 (x1, y1, z1, x2, y2, z2, x3, ...). Use it to add mesh data.
 	 *
-	 * @return The position list.
+	 * @return The position list
 	 */
 	public TFloatList positions() {
 		return positions;

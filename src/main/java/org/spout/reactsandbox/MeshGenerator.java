@@ -35,7 +35,17 @@ import gnu.trove.list.TIntList;
 
 import org.spout.physics.math.Vector3;
 
+/**
+ * Generates various shape meshes of the desired size and stores them to the models.
+ */
 public class MeshGenerator {
+	/**
+	 * Generate a cuboid shaped wireframe (the outline of the cuboid). The center is at the middle of
+	 * the cuboid.
+	 *
+	 * @param destination The wireframe model in which to store the mesh
+	 * @param size The size of the cuboid to generate, on x, y and z
+	 */
 	public static void generateCuboid(OpenGL32Wireframe destination, Vector3 size) {
 		/*
 		^
@@ -91,6 +101,12 @@ public class MeshGenerator {
 		addAll(indices, 0, 1, 1, 5, 5, 4, 4, 0);
 	}
 
+	/**
+	 * Generates a solid cuboid mesh. The center is at the middle of the cuboid.
+	 *
+	 * @param destination The solid model in which to store the mesh
+	 * @param size The size of the cuboid to generate, on x, y and z
+	 */
 	public static void generateCuboid(OpenGL32Solid destination, Vector3 size) {
 		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
@@ -175,6 +191,12 @@ public class MeshGenerator {
 		addAll(indices, 20, 22, 21, 20, 23, 22);
 	}
 
+	/**
+	 * Generates a solid spherical mesh. The center is at the middle of the sphere.
+	 *
+	 * @param destination The solid model in which to store the mesh
+	 * @param radius The radius of the sphere
+	 */
 	public static void generateSphere(OpenGL32Solid destination, float radius) {
 		// Octahedron positions
 		final Vector3 v0 = new Vector3(0.0f, -1.0f, 0.0f);
@@ -232,6 +254,13 @@ public class MeshGenerator {
 		}
 	}
 
+	/**
+	 * Generates a cylindrical solid mesh. The center is at middle of the of the cylinder.
+	 *
+	 * @param destination The solid model in which to store the mesh
+	 * @param radius The radius of the base and top
+	 * @param height The height (distance from the base to the top)
+	 */
 	public static void generateCylinder(OpenGL32Solid destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cylinder in the middle
 		final float halfHeight = height / 2;
@@ -301,6 +330,13 @@ public class MeshGenerator {
 		}
 	}
 
+	/**
+	 * Generates a conical solid mesh. The center is at the middle of the cone.
+	 *
+	 * @param destination The solid model in which to store the mesh
+	 * @param radius The radius of the base
+	 * @param height The height (distance from the base to the apex)
+	 */
 	public static void generateCone(OpenGL32Solid destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cone in the middle
 		final float halfHeight = height / 2;

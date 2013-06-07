@@ -42,6 +42,9 @@ import org.yaml.snakeyaml.Yaml;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Vector3;
 
+/**
+ * The main class of the ReactSandbox.
+ */
 public class Sandbox {
 	// Constants
 	private static final String WINDOW_TITLE = "React Sandbox";
@@ -58,6 +61,11 @@ public class Sandbox {
 	private static float cameraPitch = 0;
 	private static float cameraYaw = 0;
 
+	/**
+	 * Entry point for the application.
+	 *
+	 * @param args Unused
+	 */
 	public static void main(String[] args) {
 		try {
 			deploy();
