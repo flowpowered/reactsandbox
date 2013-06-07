@@ -36,7 +36,7 @@ import gnu.trove.list.TIntList;
 import org.spout.physics.math.Vector3;
 
 public class MeshGenerator {
-	public static void generateCuboid(OpenGL32Solid destination, Vector3 size) {
+	public static void generateCuboid(OpenGL32Wireframe destination, Vector3 size) {
 		/*
 		^
 		| y
@@ -55,7 +55,7 @@ public class MeshGenerator {
 		 \|     \|
 		  3------2
 		 */
-		// corner positions
+		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
 		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());
 		final Vector3 p0 = Vector3.negate(p6);
@@ -65,18 +65,55 @@ public class MeshGenerator {
 		final Vector3 p2 = Vector3.negate(p4);
 		final Vector3 p5 = new Vector3(p.getX(), p.getY(), -p.getZ());
 		final Vector3 p3 = Vector3.negate(p5);
-		// face normals
+		// Model data buffers
+		final TFloatList positions = destination.positions();
+		final TIntList indices = destination.indices();
+		// Add all of the corners
+		addVector(positions, p0);
+		addVector(positions, p1);
+		addVector(positions, p2);
+		addVector(positions, p3);
+		addVector(positions, p4);
+		addVector(positions, p5);
+		addVector(positions, p6);
+		addVector(positions, p7);
+		// Face x
+		addAll(indices, 1, 2, 2, 6, 6, 5, 5, 1);
+		// Face y
+		addAll(indices, 4, 5, 5, 6, 6, 7, 7, 4);
+		// Face z
+		addAll(indices, 2, 3, 3, 7, 7, 6, 6, 2);
+		// Face -x
+		addAll(indices, 0, 3, 3, 7, 7, 4, 4, 0);
+		// Face -y
+		addAll(indices, 0, 1, 1, 2, 2, 3, 3, 0);
+		// Face -z
+		addAll(indices, 0, 1, 1, 5, 5, 4, 4, 0);
+	}
+
+	public static void generateCuboid(OpenGL32Solid destination, Vector3 size) {
+		// Corner positions
+		final Vector3 p = Vector3.divide(size, 2);
+		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());
+		final Vector3 p0 = Vector3.negate(p6);
+		final Vector3 p7 = new Vector3(-p.getX(), p.getY(), p.getZ());
+		final Vector3 p1 = Vector3.negate(p7);
+		final Vector3 p4 = new Vector3(-p.getX(), p.getY(), -p.getZ());
+		final Vector3 p2 = Vector3.negate(p4);
+		final Vector3 p5 = new Vector3(p.getX(), p.getY(), -p.getZ());
+		final Vector3 p3 = Vector3.negate(p5);
+		// Face normals
 		final Vector3 nx = new Vector3(1, 0, 0);
 		final Vector3 ny = new Vector3(0, 1, 0);
 		final Vector3 nz = new Vector3(0, 0, 1);
 		final Vector3 nxN = new Vector3(-1, 0, 0);
 		final Vector3 nyN = new Vector3(0, -1, 0);
 		final Vector3 nzN = new Vector3(0, 0, -1);
-		// model data buffers
+		// Model data buffers
 		final TFloatList positions = destination.positions();
 		final TFloatList normals = destination.normals();
 		final TIntList indices = destination.indices();
-		// face x
+		// Face x
 		addVector(positions, p2);
 		addVector(normals, nx);
 		addVector(positions, p6);
@@ -86,7 +123,7 @@ public class MeshGenerator {
 		addVector(positions, p1);
 		addVector(normals, nx);
 		addAll(indices, 0, 2, 1, 0, 3, 2);
-		// face y
+		// Face y
 		addVector(positions, p4);
 		addVector(normals, ny);
 		addVector(positions, p5);
@@ -96,7 +133,7 @@ public class MeshGenerator {
 		addVector(positions, p7);
 		addVector(normals, ny);
 		addAll(indices, 4, 6, 5, 4, 7, 6);
-		// face z
+		// Face z
 		addVector(positions, p3);
 		addVector(normals, nz);
 		addVector(positions, p7);
@@ -106,7 +143,7 @@ public class MeshGenerator {
 		addVector(positions, p2);
 		addVector(normals, nz);
 		addAll(indices, 8, 10, 9, 8, 11, 10);
-		// face -x
+		// Face -x
 		addVector(positions, p0);
 		addVector(normals, nxN);
 		addVector(positions, p4);
@@ -116,7 +153,7 @@ public class MeshGenerator {
 		addVector(positions, p3);
 		addVector(normals, nxN);
 		addAll(indices, 12, 14, 13, 12, 15, 14);
-		// face -y
+		// Face -y
 		addVector(positions, p0);
 		addVector(normals, nyN);
 		addVector(positions, p3);
@@ -126,7 +163,7 @@ public class MeshGenerator {
 		addVector(positions, p1);
 		addVector(normals, nyN);
 		addAll(indices, 16, 18, 17, 16, 19, 18);
-		// face -z
+		// Face -z
 		addVector(positions, p1);
 		addVector(normals, nzN);
 		addVector(positions, p5);

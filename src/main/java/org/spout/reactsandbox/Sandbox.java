@@ -70,11 +70,10 @@ public class Sandbox {
 			solid.create();
 			OpenGL32Renderer.addModel(solid);
 			final OpenGL32Wireframe wireframe = new OpenGL32Wireframe();
-			wireframe.positions().add(new float[]{-4, -4, -4, 4, 4, 4});
-			wireframe.indices().add(new int[]{0, 1});
-			wireframe.color(new Color(0.1f, 1, 0.1f));
-			wireframe.create();
+			MeshGenerator.generateCuboid(wireframe, new Vector3(8, 8, 8));
 			OpenGL32Renderer.addModel(wireframe);
+			wireframe.color(defaultModelColor);
+			wireframe.create();
 			Mouse.setGrabbed(true);
 			while (!Display.isCloseRequested()) {
 				final long start = System.nanoTime();
