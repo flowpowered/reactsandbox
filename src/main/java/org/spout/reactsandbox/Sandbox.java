@@ -92,9 +92,11 @@ public class Sandbox {
 			System.out.println("Starting up");
 			OpenGL32Renderer.create(WINDOW_TITLE, windowWidth, windowHeight, fieldOfView);
 			world = new DynamicsWorld(gravity, TIMESTEP);
-			addBody(new BoxShape(new Vector3(0.2f, 0.2f, 0.2f)), 1, new Vector3(0, 10, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
-			addBody(new SphereShape(0.3f), 1, new Vector3(0, 15, 0), Quaternion.identity());
-			final RigidBody floor = addBody(new BoxShape(new Vector3(50, 0.1f, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
+			addBody(new BoxShape(new Vector3(0.8f, 0.8f, 0.8f)), 2, new Vector3(0, 8, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
+			addBody(new ConeShape(2, 1), 1.5f, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
+			addBody(new CylinderShape(1, 2), 2.4f, new Vector3(0, 16, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1));
+			addBody(new SphereShape(2), 3, new Vector3(0, 20, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
+			final RigidBody floor = addBody(new BoxShape(new Vector3(50, 0.5f, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
 			floor.setIsMotionEnabled(false);
 			Mouse.setGrabbed(true);
 			world.start();
