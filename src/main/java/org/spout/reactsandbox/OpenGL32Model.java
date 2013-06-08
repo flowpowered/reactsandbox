@@ -43,6 +43,7 @@ public abstract class OpenGL32Model {
 	protected boolean created = false;
 	// Properties
 	protected final Vector3 position = new Vector3(0, 0, 0);
+	protected final Vector3 scale = new Vector3(1, 1, 1);
 	protected final Quaternion rotation = Quaternion.identity();
 	protected final Matrix4x4 matrix = Matrix4x4.identity();
 	protected boolean updateMatrix = true;
@@ -73,7 +74,8 @@ public abstract class OpenGL32Model {
 		if (updateMatrix) {
 			final Matrix4x4 rotationMatrix = SandboxUtil.asRotationMatrix(rotation);
 			final Matrix4x4 positionMatrix = SandboxUtil.asTranslationMatrix(position);
-			matrix.set(Matrix4x4.multiply(rotationMatrix, positionMatrix));
+			final Matrix4x4 scaleMatrix = SandboxUtil.asScalingMatrix(scale);
+			matrix.set(Matrix4x4.multiply(positionMatrix, Matrix4x4.multiply(rotationMatrix, scaleMatrix)));
 			updateMatrix = false;
 		}
 		return matrix;
@@ -134,6 +136,26 @@ public abstract class OpenGL32Model {
 	 */
 	public void rotation(Quaternion rotation) {
 		this.rotation.set(rotation);
+		updateMatrix = true;
+	}
+
+	/**
+	 * Gets the model scale.
+	 *
+	 * @return The model scale
+	 */
+	public Vector3 scale() {
+		updateMatrix = true;
+		return scale;
+	}
+
+	/**
+	 * Sets the model scale.
+	 *
+	 * @param scale The model scale
+	 */
+	public void scale(Vector3 scale) {
+		this.scale.set(scale);
 		updateMatrix = true;
 	}
 }

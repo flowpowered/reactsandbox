@@ -82,6 +82,7 @@ public class Sandbox {
 
 	/**
 	 * Entry point for the application.
+	 *
 	 * @param args Unused
 	 */
 	public static void main(String[] args) {
@@ -97,6 +98,7 @@ public class Sandbox {
 			floor.setIsMotionEnabled(false);
 			Mouse.setGrabbed(true);
 			world.start();
+			OpenGL32Renderer.cameraPosition().setAllValues(0, -5, -10);
 			while (!Display.isCloseRequested()) {
 				final long start = System.nanoTime();
 				processInput();
@@ -129,8 +131,9 @@ public class Sandbox {
 		final Vector3 bodyPosition = bodyTransform.getPosition();
 		final Quaternion bodyOrientation = bodyTransform.getOrientation();
 		final OpenGL32Wireframe aabbModel = new OpenGL32Wireframe();
+		MeshGenerator.generateCuboid(aabbModel, new Vector3(1, 1, 1));
 		final AABB aabb = body.getAABB();
-		MeshGenerator.generateCuboid(aabbModel, Vector3.subtract(aabb.getMax(), aabb.getMin()));
+		aabbModel.scale(Vector3.subtract(aabb.getMax(), aabb.getMin()));
 		final OpenGL32Solid shapeModel = new OpenGL32Solid();
 		switch (shape.getType()) {
 			case BOX:
@@ -150,7 +153,6 @@ public class Sandbox {
 				MeshGenerator.generateSphere(shapeModel, sphere.getRadius());
 		}
 		aabbModel.position(bodyPosition);
-		aabbModel.rotation(bodyOrientation);
 		aabbModel.color(defaultAABBColor);
 		aabbModel.create();
 		OpenGL32Renderer.addModel(aabbModel);
@@ -167,10 +169,15 @@ public class Sandbox {
 	private static void updateBodies() {
 		for (Entry<RigidBody, OpenGL32Solid> entry : shapes.entrySet()) {
 			final RigidBody body = entry.getKey();
-			final OpenGL32Solid model = entry.getValue();
+			final OpenGL32Solid shape = entry.getValue();
+			final OpenGL32Wireframe aabbModel = aabbs.get(body);
+			final AABB aabb = body.getAABB();
 			final Transform transform = body.getTransform();
-			model.position().set(transform.getPosition());
-			model.rotation().set(transform.getOrientation());
+			final Vector3 position = transform.getPosition();
+			aabbModel.position(position);
+			shape.position(position);
+			aabbModel.scale(Vector3.subtract(aabb.getMax(), aabb.getMin()));
+			shape.rotation(transform.getOrientation());
 		}
 	}
 

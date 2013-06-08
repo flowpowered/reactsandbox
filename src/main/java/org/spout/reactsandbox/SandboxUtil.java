@@ -74,6 +74,20 @@ public class SandboxUtil {
 	}
 
 	/**
+	 * Creates a new scaling 4x4 matrix from the provided vector3.
+	 *
+	 * @param v The vector3
+	 * @return The scaling matrix
+	 */
+	public static Matrix4x4 asScalingMatrix(Vector3 v) {
+		return new Matrix4x4(
+				v.getX(), 0, 0, 0,
+				0, v.getY(), 0, 0,
+				0, 0, v.getZ(), 0,
+				0, 0, 0, 1);
+	}
+
+	/**
 	 * Converts the 4x4 matrix to an array. Can be used for OpenGL.
 	 *
 	 * @param m The matrix to convert
