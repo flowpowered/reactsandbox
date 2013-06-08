@@ -29,7 +29,9 @@ package org.spout.reactsandbox;
 import java.awt.Color;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -39,7 +41,17 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.yaml.snakeyaml.Yaml;
 
+import org.spout.physics.body.RigidBody;
+import org.spout.physics.collision.shape.AABB;
+import org.spout.physics.collision.shape.BoxShape;
+import org.spout.physics.collision.shape.CollisionShape;
+import org.spout.physics.collision.shape.ConeShape;
+import org.spout.physics.collision.shape.CylinderShape;
+import org.spout.physics.collision.shape.SphereShape;
+import org.spout.physics.engine.DynamicsWorld;
+import org.spout.physics.math.Matrix3x3;
 import org.spout.physics.math.Quaternion;
+import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 
 /**
@@ -48,14 +60,21 @@ import org.spout.physics.math.Vector3;
 public class Sandbox {
 	// Constants
 	private static final String WINDOW_TITLE = "React Sandbox";
+	private static final float TIMESTEP = 1f / 50;
+	private static final int TIMESTEP_MILISEC = Math.round(TIMESTEP * 1000);
 	// Settings
 	private static float mouseSensitivity = 0.08f;
 	private static float cameraSpeed = 0.2f;
 	private static int windowWidth = 1200;
 	private static int windowHeight = 800;
 	private static float fieldOfView = 75;
-	private static Color defaultModelColor;
-	// Model data
+	private static Color defaultAABBColor;
+	private static Color defaultShapeColor;
+	// Physics objects
+	private static DynamicsWorld world;
+	private static final Vector3 gravity = new Vector3(0, -9.81f, 0);
+	private static final Map<RigidBody, OpenGL32Solid> shapes = new HashMap<RigidBody, OpenGL32Solid>();
+	private static final Map<RigidBody, OpenGL32Wireframe> aabbs = new HashMap<RigidBody, OpenGL32Wireframe>();
 	// Input
 	private static boolean mouseGrabbed = true;
 	private static float cameraPitch = 0;
@@ -72,24 +91,23 @@ public class Sandbox {
 			loadConfiguration();
 			System.out.println("Starting up");
 			OpenGL32Renderer.create(WINDOW_TITLE, windowWidth, windowHeight, fieldOfView);
-			final OpenGL32Solid solid = new OpenGL32Solid();
-			MeshGenerator.generateCone(solid, 4, 8);
-			solid.color(defaultModelColor);
-			solid.create();
-			OpenGL32Renderer.addModel(solid);
-			final OpenGL32Wireframe wireframe = new OpenGL32Wireframe();
-			MeshGenerator.generateCuboid(wireframe, new Vector3(8, 8, 8));
-			OpenGL32Renderer.addModel(wireframe);
-			wireframe.color(defaultModelColor);
-			wireframe.create();
+			world = new DynamicsWorld(gravity, TIMESTEP);
+			addBody(new BoxShape(new Vector3(1, 1, 1)), 5, new Vector3(0, 10, 0), Quaternion.identity());
+			final RigidBody floor = addBody(new BoxShape(new Vector3(10, 0.5f, 10)), 100, new Vector3(0, 0, 0), Quaternion.identity());
+			floor.setIsMotionEnabled(false);
 			Mouse.setGrabbed(true);
+			world.start();
 			while (!Display.isCloseRequested()) {
 				final long start = System.nanoTime();
 				processInput();
+				world.update();
+				updateBodies();
 				OpenGL32Renderer.render();
-				Thread.sleep(Math.max(20 - Math.round((System.nanoTime() - start) / 1000000d), 0));
+				final long delta = Math.round((System.nanoTime() - start) / 1000000d);
+				Thread.sleep(Math.max(TIMESTEP_MILISEC - delta, 0));
 			}
 			System.out.println("Shutting down");
+			world.stop();
 			Mouse.setGrabbed(false);
 			OpenGL32Renderer.destroy();
 		} catch (Exception ex) {
@@ -98,6 +116,61 @@ public class Sandbox {
 			final String message = ex.getMessage();
 			Sys.alert("Error: " + name, message == null || message.trim().equals("") ? name : message);
 			System.exit(-1);
+		}
+	}
+
+	public static RigidBody addBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
+		final Matrix3x3 inertia = new Matrix3x3();
+		shape.computeLocalInertiaTensor(inertia, mass);
+		RigidBody body = world.createRigidBody(new Transform(position, orientation), mass, inertia, shape);
+		body.setIsMotionEnabled(true);
+		body.setRestitution(0.5f);
+		final Transform bodyTransform = body.getTransform();
+		final Vector3 bodyPosition = bodyTransform.getPosition();
+		final Quaternion bodyOrientation = bodyTransform.getOrientation();
+		final OpenGL32Wireframe aabbModel = new OpenGL32Wireframe();
+		final AABB aabb = body.getAABB();
+		MeshGenerator.generateCuboid(aabbModel, Vector3.subtract(aabb.getMax(), aabb.getMin()));
+		final OpenGL32Solid shapeModel = new OpenGL32Solid();
+		switch (shape.getType()) {
+			case BOX:
+				final BoxShape box = (BoxShape) shape;
+				MeshGenerator.generateCuboid(shapeModel, Vector3.multiply(box.getExtent(), 2));
+				break;
+			case CONE:
+				final ConeShape cone = (ConeShape) shape;
+				MeshGenerator.generateCone(shapeModel, cone.getRadius(), cone.getHeight());
+				break;
+			case CYLINDER:
+				final CylinderShape cylinder = (CylinderShape) shape;
+				MeshGenerator.generateCylinder(shapeModel, cylinder.getRadius(), cylinder.getHeight());
+				break;
+			case SPHERE:
+				final SphereShape sphere = (SphereShape) shape;
+				MeshGenerator.generateSphere(shapeModel, sphere.getRadius());
+		}
+		aabbModel.position(bodyPosition);
+		aabbModel.rotation(bodyOrientation);
+		aabbModel.color(defaultAABBColor);
+		aabbModel.create();
+		OpenGL32Renderer.addModel(aabbModel);
+		aabbs.put(body, aabbModel);
+		shapeModel.position(bodyPosition);
+		shapeModel.rotation(bodyOrientation);
+		shapeModel.color(defaultShapeColor);
+		shapeModel.create();
+		OpenGL32Renderer.addModel(shapeModel);
+		shapes.put(body, shapeModel);
+		return body;
+	}
+
+	private static void updateBodies() {
+		for (Entry<RigidBody, OpenGL32Solid> entry : shapes.entrySet()) {
+			final RigidBody body = entry.getKey();
+			final OpenGL32Solid model = entry.getValue();
+			final Transform transform = body.getTransform();
+			model.position().set(transform.getPosition());
+			model.rotation().set(transform.getOrientation());
 		}
 	}
 
@@ -201,7 +274,8 @@ public class Sandbox {
 			windowHeight = Integer.parseInt(windowSize[1].trim());
 			fieldOfView = ((Number) appearanceConfig.get("FieldOfView")).floatValue();
 			OpenGL32Renderer.backgroundColor(parseColor(((String) appearanceConfig.get("BackgroundColor")), 0));
-			defaultModelColor = (parseColor(((String) appearanceConfig.get("ModelColor")), 1));
+			defaultAABBColor = (parseColor(((String) appearanceConfig.get("AABBColor")), 1));
+			defaultShapeColor = (parseColor(((String) appearanceConfig.get("ShapeColor")), 1));
 			OpenGL32Renderer.diffuseIntensity(((Number) appearanceConfig.get("DiffuseIntensity")).floatValue());
 			OpenGL32Renderer.specularIntensity(((Number) appearanceConfig.get("SpecularIntensity")).floatValue());
 			OpenGL32Renderer.ambientIntensity(((Number) appearanceConfig.get("AmbientIntensity")).floatValue());

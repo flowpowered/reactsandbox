@@ -10,8 +10,10 @@ Appearance:
     FieldOfView: 75
     # Back ground color in RGB float components.
     BackgroundColor: 0.2, 0.2, 0.2
-    # Model color in RGB floats.
-    ModelColor: 0.8, 0.1, 0.1
+    # AABB color in RGB floats.
+    AABBColor: 0.1, 0.8, 0.1
+    # Shape color in RGB floats.
+    ShapeColor: 0.8, 0.1, 0.1
     # Diffuse intensity in each RGB float component.
     DiffuseIntensity: 0.8
     # Specular intensity in each RGB float component.
