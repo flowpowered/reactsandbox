@@ -82,7 +82,6 @@ public class Sandbox {
 
 	/**
 	 * Entry point for the application.
-	 *
 	 * @param args Unused
 	 */
 	public static void main(String[] args) {
@@ -183,17 +182,19 @@ public class Sandbox {
 				}
 			}
 		}
-		if (mouseGrabbed != mouseGrabbedBefore) {
-			Mouse.setGrabbed(mouseGrabbed);
-		}
-		if (mouseGrabbed) {
-			cameraYaw -= Mouse.getDY() * mouseSensitivity;
-			cameraYaw %= 360;
-			cameraPitch += Mouse.getDX() * mouseSensitivity;
-			cameraPitch %= 360;
-			final Quaternion yaw = SandboxUtil.angleAxisToQuaternion(cameraYaw, 1, 0, 0);
-			final Quaternion pitch = SandboxUtil.angleAxisToQuaternion(cameraPitch, 0, 1, 0);
-			OpenGL32Renderer.cameraRotation(Quaternion.multiply(yaw, pitch));
+		if (Display.isActive()) {
+			if (mouseGrabbed != mouseGrabbedBefore) {
+				Mouse.setGrabbed(mouseGrabbed);
+			}
+			if (mouseGrabbed) {
+				cameraYaw -= Mouse.getDY() * mouseSensitivity;
+				cameraYaw %= 360;
+				cameraPitch += Mouse.getDX() * mouseSensitivity;
+				cameraPitch %= 360;
+				final Quaternion yaw = SandboxUtil.angleAxisToQuaternion(cameraYaw, 1, 0, 0);
+				final Quaternion pitch = SandboxUtil.angleAxisToQuaternion(cameraPitch, 0, 1, 0);
+				OpenGL32Renderer.cameraRotation(Quaternion.multiply(yaw, pitch));
+			}
 		}
 		final Vector3 right = OpenGL32Renderer.cameraRight();
 		final Vector3 up = OpenGL32Renderer.cameraUp();
