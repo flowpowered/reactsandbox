@@ -67,7 +67,7 @@ public class OpenGL32Renderer {
 	private static final OpenGL32Program wireframeShaders = new OpenGL32Program();
 	// Camera
 	private static final Matrix4x4 projectionMatrix = Matrix4x4.identity();
-	private static final Vector3 cameraPosition = new Vector3(0, 0, 0);
+	private static final Vector3 cameraPosition = new Vector3(0, -5, -10);
 	private static final Quaternion cameraRotation = Quaternion.identity();
 	private static final Matrix4x4 cameraRotationMatrix = Matrix4x4.identity();
 	private static final Matrix4x4 cameraMatrix = Matrix4x4.identity();
