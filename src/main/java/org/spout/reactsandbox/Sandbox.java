@@ -49,7 +49,6 @@ import org.spout.physics.collision.shape.ConeShape;
 import org.spout.physics.collision.shape.CylinderShape;
 import org.spout.physics.collision.shape.SphereShape;
 import org.spout.physics.engine.DynamicsWorld;
-import org.spout.physics.math.Matrix3x3;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
@@ -60,8 +59,8 @@ import org.spout.physics.math.Vector3;
 public class Sandbox {
 	// Constants
 	private static final String WINDOW_TITLE = "React Sandbox";
-	private static final float TIMESTEP = 1f / 50;
-	private static final int TIMESTEP_MILISEC = Math.round(TIMESTEP * 1000);
+	private static final float TIMESTEP = 1f / 60;
+	private static final int TIMESTEP_MILLISEC = Math.round(TIMESTEP * 1000);
 	// Settings
 	private static float mouseSensitivity = 0.08f;
 	private static float cameraSpeed = 0.2f;
@@ -92,11 +91,11 @@ public class Sandbox {
 			System.out.println("Starting up");
 			OpenGL32Renderer.create(WINDOW_TITLE, windowWidth, windowHeight, fieldOfView);
 			world = new DynamicsWorld(gravity, TIMESTEP);
-			addBody(new BoxShape(new Vector3(0.8f, 0.8f, 0.8f)), 2, new Vector3(0, 8, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
-			addBody(new ConeShape(2, 1), 1.5f, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
-			addBody(new CylinderShape(1, 2), 2.4f, new Vector3(0, 16, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1));
-			addBody(new SphereShape(2), 3, new Vector3(0, 20, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
-			final RigidBody floor = addBody(new BoxShape(new Vector3(50, 0.5f, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
+			addBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
+			addBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
+			addBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1));
+			addBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
+			final RigidBody floor = addBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
 			floor.setIsMotionEnabled(false);
 			Mouse.setGrabbed(true);
 			world.start();
@@ -108,7 +107,7 @@ public class Sandbox {
 				updateBodies();
 				OpenGL32Renderer.render();
 				final long delta = Math.round((System.nanoTime() - start) / 1000000d);
-				Thread.sleep(Math.max(TIMESTEP_MILISEC - delta, 0));
+				Thread.sleep(Math.max(TIMESTEP_MILLISEC - delta, 0));
 			}
 			System.out.println("Shutting down");
 			world.stop();
@@ -123,10 +122,8 @@ public class Sandbox {
 		}
 	}
 
-	public static RigidBody addBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
-		final Matrix3x3 inertia = new Matrix3x3();
-		shape.computeLocalInertiaTensor(inertia, mass);
-		RigidBody body = world.createRigidBody(new Transform(position, orientation), mass, inertia, shape);
+	private static RigidBody addBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
+		RigidBody body = world.createRigidBody(new Transform(position, orientation), mass, shape);
 		body.setIsMotionEnabled(true);
 		body.setRestitution(0.5f);
 		final Transform bodyTransform = body.getTransform();
