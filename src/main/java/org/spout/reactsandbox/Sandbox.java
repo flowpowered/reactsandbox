@@ -41,6 +41,7 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.yaml.snakeyaml.Yaml;
 
+import org.spout.physics.body.CollisionBody;
 import org.spout.physics.body.RigidBody;
 import org.spout.physics.collision.shape.AABB;
 import org.spout.physics.collision.shape.BoxShape;
@@ -95,8 +96,7 @@ public class Sandbox {
 			addBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
 			addBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1));
 			addBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
-			final RigidBody floor = addBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
-			floor.setIsMotionEnabled(false);
+			addBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity()).setMotionEnabled(false);
 			Mouse.setGrabbed(true);
 			world.start();
 			OpenGL32Renderer.cameraPosition().setAllValues(0, -5, -10);
@@ -105,6 +105,12 @@ public class Sandbox {
 				processInput();
 				world.update();
 				updateBodies();
+				final CollisionBody targeted = world.findClosestIntersectingBody(
+						Vector3.negate(OpenGL32Renderer.cameraPosition()),
+						Vector3.negate(OpenGL32Renderer.cameraForward()));
+				if (targeted instanceof RigidBody) {
+					aabbs.get(targeted).color(Color.BLUE);
+				}
 				OpenGL32Renderer.render();
 				final long delta = Math.round((System.nanoTime() - start) / 1000000d);
 				Thread.sleep(Math.max(TIMESTEP_MILLISEC - delta, 0));
@@ -124,7 +130,7 @@ public class Sandbox {
 
 	private static RigidBody addBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
 		RigidBody body = world.createRigidBody(new Transform(position, orientation), mass, shape);
-		body.setIsMotionEnabled(true);
+		body.setMotionEnabled(true);
 		body.setRestitution(0.5f);
 		final Transform bodyTransform = body.getTransform();
 		final Vector3 bodyPosition = bodyTransform.getPosition();
@@ -177,6 +183,7 @@ public class Sandbox {
 			shape.position(position);
 			aabbModel.scale(Vector3.subtract(aabb.getMax(), aabb.getMin()));
 			shape.rotation(transform.getOrientation());
+			aabbModel.color(defaultAABBColor);
 		}
 	}
 
