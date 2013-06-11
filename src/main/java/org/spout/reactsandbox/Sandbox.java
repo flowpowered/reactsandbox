@@ -99,15 +99,15 @@ public class Sandbox {
 			addBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity()).setMotionEnabled(false);
 			Mouse.setGrabbed(true);
 			world.start();
-			OpenGL32Renderer.cameraPosition().setAllValues(0, -5, -10);
+			OpenGL32Renderer.cameraPosition().setAllValues(0, 5, 10);
 			while (!Display.isCloseRequested()) {
 				final long start = System.nanoTime();
 				processInput();
 				world.update();
 				updateBodies();
 				final CollisionBody targeted = world.findClosestIntersectingBody(
-						Vector3.negate(OpenGL32Renderer.cameraPosition()),
-						Vector3.negate(OpenGL32Renderer.cameraForward()));
+						OpenGL32Renderer.cameraPosition(),
+						OpenGL32Renderer.cameraForward());
 				if (targeted instanceof RigidBody) {
 					aabbs.get(targeted).color(Color.BLUE);
 				}
@@ -226,13 +226,13 @@ public class Sandbox {
 		if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
 			position.add(Vector3.multiply(right, -cameraSpeed));
 		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
+		if (Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
 			position.add(Vector3.multiply(up, cameraSpeed));
 		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
+		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
 			position.add(Vector3.multiply(up, -cameraSpeed));
 		}
-		OpenGL32Renderer.lightPosition(Vector3.negate(position));
+		OpenGL32Renderer.lightPosition(position);
 	}
 
 	private static void deploy() throws Exception {

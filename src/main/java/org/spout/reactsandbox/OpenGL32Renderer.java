@@ -182,7 +182,7 @@ public class OpenGL32Renderer {
 	private static Matrix4x4 cameraMatrix() {
 		if (updateCameraMatrix) {
 			cameraRotationMatrix.set(SandboxUtil.asRotationMatrix(cameraRotation));
-			final Matrix4x4 cameraPositionMatrix = SandboxUtil.asTranslationMatrix(cameraPosition);
+			final Matrix4x4 cameraPositionMatrix = SandboxUtil.asTranslationMatrix(Vector3.negate(cameraPosition));
 			cameraMatrix.set(Matrix4x4.multiply(cameraRotationMatrix, cameraPositionMatrix));
 			updateCameraMatrix = false;
 		}
@@ -337,7 +337,7 @@ public class OpenGL32Renderer {
 	 * @return The camera's right direction vector
 	 */
 	public static Vector3 cameraRight() {
-		return toCamera(new Vector3(1, 0, 0));
+		return toCamera(new Vector3(-1, 0, 0));
 	}
 
 	/**
@@ -355,7 +355,7 @@ public class OpenGL32Renderer {
 	 * @return The camera's forward direction vector
 	 */
 	public static Vector3 cameraForward() {
-		return toCamera(new Vector3(0, 0, 1));
+		return toCamera(new Vector3(0, 0, -1));
 	}
 
 	/**
