@@ -41,8 +41,8 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.yaml.snakeyaml.Yaml;
 
-import org.spout.physics.body.CollisionBody;
 import org.spout.physics.body.RigidBody;
+import org.spout.physics.collision.RayCaster.IntersectedBody;
 import org.spout.physics.collision.shape.AABB;
 import org.spout.physics.collision.shape.BoxShape;
 import org.spout.physics.collision.shape.CollisionShape;
@@ -105,11 +105,11 @@ public class Sandbox {
 				processInput();
 				world.update();
 				updateBodies();
-				final CollisionBody targeted = world.findClosestIntersectingBody(
+				final IntersectedBody targeted = world.findClosestIntersectingBody(
 						OpenGL32Renderer.cameraPosition(),
 						OpenGL32Renderer.cameraForward());
-				if (targeted instanceof RigidBody) {
-					aabbs.get(targeted).color(Color.BLUE);
+				if (targeted != null && targeted.getBody() instanceof RigidBody) {
+					aabbs.get(targeted.getBody()).color(Color.BLUE);
 				}
 				OpenGL32Renderer.render();
 				final long delta = Math.round((System.nanoTime() - start) / 1000000d);
