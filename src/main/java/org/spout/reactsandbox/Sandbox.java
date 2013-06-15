@@ -41,6 +41,9 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.yaml.snakeyaml.Yaml;
 
+import org.spout.physics.body.CollisionBody;
+import org.spout.physics.body.ImmobileRigidBody;
+import org.spout.physics.body.MobileRigidBody;
 import org.spout.physics.body.RigidBody;
 import org.spout.physics.collision.RayCaster.IntersectedBody;
 import org.spout.physics.collision.shape.AABB;
@@ -73,8 +76,8 @@ public class Sandbox {
 	// Physics objects
 	private static DynamicsWorld world;
 	private static final Vector3 gravity = new Vector3(0, -9.81f, 0);
-	private static final Map<RigidBody, OpenGL32Solid> shapes = new HashMap<RigidBody, OpenGL32Solid>();
-	private static final Map<RigidBody, OpenGL32Wireframe> aabbs = new HashMap<RigidBody, OpenGL32Wireframe>();
+	private static final Map<CollisionBody, OpenGL32Solid> shapes = new HashMap<CollisionBody, OpenGL32Solid>();
+	private static final Map<CollisionBody, OpenGL32Wireframe> aabbs = new HashMap<CollisionBody, OpenGL32Wireframe>();
 	// Input
 	private static boolean mouseGrabbed = true;
 	private static float cameraPitch = 0;
@@ -92,11 +95,12 @@ public class Sandbox {
 			System.out.println("Starting up");
 			OpenGL32Renderer.create(WINDOW_TITLE, windowWidth, windowHeight, fieldOfView);
 			world = new DynamicsWorld(gravity, TIMESTEP);
-			addBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
-			addBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
-			addBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1));
-			addBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
-			addBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity()).setMotionEnabled(false);
+			addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
+			addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
+			addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1));
+			addMobileBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
+			addImmobileBody(new BoxShape(new Vector3(10, 1, 10)), 20, new Vector3(0, 1.8f, 0), Quaternion.identity());
+			addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
 			Mouse.setGrabbed(true);
 			world.start();
 			OpenGL32Renderer.cameraPosition().setAllValues(0, 5, 10);
@@ -128,10 +132,21 @@ public class Sandbox {
 		}
 	}
 
-	private static RigidBody addBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
-		RigidBody body = world.createRigidBody(new Transform(position, orientation), mass, shape);
-		body.setMotionEnabled(true);
+	private static ImmobileRigidBody addImmobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
+		final ImmobileRigidBody body = world.createImmobileRigidBody(new Transform(position, orientation), mass, shape);
 		body.setRestitution(0.5f);
+		addBody(body);
+		return body;
+	}
+
+	private static MobileRigidBody addMobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
+		final MobileRigidBody body = world.createMobileRigidBody(new Transform(position, orientation), mass, shape);
+		body.setRestitution(0.5f);
+		addBody(body);
+		return body;
+	}
+
+	private static CollisionBody addBody(CollisionBody body) {
 		final Transform bodyTransform = body.getTransform();
 		final Vector3 bodyPosition = bodyTransform.getPosition();
 		final Quaternion bodyOrientation = bodyTransform.getOrientation();
@@ -139,6 +154,7 @@ public class Sandbox {
 		MeshGenerator.generateCuboid(aabbModel, new Vector3(1, 1, 1));
 		final AABB aabb = body.getAABB();
 		aabbModel.scale(Vector3.subtract(aabb.getMax(), aabb.getMin()));
+		final CollisionShape shape = body.getCollisionShape();
 		final OpenGL32Solid shapeModel = new OpenGL32Solid();
 		switch (shape.getType()) {
 			case BOX:
@@ -172,8 +188,8 @@ public class Sandbox {
 	}
 
 	private static void updateBodies() {
-		for (Entry<RigidBody, OpenGL32Solid> entry : shapes.entrySet()) {
-			final RigidBody body = entry.getKey();
+		for (Entry<CollisionBody, OpenGL32Solid> entry : shapes.entrySet()) {
+			final CollisionBody body = entry.getKey();
 			final OpenGL32Solid shape = entry.getValue();
 			final OpenGL32Wireframe aabbModel = aabbs.get(body);
 			final AABB aabb = body.getAABB();
