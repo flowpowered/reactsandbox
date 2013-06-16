@@ -45,6 +45,7 @@ import org.spout.physics.body.CollisionBody;
 import org.spout.physics.body.ImmobileRigidBody;
 import org.spout.physics.body.MobileRigidBody;
 import org.spout.physics.body.RigidBody;
+import org.spout.physics.body.RigidBodyMaterial;
 import org.spout.physics.collision.RayCaster.IntersectedBody;
 import org.spout.physics.collision.shape.AABB;
 import org.spout.physics.collision.shape.BoxShape;
@@ -65,6 +66,7 @@ public class Sandbox {
 	private static final String WINDOW_TITLE = "React Sandbox";
 	private static final float TIMESTEP = 1f / 60;
 	private static final int TIMESTEP_MILLISEC = Math.round(TIMESTEP * 1000);
+	private static final RigidBodyMaterial WOOD_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0.6f, 0.4f));
 	// Settings
 	private static float mouseSensitivity = 0.08f;
 	private static float cameraSpeed = 0.2f;
@@ -134,14 +136,14 @@ public class Sandbox {
 
 	private static ImmobileRigidBody addImmobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
 		final ImmobileRigidBody body = world.createImmobileRigidBody(new Transform(position, orientation), mass, shape);
-		body.setRestitution(0.5f);
+		body.setMaterial(WOOD_MATERIAL);
 		addBody(body);
 		return body;
 	}
 
 	private static MobileRigidBody addMobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
 		final MobileRigidBody body = world.createMobileRigidBody(new Transform(position, orientation), mass, shape);
-		body.setRestitution(0.5f);
+		body.setMaterial(WOOD_MATERIAL);
 		addBody(body);
 		return body;
 	}
