@@ -212,6 +212,12 @@ public class Sandbox {
 				if (Keyboard.getEventKey() == Keyboard.KEY_ESCAPE) {
 					mouseGrabbed ^= true;
 				}
+				if (Keyboard.getEventKey() == Keyboard.KEY_X) {
+					final IntersectedBody targeted = world.findClosestIntersectingBody(OpenGL32Renderer.cameraPosition(), OpenGL32Renderer.cameraForward());
+					if (targeted != null) {
+						removeCollisionBody(targeted.getBody());
+					}
+				}
 			}
 		}
 		if (Display.isActive()) {
@@ -250,14 +256,19 @@ public class Sandbox {
 		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
 			position.add(Vector3.multiply(up, -cameraSpeed));
 		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_X)) {
-			final IntersectedBody targeted = world.findClosestIntersectingBody(OpenGL32Renderer.cameraPosition(), OpenGL32Renderer.cameraForward());
-			if (targeted != null && targeted.getBody() instanceof RigidBody) {
-				world.destroyRigidBody((RigidBody) targeted.getBody());
-			}
-		}
-
 		OpenGL32Renderer.lightPosition(position);
+	}
+
+	private static void removeCollisionBody(final CollisionBody body) {
+		final OpenGL32Model shapeModel = shapes.remove(body);
+		OpenGL32Renderer.removeModel(shapeModel);
+		shapeModel.destroy();
+		final OpenGL32Model aabbModel = aabbs.remove(body);
+		OpenGL32Renderer.removeModel(aabbModel);
+		aabbModel.destroy();
+		if (body instanceof RigidBody) {
+			world.destroyRigidBody((RigidBody) body);
+		}
 	}
 
 	private static void deploy() throws Exception {
