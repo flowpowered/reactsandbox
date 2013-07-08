@@ -250,6 +250,13 @@ public class Sandbox {
 		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
 			position.add(Vector3.multiply(up, -cameraSpeed));
 		}
+		if (Keyboard.isKeyDown(Keyboard.KEY_X)) {
+			final IntersectedBody targeted = world.findClosestIntersectingBody(OpenGL32Renderer.cameraPosition(), OpenGL32Renderer.cameraForward());
+			if (targeted != null && targeted.getBody() instanceof RigidBody) {
+				world.destroyRigidBody((RigidBody) targeted.getBody());
+			}
+		}
+
 		OpenGL32Renderer.lightPosition(position);
 	}
 
