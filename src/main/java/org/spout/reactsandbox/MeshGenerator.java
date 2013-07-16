@@ -34,6 +34,8 @@ import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 
 import org.spout.physics.math.Vector3;
+import org.spout.renderer.gl30.OpenGL30Solid;
+import org.spout.renderer.gl30.OpenGL30Wireframe;
 
 /**
  * Generates various shape meshes of the desired size and stores them to the models.
@@ -46,7 +48,7 @@ public class MeshGenerator {
 	 * @param destination The wireframe model in which to store the mesh
 	 * @param size The size of the cuboid to generate, on x, y and z
 	 */
-	public static void generateCuboid(OpenGL32Wireframe destination, Vector3 size) {
+	public static void generateCuboid(OpenGL30Wireframe destination, Vector3 size) {
 		/*
 		^
 		| y
@@ -107,7 +109,7 @@ public class MeshGenerator {
 	 * @param destination The solid model in which to store the mesh
 	 * @param size The size of the cuboid to generate, on x, y and z
 	 */
-	public static void generateCuboid(OpenGL32Solid destination, Vector3 size) {
+	public static void generateCuboid(OpenGL30Solid destination, Vector3 size) {
 		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
 		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());
@@ -197,7 +199,7 @@ public class MeshGenerator {
 	 * @param destination The solid model in which to store the mesh
 	 * @param radius The radius of the sphere
 	 */
-	public static void generateSphere(OpenGL32Solid destination, float radius) {
+	public static void generateSphere(OpenGL30Solid destination, float radius) {
 		// Octahedron positions
 		final Vector3 v0 = new Vector3(0.0f, -1.0f, 0.0f);
 		final Vector3 v1 = new Vector3(1.0f, 0.0f, 0.0f);
@@ -261,7 +263,7 @@ public class MeshGenerator {
 	 * @param radius The radius of the base and top
 	 * @param height The height (distance from the base to the top)
 	 */
-	public static void generateCylinder(OpenGL32Solid destination, float radius, float height) {
+	public static void generateCylinder(OpenGL30Solid destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cylinder in the middle
 		final float halfHeight = height / 2;
 		// Center positions in the top and bottom faces
@@ -337,7 +339,7 @@ public class MeshGenerator {
 	 * @param radius The radius of the base
 	 * @param height The height (distance from the base to the apex)
 	 */
-	public static void generateCone(OpenGL32Solid destination, float radius, float height) {
+	public static void generateCone(OpenGL30Solid destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cone in the middle
 		final float halfHeight = height / 2;
 		// Apex of the cone

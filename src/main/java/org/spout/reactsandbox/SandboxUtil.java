@@ -26,94 +26,41 @@
  */
 package org.spout.reactsandbox;
 
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-
-import gnu.trove.list.TFloatList;
-import gnu.trove.list.TIntList;
-
-import org.lwjgl.BufferUtils;
-
-import org.spout.physics.math.Matrix3x3;
-import org.spout.physics.math.Matrix4x4;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Vector3;
-import org.spout.physics.math.Vector4;
 
 /**
  * Various utility function for the sandbox.
  */
 public class SandboxUtil {
 	/**
-	 * Creates a new rotation 4x4 matrix from the provided quaternion.
+	 * Converts from Math to React Vector3.
 	 *
-	 * @param q The quaternion
-	 * @return The rotation matrix
+	 * @param v The React Vector3
+	 * @return The equivalent Math Vector3
 	 */
-	public static Matrix4x4 asRotationMatrix(Quaternion q) {
-		final Matrix3x3 m3 = q.getMatrix();
-		return new Matrix4x4(
-				m3.get(0, 0), m3.get(0, 1), m3.get(0, 2), 0,
-				m3.get(1, 0), m3.get(1, 1), m3.get(1, 2), 0,
-				m3.get(2, 0), m3.get(2, 1), m3.get(2, 2), 0,
-				0, 0, 0, 1);
+	public static org.spout.math.vector.Vector3 toMathVector3(Vector3 v) {
+		return new org.spout.math.vector.Vector3(v.getX(), v.getY(), v.getZ());
 	}
 
 	/**
-	 * Creates a new translation 4x4 matrix from the provided vector3.
+	 * Converts from React to Math Vector3.
 	 *
-	 * @param v The vector3
-	 * @return The translation matrix
+	 * @param v The Math Vector3
+	 * @return The equivalent React Vector3
 	 */
-	public static Matrix4x4 asTranslationMatrix(Vector3 v) {
-		return new Matrix4x4(
-				1, 0, 0, v.getX(),
-				0, 1, 0, v.getY(),
-				0, 0, 1, v.getZ(),
-				0, 0, 0, 1);
+	public static Vector3 toReactVector3(org.spout.math.vector.Vector3 v) {
+		return new Vector3(v.getX(), v.getY(), v.getZ());
 	}
 
 	/**
-	 * Creates a new scaling 4x4 matrix from the provided vector3.
+	 * Converts from Math to React Quaternion.
 	 *
-	 * @param v The vector3
-	 * @return The scaling matrix
+	 * @param q The React Quaternion
+	 * @return The equivalent Math Quaternion
 	 */
-	public static Matrix4x4 asScalingMatrix(Vector3 v) {
-		return new Matrix4x4(
-				v.getX(), 0, 0, 0,
-				0, v.getY(), 0, 0,
-				0, 0, v.getZ(), 0,
-				0, 0, 0, 1);
-	}
-
-	/**
-	 * Converts the 4x4 matrix to an array. Can be used for OpenGL.
-	 *
-	 * @param m The matrix to convert
-	 * @return The array for the matrix
-	 */
-	public static float[] asArray(Matrix4x4 m) {
-		final float[] a = new float[16];
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < 4; j++) {
-				a[i + j * 4] = m.get(i, j);
-			}
-		}
-		return a;
-	}
-
-	/**
-	 * Transforms the vector3 with a 4x4 matrix and returns is as a new vector3.
-	 *
-	 * @param m The transformation matrix
-	 * @param v The vector to transform
-	 * @return The transformed vector
-	 */
-	public static Vector3 transform(Matrix4x4 m, Vector3 v) {
-		final Vector4 v4 = new Vector4(v.getX(), v.getY(), v.getZ(), 1);
-		final Vector4 tv4 = Matrix4x4.multiply(m, v4);
-		return new Vector3(tv4.getX(), tv4.getY(), tv4.getZ());
+	public static org.spout.math.imaginary.Quaternion toMathQuaternion(Quaternion q) {
+		return new org.spout.math.imaginary.Quaternion(q.getX(), q.getY(), q.getZ(), q.getW());
 	}
 
 	/**
@@ -129,31 +76,5 @@ public class SandboxUtil {
 		final float halfAngle = (float) (Math.toRadians(angle) / 2);
 		final float q = (float) (Math.sin(halfAngle) / Math.sqrt(x * x + y * y + z * z));
 		return new Quaternion(x * q, y * q, z * q, (float) Math.cos(halfAngle));
-	}
-
-	/**
-	 * Converts a float list to a float buffer.
-	 *
-	 * @param floats The float list to convert
-	 * @return The float buffer for the list
-	 */
-	public static FloatBuffer toBuffer(TFloatList floats) {
-		final FloatBuffer floatsBuffer = BufferUtils.createFloatBuffer(floats.size());
-		floatsBuffer.put(floats.toArray());
-		floatsBuffer.flip();
-		return floatsBuffer;
-	}
-
-	/**
-	 * Converts an integer list to an integer buffer.
-	 *
-	 * @param ints The integer list to convert
-	 * @return The integer buffer for the list
-	 */
-	public static IntBuffer toBuffer(TIntList ints) {
-		final IntBuffer intsBuffer = BufferUtils.createIntBuffer(ints.size());
-		intsBuffer.put(ints.toArray());
-		intsBuffer.flip();
-		return intsBuffer;
 	}
 }

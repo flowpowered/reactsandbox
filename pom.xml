@@ -1,5 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<!-- Project information -->
@@ -16,7 +17,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<buildNumber>0</buildNumber>
 		<mainClass>${project.groupId}.${project.artifactId}.Sandbox</mainClass>
-		<lwjglVersion>2.9.0</lwjglVersion>
 		<reactVersion>0.0.1-SNAPSHOT</reactVersion>
 	</properties>
 
@@ -32,7 +32,9 @@
 			<name>Spout License Version 1</name>
 			<url>http://spout.in/licensev1</url>
 			<distribution>repo</distribution>
-			<comments>GNU Lesser General Public License Version 3, but with a provision that files are released under the MIT license 180 days after they are published.</comments>
+			<comments>GNU Lesser General Public License Version 3, but with a provision that files
+				are released under the MIT license 180 days after they are published.
+			</comments>
 		</license>
 	</licenses>
 
@@ -77,15 +79,9 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.lwjgl.lwjgl</groupId>
-			<artifactId>lwjgl</artifactId>
-			<version>${lwjglVersion}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.lwjgl.lwjgl</groupId>
-			<artifactId>lwjgl_util</artifactId>
-			<version>${lwjglVersion}</version>
+			<groupId>org.spout</groupId>
+			<artifactId>caustic</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
