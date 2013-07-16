@@ -203,6 +203,12 @@ public class OpenGL32Renderer {
 		solidShaders.setUniform("ambientIntensity", ambientIntensity);
 		solidShaders.setUniform("lightPosition", lightPosition);
 		solidShaders.setUniform("lightAttenuation", lightAttenuation);
+		// START SANDBOX
+		solidShaders.setUniform("targetPosition", targetPosition);
+		solidShaders.setUniform("targetSize", targetSize);
+		solidShaders.setUniform("targetColor", targetColor);
+		solidShaders.setUniform("displayTarget", displayTarget);
+		// END SANDBOX
 		checkForOpenGLError("preRenderSolid");
 	}
 
@@ -217,6 +223,45 @@ public class OpenGL32Renderer {
 		solidShaders.setUniform("modelColor", solid.color());
 		checkForOpenGLError("preRenderModel");
 	}
+
+	// START SANDBOX
+	private static final Vector3 targetPosition = new Vector3();
+	private static float targetSize = 0.1f;
+	private static Color targetColor = new Color(1f, 1f, 0f, 1f);
+	private static boolean displayTarget = false;
+
+	public static Vector3 targetPosition() {
+		return targetPosition;
+	}
+
+	public static void targetPosition(Vector3 target) {
+		targetPosition.set(target);
+	}
+
+	public static float targetSize() {
+		return targetSize;
+	}
+
+	public static void targetSize(float size) {
+		targetSize = size;
+	}
+
+	public static Color targetColor() {
+		return targetColor;
+	}
+
+	public static void targetColor(Color color) {
+		targetColor = color;
+	}
+
+	public static boolean displayTarget() {
+		return displayTarget;
+	}
+
+	public static void displayTarget(boolean display) {
+		displayTarget = display;
+	}
+	// END SANDBOX
 
 	protected static void render() {
 		if (!created) {

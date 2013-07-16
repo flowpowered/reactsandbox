@@ -119,6 +119,19 @@ public class OpenGL32Program {
 	}
 
 	/**
+	 * Sets a uniform boolean in the shader to the desired value.
+	 *
+	 * @param name The name of the uniform to set
+	 * @param b The boolean value
+	 */
+	public void setUniform(String name, boolean b) {
+		if (!uniforms.containsKey(name)) {
+			throw new IllegalArgumentException("The uniform name could not be found in the program");
+		}
+		GL20.glUniform1i(uniforms.get(name), b ? 1 : 0);
+	}
+
+	/**
 	 * Sets a uniform float in the shader to the desired value.
 	 *
 	 * @param name The name of the uniform to set

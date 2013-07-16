@@ -111,12 +111,7 @@ public class Sandbox {
 				processInput();
 				world.update();
 				updateBodies();
-				final IntersectedBody targeted = world.findClosestIntersectingBody(
-						OpenGL32Renderer.cameraPosition(),
-						OpenGL32Renderer.cameraForward());
-				if (targeted != null && targeted.getBody() instanceof RigidBody) {
-					aabbs.get(targeted.getBody()).color(Color.BLUE);
-				}
+				handleSelection();
 				OpenGL32Renderer.render();
 				final long delta = Math.round((System.nanoTime() - start) / 1000000d);
 				Thread.sleep(Math.max(TIMESTEP_MILLISEC - delta, 0));
@@ -189,6 +184,18 @@ public class Sandbox {
 		return body;
 	}
 
+	private static void removeBody(final CollisionBody body) {
+		final OpenGL32Model shapeModel = shapes.remove(body);
+		OpenGL32Renderer.removeModel(shapeModel);
+		shapeModel.destroy();
+		final OpenGL32Model aabbModel = aabbs.remove(body);
+		OpenGL32Renderer.removeModel(aabbModel);
+		aabbModel.destroy();
+		if (body instanceof RigidBody) {
+			world.destroyRigidBody((RigidBody) body);
+		}
+	}
+
 	private static void updateBodies() {
 		for (Entry<CollisionBody, OpenGL32Solid> entry : shapes.entrySet()) {
 			final CollisionBody body = entry.getKey();
@@ -215,7 +222,7 @@ public class Sandbox {
 				if (Keyboard.getEventKey() == Keyboard.KEY_X) {
 					final IntersectedBody targeted = world.findClosestIntersectingBody(OpenGL32Renderer.cameraPosition(), OpenGL32Renderer.cameraForward());
 					if (targeted != null) {
-						removeCollisionBody(targeted.getBody());
+						removeBody(targeted.getBody());
 					}
 				}
 			}
@@ -259,15 +266,16 @@ public class Sandbox {
 		OpenGL32Renderer.lightPosition(position);
 	}
 
-	private static void removeCollisionBody(final CollisionBody body) {
-		final OpenGL32Model shapeModel = shapes.remove(body);
-		OpenGL32Renderer.removeModel(shapeModel);
-		shapeModel.destroy();
-		final OpenGL32Model aabbModel = aabbs.remove(body);
-		OpenGL32Renderer.removeModel(aabbModel);
-		aabbModel.destroy();
-		if (body instanceof RigidBody) {
-			world.destroyRigidBody((RigidBody) body);
+	private static void handleSelection() {
+		final IntersectedBody targeted = world.findClosestIntersectingBody(
+				OpenGL32Renderer.cameraPosition(),
+				OpenGL32Renderer.cameraForward());
+		if (targeted != null && targeted.getBody() instanceof RigidBody) {
+			aabbs.get(targeted.getBody()).color(Color.BLUE);
+			OpenGL32Renderer.targetPosition(targeted.getIntersectionPoint());
+			OpenGL32Renderer.displayTarget(true);
+		} else {
+			OpenGL32Renderer.displayTarget(false);
 		}
 	}
 
