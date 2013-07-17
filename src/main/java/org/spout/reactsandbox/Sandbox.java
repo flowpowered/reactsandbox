@@ -57,6 +57,7 @@ import org.spout.physics.engine.DynamicsWorld;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
+import org.spout.renderer.Camera;
 import org.spout.renderer.gl30.OpenGL30Renderer;
 import org.spout.renderer.gl30.OpenGL30Solid;
 import org.spout.renderer.gl30.OpenGL30Wireframe;
@@ -112,7 +113,7 @@ public class Sandbox {
 			addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
 			Mouse.setGrabbed(true);
 			world.start();
-			renderer.setCameraPosition(SandboxUtil.toMathVector3(new Vector3(0, 5, 10)));
+			renderer.getCamera().setPosition(SandboxUtil.toMathVector3(new Vector3(0, 5, 10)));
 			while (!Display.isCloseRequested()) {
 				final long start = System.nanoTime();
 				processInput();
@@ -232,24 +233,25 @@ public class Sandbox {
 				}
 			}
 		}
+		final Camera camera = renderer.getCamera();
 		if (Display.isActive()) {
 			if (mouseGrabbed != mouseGrabbedBefore) {
 				Mouse.setGrabbed(mouseGrabbed);
 			}
 			if (mouseGrabbed) {
-				cameraYaw -= Mouse.getDY() * mouseSensitivity;
-				cameraYaw %= 360;
-				cameraPitch += Mouse.getDX() * mouseSensitivity;
+				cameraPitch -= Mouse.getDX() * mouseSensitivity;
 				cameraPitch %= 360;
-				final Quaternion yaw = SandboxUtil.angleAxisToQuaternion(cameraYaw, 1, 0, 0);
 				final Quaternion pitch = SandboxUtil.angleAxisToQuaternion(cameraPitch, 0, 1, 0);
-				renderer.setCameraRotation(SandboxUtil.toMathQuaternion(Quaternion.multiply(yaw, pitch)));
+				cameraYaw += Mouse.getDY() * mouseSensitivity;
+				cameraYaw %= 360;
+				final Quaternion yaw = SandboxUtil.angleAxisToQuaternion(cameraYaw, 1, 0, 0);
+				camera.setRotation(SandboxUtil.toMathQuaternion(Quaternion.multiply(pitch, yaw)));
 			}
 		}
-		final Vector3 right = SandboxUtil.toReactVector3(renderer.getCameraRight());
-		final Vector3 up = SandboxUtil.toReactVector3(renderer.getCameraUp());
-		final Vector3 forward = SandboxUtil.toReactVector3(renderer.getCameraForward());
-		final Vector3 position = SandboxUtil.toReactVector3(renderer.getCameraPosition());
+		final Vector3 right = SandboxUtil.toReactVector3(camera.getRight());
+		final Vector3 up = SandboxUtil.toReactVector3(camera.getUp());
+		final Vector3 forward = SandboxUtil.toReactVector3(camera.getForward());
+		final Vector3 position = SandboxUtil.toReactVector3(camera.getPosition());
 		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
 			position.add(Vector3.multiply(forward, cameraSpeed));
 		}
@@ -268,7 +270,7 @@ public class Sandbox {
 		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
 			position.add(Vector3.multiply(up, -cameraSpeed));
 		}
-		renderer.setCameraPosition(SandboxUtil.toMathVector3(position));
+		camera.setPosition(SandboxUtil.toMathVector3(position));
 		renderer.setLightPosition(SandboxUtil.toMathVector3(position));
 	}
 
@@ -280,8 +282,8 @@ public class Sandbox {
 		//unsuported for now...
 		//OpenGL32Renderer.displayTarget(false);
 		final IntersectedBody targeted = world.findClosestIntersectingBody(
-				SandboxUtil.toReactVector3(renderer.getCameraPosition()),
-				SandboxUtil.toReactVector3(renderer.getCameraForward()));
+				SandboxUtil.toReactVector3(renderer.getCamera().getPosition()),
+				SandboxUtil.toReactVector3(renderer.getCamera().getForward()));
 		if (targeted != null && targeted.getBody() instanceof RigidBody) {
 			selected = targeted.getBody();
 			aabbs.get(selected).setColor(Color.BLUE);
