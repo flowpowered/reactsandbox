@@ -112,7 +112,7 @@ public class Sandbox {
 			addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
 			Mouse.setGrabbed(true);
 			world.start();
-			renderer.cameraPosition(SandboxUtil.toMathVector3(new Vector3(0, 5, 10)));
+			renderer.setCameraPosition(SandboxUtil.toMathVector3(new Vector3(0, 5, 10)));
 			while (!Display.isCloseRequested()) {
 				final long start = System.nanoTime();
 				processInput();
@@ -157,7 +157,7 @@ public class Sandbox {
 		final OpenGL30Wireframe aabbModel = new OpenGL30Wireframe();
 		MeshGenerator.generateCuboid(aabbModel, new Vector3(1, 1, 1));
 		final AABB aabb = body.getAABB();
-		aabbModel.scale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
+		aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
 		final CollisionShape shape = body.getCollisionShape();
 		final OpenGL30Solid shapeModel = new OpenGL30Solid();
 		switch (shape.getType()) {
@@ -177,14 +177,14 @@ public class Sandbox {
 				final SphereShape sphere = (SphereShape) shape;
 				MeshGenerator.generateSphere(shapeModel, sphere.getRadius());
 		}
-		aabbModel.position(SandboxUtil.toMathVector3(bodyPosition));
-		aabbModel.color(defaultAABBColor);
+		aabbModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
+		aabbModel.setColor(defaultAABBColor);
 		aabbModel.create();
 		renderer.addModel(aabbModel);
 		aabbs.put(body, aabbModel);
-		shapeModel.position(SandboxUtil.toMathVector3(bodyPosition));
-		shapeModel.rotation(SandboxUtil.toMathQuaternion(bodyOrientation));
-		shapeModel.color(defaultShapeColor);
+		shapeModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
+		shapeModel.setRotation(SandboxUtil.toMathQuaternion(bodyOrientation));
+		shapeModel.setColor(defaultShapeColor);
 		shapeModel.create();
 		renderer.addModel(shapeModel);
 		shapes.put(body, shapeModel);
@@ -211,10 +211,10 @@ public class Sandbox {
 			final AABB aabb = body.getAABB();
 			final Transform transform = body.getTransform();
 			final Vector3 position = transform.getPosition();
-			aabbModel.position(SandboxUtil.toMathVector3(position));
-			shape.position(SandboxUtil.toMathVector3(position));
-			aabbModel.scale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
-			shape.rotation(SandboxUtil.toMathQuaternion(transform.getOrientation()));
+			aabbModel.setPosition(SandboxUtil.toMathVector3(position));
+			shape.setPosition(SandboxUtil.toMathVector3(position));
+			aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
+			shape.setRotation(SandboxUtil.toMathQuaternion(transform.getOrientation()));
 		}
 	}
 
@@ -243,13 +243,13 @@ public class Sandbox {
 				cameraPitch %= 360;
 				final Quaternion yaw = SandboxUtil.angleAxisToQuaternion(cameraYaw, 1, 0, 0);
 				final Quaternion pitch = SandboxUtil.angleAxisToQuaternion(cameraPitch, 0, 1, 0);
-				renderer.cameraRotation(SandboxUtil.toMathQuaternion(Quaternion.multiply(yaw, pitch)));
+				renderer.setCameraRotation(SandboxUtil.toMathQuaternion(Quaternion.multiply(yaw, pitch)));
 			}
 		}
-		final Vector3 right = SandboxUtil.toReactVector3(renderer.cameraRight());
-		final Vector3 up = SandboxUtil.toReactVector3(renderer.cameraUp());
-		final Vector3 forward = SandboxUtil.toReactVector3(renderer.cameraForward());
-		final Vector3 position = SandboxUtil.toReactVector3(renderer.cameraPosition());
+		final Vector3 right = SandboxUtil.toReactVector3(renderer.getCameraRight());
+		final Vector3 up = SandboxUtil.toReactVector3(renderer.getCameraUp());
+		final Vector3 forward = SandboxUtil.toReactVector3(renderer.getCameraForward());
+		final Vector3 position = SandboxUtil.toReactVector3(renderer.getCameraPosition());
 		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
 			position.add(Vector3.multiply(forward, cameraSpeed));
 		}
@@ -268,23 +268,23 @@ public class Sandbox {
 		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
 			position.add(Vector3.multiply(up, -cameraSpeed));
 		}
-		renderer.cameraPosition(SandboxUtil.toMathVector3(position));
-		renderer.lightPosition(SandboxUtil.toMathVector3(position));
+		renderer.setCameraPosition(SandboxUtil.toMathVector3(position));
+		renderer.setLightPosition(SandboxUtil.toMathVector3(position));
 	}
 
 	private static void handleSelection() {
 		if (selected != null) {
-			aabbs.get(selected).color(defaultAABBColor);
+			aabbs.get(selected).setColor(defaultAABBColor);
 			selected = null;
 		}
 		//unsuported for now...
 		//OpenGL32Renderer.displayTarget(false);
 		final IntersectedBody targeted = world.findClosestIntersectingBody(
-				SandboxUtil.toReactVector3(renderer.cameraPosition()),
-				SandboxUtil.toReactVector3(renderer.cameraForward()));
+				SandboxUtil.toReactVector3(renderer.getCameraPosition()),
+				SandboxUtil.toReactVector3(renderer.getCameraForward()));
 		if (targeted != null && targeted.getBody() instanceof RigidBody) {
 			selected = targeted.getBody();
-			aabbs.get(selected).color(Color.BLUE);
+			aabbs.get(selected).setColor(Color.BLUE);
 			//unsuported for now...
 			//OpenGL32Renderer.targetPosition(targeted.getIntersectionPoint());
 			//OpenGL32Renderer.displayTarget(true);
@@ -344,13 +344,13 @@ public class Sandbox {
 			windowWidth = Integer.parseInt(windowSize[0].trim());
 			windowHeight = Integer.parseInt(windowSize[1].trim());
 			fieldOfView = ((Number) appearanceConfig.get("FieldOfView")).floatValue();
-			renderer.backgroundColor(parseColor(((String) appearanceConfig.get("BackgroundColor")), 0));
+			renderer.setBackgroundColor(parseColor(((String) appearanceConfig.get("BackgroundColor")), 0));
 			defaultAABBColor = (parseColor(((String) appearanceConfig.get("AABBColor")), 1));
 			defaultShapeColor = (parseColor(((String) appearanceConfig.get("ShapeColor")), 1));
-			renderer.diffuseIntensity(((Number) appearanceConfig.get("DiffuseIntensity")).floatValue());
-			renderer.specularIntensity(((Number) appearanceConfig.get("SpecularIntensity")).floatValue());
-			renderer.ambientIntensity(((Number) appearanceConfig.get("AmbientIntensity")).floatValue());
-			renderer.lightAttenuation(((Number) appearanceConfig.get("LightAttenuation")).floatValue());
+			renderer.setDiffuseIntensity(((Number) appearanceConfig.get("DiffuseIntensity")).floatValue());
+			renderer.setSpecularIntensity(((Number) appearanceConfig.get("SpecularIntensity")).floatValue());
+			renderer.setAmbientIntensity(((Number) appearanceConfig.get("AmbientIntensity")).floatValue());
+			renderer.setLightAttenuation(((Number) appearanceConfig.get("LightAttenuation")).floatValue());
 		} catch (Exception ex) {
 			throw new IllegalStateException("Malformed config.yml: \"" + ex.getMessage() + "\".");
 		}

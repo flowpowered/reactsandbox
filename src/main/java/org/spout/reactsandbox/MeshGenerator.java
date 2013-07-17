@@ -78,8 +78,8 @@ public class MeshGenerator {
 		final Vector3 p5 = new Vector3(p.getX(), p.getY(), -p.getZ());
 		final Vector3 p3 = Vector3.negate(p5);
 		// Model data buffers
-		final TFloatList positions = destination.positions();
-		final TIntList indices = destination.indices();
+		final TFloatList positions = destination.getPositions();
+		final TIntList indices = destination.getIndices();
 		// Add all of the corners
 		addVector(positions, p0);
 		addVector(positions, p1);
@@ -128,9 +128,9 @@ public class MeshGenerator {
 		final Vector3 nyN = new Vector3(0, -1, 0);
 		final Vector3 nzN = new Vector3(0, 0, -1);
 		// Model data buffers
-		final TFloatList positions = destination.positions();
-		final TFloatList normals = destination.normals();
-		final TIntList indices = destination.indices();
+		final TFloatList positions = destination.getPositions();
+		final TFloatList normals = destination.getNormals();
+		final TIntList indices = destination.getIndices();
 		// Face x
 		addVector(positions, p2);
 		addVector(normals, nx);
@@ -239,9 +239,9 @@ public class MeshGenerator {
 			triangle.v2.normalize().multiply(radius);
 		}
 		// Model data buffers
-		final TFloatList positions = destination.positions();
-		final TFloatList normals = destination.normals();
-		final TIntList indices = destination.indices();
+		final TFloatList positions = destination.getPositions();
+		final TFloatList normals = destination.getNormals();
+		final TIntList indices = destination.getIndices();
 		// Add the triangle faces to the data buffers
 		int index = 0;
 		for (Triangle triangle : triangles) {
@@ -282,9 +282,9 @@ public class MeshGenerator {
 					radius * (float) -Math.sin(angleRads)));
 		}
 		// Model data buffers
-		final TFloatList positions = destination.positions();
-		final TFloatList normals = destination.normals();
-		final TIntList indices = destination.indices();
+		final TFloatList positions = destination.getPositions();
+		final TFloatList normals = destination.getNormals();
+		final TIntList indices = destination.getIndices();
 		// Add all the faces section by section, turning around the y axis
 		int index = 0;
 		final int rimsSize = rims.size();
@@ -358,9 +358,9 @@ public class MeshGenerator {
 					radius * (float) -Math.sin(angleRads)));
 		}
 		// Model data buffers
-		final TFloatList positions = destination.positions();
-		final TFloatList normals = destination.normals();
-		final TIntList indices = destination.indices();
+		final TFloatList positions = destination.getPositions();
+		final TFloatList normals = destination.getNormals();
+		final TIntList indices = destination.getIndices();
 		// Add all the faces section by section, turning around the y axis
 		int index = 0;
 		final int rimSize = rim.size();
