@@ -101,7 +101,10 @@ public class Sandbox {
 			deploy();
 			loadConfiguration();
 			System.out.println("Starting up");
-			renderer.create(WINDOW_TITLE, windowWidth, windowHeight, fieldOfView);
+			renderer.setWindowTitle(WINDOW_TITLE);
+			renderer.setWindowSize(windowWidth, windowHeight);
+			renderer.setCamera(Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 1000));
+			renderer.create();
 			world = new DynamicsWorld(gravity, TIMESTEP);
 			addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
 			addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
@@ -153,28 +156,30 @@ public class Sandbox {
 		final Transform bodyTransform = body.getTransform();
 		final Vector3 bodyPosition = bodyTransform.getPosition();
 		final Quaternion bodyOrientation = bodyTransform.getOrientation();
-		//final OpenGL30Wireframe aabbModel = new OpenGL30Wireframe();
-		//MeshGenerator.generateCuboid(aabbModel, new Vector3(1, 1, 1));
+		//final OpenGL30Wireframe aabbModel = MeshGenerator.generateCuboid(new Vector3(1, 1, 1));
 		//final AABB aabb = body.getAABB();
 		//aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
 		final CollisionShape shape = body.getCollisionShape();
-		final OpenGL30Model shapeModel = new OpenGL30Model();
+		final OpenGL30Model shapeModel;
 		switch (shape.getType()) {
 			case BOX:
 				final BoxShape box = (BoxShape) shape;
-				MeshGenerator.generateCuboid(shapeModel, Vector3.multiply(box.getExtent(), 2));
+				shapeModel = MeshGenerator.generateCuboid(Vector3.multiply(box.getExtent(), 2));
 				break;
 			case CONE:
 				final ConeShape cone = (ConeShape) shape;
-				MeshGenerator.generateCone(shapeModel, cone.getRadius(), cone.getHeight());
+				shapeModel = MeshGenerator.generateCone(cone.getRadius(), cone.getHeight());
 				break;
 			case CYLINDER:
 				final CylinderShape cylinder = (CylinderShape) shape;
-				MeshGenerator.generateCylinder(shapeModel, cylinder.getRadius(), cylinder.getHeight());
+				shapeModel = MeshGenerator.generateCylinder(cylinder.getRadius(), cylinder.getHeight());
 				break;
 			case SPHERE:
 				final SphereShape sphere = (SphereShape) shape;
-				MeshGenerator.generateSphere(shapeModel, sphere.getRadius());
+				shapeModel = MeshGenerator.generateSphere(sphere.getRadius());
+				break;
+			default:
+				throw new IllegalArgumentException("Unsuported collision shape: " + shape.getType());
 		}
 		//aabbModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
 		//aabbModel.setColor(defaultAABBColor);
