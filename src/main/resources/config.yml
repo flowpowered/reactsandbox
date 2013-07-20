@@ -12,8 +12,14 @@ Appearance:
     BackgroundColor: 0.2, 0.2, 0.2
     # AABB color in RGB floats.
     AABBColor: 0.1, 0.8, 0.1
-    # Shape color in RGB floats.
-    ShapeColor: 0.8, 0.1, 0.1
+    # Shape color for "Box" in RGB floats.
+    BoxShapeColor: 0.2, 0.65, 0.69
+    # Shape color for "Cone" in RGB floats.
+    ConeShapeColor: 0.1, 0.1, 0.1
+    # Shape color for "Cylinder" in RGB floats.
+    CylinderShapeColor: 0.8, 0.1, 0.8
+    # Shape color for "Sphere" in RGB floats.
+    SphereShapeColor: 1, 1, 1
     # Diffuse intensity in each RGB float component.
     DiffuseIntensity: 0.8
     # Specular intensity in each RGB float component.

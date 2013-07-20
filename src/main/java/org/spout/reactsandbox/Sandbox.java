@@ -76,7 +76,10 @@ public class Sandbox {
 	private static int windowHeight = 800;
 	private static float fieldOfView = 75;
 	//private static Color defaultAABBColor;
-	private static Color defaultShapeColor;
+	private static Color boxShapeColor;
+	private static Color coneShapeColor;
+	private static Color cylinderShapeColor;
+	private static Color sphereShapeColor;
 	// Physics objects
 	private static DynamicsWorld world;
 	private static Vector3 gravity = new Vector3(0, -9.81f, 0);
@@ -107,6 +110,7 @@ public class Sandbox {
 			renderer.create();
 			world = new DynamicsWorld(gravity, TIMESTEP);
 			addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
+			addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
 			addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
 			addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1));
 			addMobileBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
@@ -165,21 +169,25 @@ public class Sandbox {
 			case BOX:
 				final BoxShape box = (BoxShape) shape;
 				shapeModel = MeshGenerator.generateCuboid(Vector3.multiply(box.getExtent(), 2));
+				shapeModel.setColor(boxShapeColor);
 				break;
 			case CONE:
 				final ConeShape cone = (ConeShape) shape;
 				shapeModel = MeshGenerator.generateCone(cone.getRadius(), cone.getHeight());
+				shapeModel.setColor(coneShapeColor);
 				break;
 			case CYLINDER:
 				final CylinderShape cylinder = (CylinderShape) shape;
 				shapeModel = MeshGenerator.generateCylinder(cylinder.getRadius(), cylinder.getHeight());
+				shapeModel.setColor(cylinderShapeColor);
 				break;
 			case SPHERE:
 				final SphereShape sphere = (SphereShape) shape;
 				shapeModel = MeshGenerator.generateSphere(sphere.getRadius());
+				shapeModel.setColor(sphereShapeColor);
 				break;
 			default:
-				throw new IllegalArgumentException("Unsuported collision shape: " + shape.getType());
+				throw new IllegalArgumentException("Unsupported collision shape: " + shape.getType());
 		}
 		//aabbModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
 		//aabbModel.setColor(defaultAABBColor);
@@ -188,7 +196,6 @@ public class Sandbox {
 		//aabbs.put(body, aabbModel);
 		shapeModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
 		shapeModel.setRotation(SandboxUtil.toMathQuaternion(bodyOrientation));
-		shapeModel.setColor(defaultShapeColor);
 		shapeModel.create();
 		renderer.addModel(shapeModel);
 		shapes.put(body, shapeModel);
@@ -351,7 +358,10 @@ public class Sandbox {
 			fieldOfView = ((Number) appearanceConfig.get("FieldOfView")).floatValue();
 			renderer.setBackgroundColor(parseColor(((String) appearanceConfig.get("BackgroundColor")), 0));
 			//defaultAABBColor = (parseColor(((String) appearanceConfig.get("AABBColor")), 1));
-			defaultShapeColor = (parseColor(((String) appearanceConfig.get("ShapeColor")), 1));
+			boxShapeColor = (parseColor(((String) appearanceConfig.get("BoxShapeColor")), 1));
+			coneShapeColor = (parseColor(((String) appearanceConfig.get("ConeShapeColor")), 1));
+			sphereShapeColor = (parseColor(((String) appearanceConfig.get("SphereShapeColor")), 1));
+			cylinderShapeColor = (parseColor(((String) appearanceConfig.get("CylinderShapeColor")), 1));
 			renderer.setDiffuseIntensity(((Number) appearanceConfig.get("DiffuseIntensity")).floatValue());
 			renderer.setSpecularIntensity(((Number) appearanceConfig.get("SpecularIntensity")).floatValue());
 			renderer.setAmbientIntensity(((Number) appearanceConfig.get("AmbientIntensity")).floatValue());
