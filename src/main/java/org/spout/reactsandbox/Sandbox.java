@@ -57,6 +57,12 @@ import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
+import org.spout.renderer.data.Uniform.ColorUniform;
+import org.spout.renderer.data.Uniform.FloatUniform;
+import org.spout.renderer.data.Uniform.Vector3Uniform;
+import org.spout.renderer.data.UniformHolder;
+import org.spout.renderer.gl20.OpenGL20Material;
+import org.spout.renderer.gl20.OpenGL20Program;
 import org.spout.renderer.gl30.OpenGL30Model;
 import org.spout.renderer.gl30.OpenGL30Renderer;
 
@@ -93,6 +99,14 @@ public class Sandbox {
 	private static CollisionBody selected = null;
 	// Rendering
 	private static OpenGL30Renderer renderer = new OpenGL30Renderer();
+	// Rendering material for all objects
+	private static final OpenGL20Material renderMaterial = new OpenGL20Material();
+	// Lighting
+	private static org.spout.math.vector.Vector3 lightPosition = new org.spout.math.vector.Vector3(0, 0, 0);
+	private static float diffuseIntensity = 0.8f;
+	private static float specularIntensity = 0.2f;
+	private static float ambientIntensity = 0.3f;
+	private static float lightAttenuation = 0.03f;
 
 	/**
 	 * Entry point for the application.
@@ -103,11 +117,8 @@ public class Sandbox {
 		try {
 			deploy();
 			loadConfiguration();
+			setupRenderer();
 			System.out.println("Starting up");
-			renderer.setWindowTitle(WINDOW_TITLE);
-			renderer.setWindowSize(windowWidth, windowHeight);
-			renderer.setCamera(Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 1000));
-			renderer.create();
 			world = new DynamicsWorld(gravity, TIMESTEP);
 			addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
 			addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
@@ -169,22 +180,22 @@ public class Sandbox {
 			case BOX:
 				final BoxShape box = (BoxShape) shape;
 				shapeModel = MeshGenerator.generateCuboid(Vector3.multiply(box.getExtent(), 2));
-				shapeModel.setColor(boxShapeColor);
+				shapeModel.getUniforms().add(new ColorUniform("modelColor", boxShapeColor));
 				break;
 			case CONE:
 				final ConeShape cone = (ConeShape) shape;
 				shapeModel = MeshGenerator.generateCone(cone.getRadius(), cone.getHeight());
-				shapeModel.setColor(coneShapeColor);
+				shapeModel.getUniforms().add(new ColorUniform("modelColor", coneShapeColor));
 				break;
 			case CYLINDER:
 				final CylinderShape cylinder = (CylinderShape) shape;
 				shapeModel = MeshGenerator.generateCylinder(cylinder.getRadius(), cylinder.getHeight());
-				shapeModel.setColor(cylinderShapeColor);
+				shapeModel.getUniforms().add(new ColorUniform("modelColor", cylinderShapeColor));
 				break;
 			case SPHERE:
 				final SphereShape sphere = (SphereShape) shape;
 				shapeModel = MeshGenerator.generateSphere(sphere.getRadius());
-				shapeModel.setColor(sphereShapeColor);
+				shapeModel.getUniforms().add(new ColorUniform("modelColor", sphereShapeColor));
 				break;
 			default:
 				throw new IllegalArgumentException("Unsupported collision shape: " + shape.getType());
@@ -194,6 +205,7 @@ public class Sandbox {
 		//aabbModel.create();
 		//renderer.addModel(aabbModel);
 		//aabbs.put(body, aabbModel);
+		shapeModel.setMaterial(renderMaterial);
 		shapeModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
 		shapeModel.setRotation(SandboxUtil.toMathQuaternion(bodyOrientation));
 		shapeModel.create();
@@ -281,7 +293,7 @@ public class Sandbox {
 			position.add(Vector3.multiply(up, -cameraSpeed));
 		}
 		camera.setPosition(SandboxUtil.toMathVector3(position));
-		renderer.setLightPosition(SandboxUtil.toMathVector3(position));
+		renderMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
 	}
 
 	private static void handleSelection() {
@@ -300,6 +312,51 @@ public class Sandbox {
 			//unsuported for now...
 			//OpenGL32Renderer.targetPosition(targeted.getIntersectionPoint());
 			//OpenGL32Renderer.displayTarget(true);
+		}
+	}
+
+	private static void setupRenderer() {
+		renderer.setWindowTitle(WINDOW_TITLE);
+		renderer.setWindowSize(windowWidth, windowHeight);
+		renderer.setCamera(Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 1000));
+		renderer.create();
+		final OpenGL20Program program = renderMaterial.getProgram();
+		program.setVertexShaderSource(Sandbox.class.getResourceAsStream("/basic.vert"));
+		program.setFragmentShaderSource(Sandbox.class.getResourceAsStream("/basic.frag"));
+		final UniformHolder uniforms = renderMaterial.getUniforms();
+		uniforms.add(new Vector3Uniform("lightPosition", lightPosition));
+		uniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
+		uniforms.add(new FloatUniform("specularIntensity", specularIntensity));
+		uniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
+		uniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
+		renderMaterial.create();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void loadConfiguration() throws Exception {
+		try {
+			final Map<String, Object> config =
+					(Map<String, Object>) new Yaml().load(new FileInputStream("config.yml"));
+			final Map<String, Object> inputConfig = (Map<String, Object>) config.get("Input");
+			final Map<String, Object> appearanceConfig = (Map<String, Object>) config.get("Appearance");
+			mouseSensitivity = ((Number) inputConfig.get("MouseSensitivity")).floatValue();
+			cameraSpeed = ((Number) inputConfig.get("CameraSpeed")).floatValue();
+			final String[] windowSize = ((String) appearanceConfig.get("WindowSize")).split(",");
+			windowWidth = Integer.parseInt(windowSize[0].trim());
+			windowHeight = Integer.parseInt(windowSize[1].trim());
+			fieldOfView = ((Number) appearanceConfig.get("FieldOfView")).floatValue();
+			renderer.setBackgroundColor(parseColor(((String) appearanceConfig.get("BackgroundColor")), 0));
+			//defaultAABBColor = (parseColor(((String) appearanceConfig.get("AABBColor")), 1));
+			boxShapeColor = (parseColor(((String) appearanceConfig.get("BoxShapeColor")), 1));
+			coneShapeColor = (parseColor(((String) appearanceConfig.get("ConeShapeColor")), 1));
+			sphereShapeColor = (parseColor(((String) appearanceConfig.get("SphereShapeColor")), 1));
+			cylinderShapeColor = (parseColor(((String) appearanceConfig.get("CylinderShapeColor")), 1));
+			diffuseIntensity = ((Number) appearanceConfig.get("DiffuseIntensity")).floatValue();
+			specularIntensity = ((Number) appearanceConfig.get("SpecularIntensity")).floatValue();
+			ambientIntensity = ((Number) appearanceConfig.get("AmbientIntensity")).floatValue();
+			lightAttenuation = ((Number) appearanceConfig.get("LightAttenuation")).floatValue();
+		} catch (Exception ex) {
+			throw new IllegalStateException("Malformed config.yml: \"" + ex.getMessage() + "\".");
 		}
 	}
 
@@ -341,34 +398,6 @@ public class Sandbox {
 		final String nativesPath = nativesDir.getAbsolutePath();
 		System.setProperty("org.lwjgl.librarypath", nativesPath);
 		System.setProperty("net.java.games.input.librarypath", nativesPath);
-	}
-
-	@SuppressWarnings("unchecked")
-	private static void loadConfiguration() throws Exception {
-		try {
-			final Map<String, Object> config =
-					(Map<String, Object>) new Yaml().load(new FileInputStream("config.yml"));
-			final Map<String, Object> inputConfig = (Map<String, Object>) config.get("Input");
-			final Map<String, Object> appearanceConfig = (Map<String, Object>) config.get("Appearance");
-			mouseSensitivity = ((Number) inputConfig.get("MouseSensitivity")).floatValue();
-			cameraSpeed = ((Number) inputConfig.get("CameraSpeed")).floatValue();
-			final String[] windowSize = ((String) appearanceConfig.get("WindowSize")).split(",");
-			windowWidth = Integer.parseInt(windowSize[0].trim());
-			windowHeight = Integer.parseInt(windowSize[1].trim());
-			fieldOfView = ((Number) appearanceConfig.get("FieldOfView")).floatValue();
-			renderer.setBackgroundColor(parseColor(((String) appearanceConfig.get("BackgroundColor")), 0));
-			//defaultAABBColor = (parseColor(((String) appearanceConfig.get("AABBColor")), 1));
-			boxShapeColor = (parseColor(((String) appearanceConfig.get("BoxShapeColor")), 1));
-			coneShapeColor = (parseColor(((String) appearanceConfig.get("ConeShapeColor")), 1));
-			sphereShapeColor = (parseColor(((String) appearanceConfig.get("SphereShapeColor")), 1));
-			cylinderShapeColor = (parseColor(((String) appearanceConfig.get("CylinderShapeColor")), 1));
-			renderer.setDiffuseIntensity(((Number) appearanceConfig.get("DiffuseIntensity")).floatValue());
-			renderer.setSpecularIntensity(((Number) appearanceConfig.get("SpecularIntensity")).floatValue());
-			renderer.setAmbientIntensity(((Number) appearanceConfig.get("AmbientIntensity")).floatValue());
-			renderer.setLightAttenuation(((Number) appearanceConfig.get("LightAttenuation")).floatValue());
-		} catch (Exception ex) {
-			throw new IllegalStateException("Malformed config.yml: \"" + ex.getMessage() + "\".");
-		}
 	}
 
 	private static Color parseColor(String s, float alpha) {
