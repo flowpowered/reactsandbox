@@ -47,6 +47,7 @@ import org.spout.physics.body.MobileRigidBody;
 import org.spout.physics.body.RigidBody;
 import org.spout.physics.body.RigidBodyMaterial;
 import org.spout.physics.collision.RayCaster.IntersectedBody;
+import org.spout.physics.collision.shape.AABB;
 import org.spout.physics.collision.shape.BoxShape;
 import org.spout.physics.collision.shape.CollisionShape;
 import org.spout.physics.collision.shape.ConeShape;
@@ -57,6 +58,8 @@ import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
+import org.spout.renderer.Model.DrawMode;
+import org.spout.renderer.data.Uniform.BooleanUniform;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
@@ -81,7 +84,7 @@ public class Sandbox {
 	private static int windowWidth = 1200;
 	private static int windowHeight = 800;
 	private static float fieldOfView = 75;
-	//private static Color defaultAABBColor;
+	private static Color aabbColor;
 	private static Color boxShapeColor;
 	private static Color coneShapeColor;
 	private static Color cylinderShapeColor;
@@ -90,17 +93,20 @@ public class Sandbox {
 	private static DynamicsWorld world;
 	private static Vector3 gravity = new Vector3(0, -9.81f, 0);
 	private static final Map<CollisionBody, OpenGL30Model> shapes = new HashMap<CollisionBody, OpenGL30Model>();
-	//private static final Map<CollisionBody, OpenGL30Wireframe> aabbs = new HashMap<CollisionBody, OpenGL30Wireframe>();
+	private static final Map<CollisionBody, OpenGL30Model> aabbs = new HashMap<CollisionBody, OpenGL30Model>();
 	// Input
 	private static boolean mouseGrabbed = true;
 	private static float cameraPitch = 0;
 	private static float cameraYaw = 0;
 	// Selection
 	private static CollisionBody selected = null;
+	private static float targetSize = 0.1f;
+	private static Color targetColor = new Color(1f, 1f, 0f, 1f);
 	// Rendering
 	private static OpenGL30Renderer renderer = new OpenGL30Renderer();
-	// Rendering material for all objects
-	private static final OpenGL20Material renderMaterial = new OpenGL20Material();
+	// Rendering material for objects
+	private static final OpenGL20Material solidMaterial = new OpenGL20Material();
+	private static final OpenGL20Material wireframeMaterial = new OpenGL20Material();
 	// Lighting
 	private static org.spout.math.vector.Vector3 lightPosition = new org.spout.math.vector.Vector3(0, 0, 0);
 	private static float diffuseIntensity = 0.8f;
@@ -120,13 +126,7 @@ public class Sandbox {
 			setupRenderer();
 			System.out.println("Starting up");
 			world = new DynamicsWorld(gravity, TIMESTEP);
-			addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
-			addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
-			addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
-			addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1));
-			addMobileBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
-			addImmobileBody(new BoxShape(new Vector3(10, 1, 10)), 20, new Vector3(0, 1.8f, 0), Quaternion.identity());
-			addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
+			addDefaultBodies();
 			Mouse.setGrabbed(true);
 			world.start();
 			renderer.getCamera().setPosition(SandboxUtil.toMathVector3(new Vector3(0, 5, 10)));
@@ -171,9 +171,16 @@ public class Sandbox {
 		final Transform bodyTransform = body.getTransform();
 		final Vector3 bodyPosition = bodyTransform.getPosition();
 		final Quaternion bodyOrientation = bodyTransform.getOrientation();
-		//final OpenGL30Wireframe aabbModel = MeshGenerator.generateCuboid(new Vector3(1, 1, 1));
-		//final AABB aabb = body.getAABB();
-		//aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
+		final AABB aabb = body.getAABB();
+		final OpenGL30Model aabbModel = MeshGenerator.generateWireCuboid(new Vector3(1, 1, 1));
+		aabbModel.setMaterial(wireframeMaterial);
+		aabbModel.setDrawMode(DrawMode.LINES);
+		aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
+		aabbModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
+		aabbModel.getUniforms().add(new ColorUniform("modelColor", aabbColor));
+		aabbModel.create();
+		renderer.addModel(aabbModel);
+		aabbs.put(body, aabbModel);
 		final CollisionShape shape = body.getCollisionShape();
 		final OpenGL30Model shapeModel;
 		switch (shape.getType()) {
@@ -200,12 +207,7 @@ public class Sandbox {
 			default:
 				throw new IllegalArgumentException("Unsupported collision shape: " + shape.getType());
 		}
-		//aabbModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
-		//aabbModel.setColor(defaultAABBColor);
-		//aabbModel.create();
-		//renderer.addModel(aabbModel);
-		//aabbs.put(body, aabbModel);
-		shapeModel.setMaterial(renderMaterial);
+		shapeModel.setMaterial(solidMaterial);
 		shapeModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
 		shapeModel.setRotation(SandboxUtil.toMathQuaternion(bodyOrientation));
 		shapeModel.create();
@@ -218,9 +220,9 @@ public class Sandbox {
 		final OpenGL30Model shapeModel = shapes.remove(body);
 		renderer.removeModel(shapeModel);
 		shapeModel.destroy();
-		//final OpenGL30Wireframe aabbModel = aabbs.remove(body);
-		//renderer.removeModel(aabbModel);
-		//aabbModel.destroy();
+		final OpenGL30Model aabbModel = aabbs.remove(body);
+		renderer.removeModel(aabbModel);
+		aabbModel.destroy();
 		if (body instanceof RigidBody) {
 			world.destroyRigidBody((RigidBody) body);
 		}
@@ -230,12 +232,12 @@ public class Sandbox {
 		for (Entry<CollisionBody, OpenGL30Model> entry : shapes.entrySet()) {
 			final CollisionBody body = entry.getKey();
 			final OpenGL30Model shape = entry.getValue();
-			//final OpenGL30Wireframe aabbModel = aabbs.get(body);
-			//final AABB aabb = body.getAABB();
+			final OpenGL30Model aabbModel = aabbs.get(body);
+			final AABB aabb = body.getAABB();
 			final Transform transform = body.getTransform();
 			final Vector3 position = transform.getPosition();
-			//aabbModel.setPosition(SandboxUtil.toMathVector3(position));
-			//aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
+			aabbModel.setPosition(SandboxUtil.toMathVector3(position));
+			aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
 			shape.setPosition(SandboxUtil.toMathVector3(position));
 			shape.setRotation(SandboxUtil.toMathQuaternion(transform.getOrientation()));
 		}
@@ -293,26 +295,34 @@ public class Sandbox {
 			position.add(Vector3.multiply(up, -cameraSpeed));
 		}
 		camera.setPosition(SandboxUtil.toMathVector3(position));
-		renderMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
+		solidMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
 	}
 
 	private static void handleSelection() {
 		if (selected != null) {
-			//aabbs.get(selected).setColor(defaultAABBColor);
+			aabbs.get(selected).getUniforms().getColor("modelColor").set(aabbColor);
 			selected = null;
 		}
-		//unsuported for now...
-		//OpenGL32Renderer.displayTarget(false);
+		solidMaterial.getUniforms().getBoolean("displayTarget").set(false);
 		final IntersectedBody targeted = world.findClosestIntersectingBody(
 				SandboxUtil.toReactVector3(renderer.getCamera().getPosition()),
 				SandboxUtil.toReactVector3(renderer.getCamera().getForward()));
 		if (targeted != null && targeted.getBody() instanceof RigidBody) {
 			selected = targeted.getBody();
-			//aabbs.get(selected).setColor(Color.BLUE);
-			//unsuported for now...
-			//OpenGL32Renderer.targetPosition(targeted.getIntersectionPoint());
-			//OpenGL32Renderer.displayTarget(true);
+			aabbs.get(selected).getUniforms().getColor("modelColor").set(Color.BLUE);
+			solidMaterial.getUniforms().getVector3("targetPosition").set(SandboxUtil.toMathVector3(targeted.getIntersectionPoint()));
+			solidMaterial.getUniforms().getBoolean("displayTarget").set(true);
 		}
+	}
+
+	private static void addDefaultBodies() {
+		addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
+		addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
+		addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
+		addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1));
+		addMobileBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
+		addImmobileBody(new BoxShape(new Vector3(10, 1, 10)), 20, new Vector3(0, 1.8f, 0), Quaternion.identity());
+		addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
 	}
 
 	private static void setupRenderer() {
@@ -320,16 +330,24 @@ public class Sandbox {
 		renderer.setWindowSize(windowWidth, windowHeight);
 		renderer.setCamera(Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 1000));
 		renderer.create();
-		final OpenGL20Program program = renderMaterial.getProgram();
-		program.setVertexShaderSource(Sandbox.class.getResourceAsStream("/basic.vert"));
-		program.setFragmentShaderSource(Sandbox.class.getResourceAsStream("/basic.frag"));
-		final UniformHolder uniforms = renderMaterial.getUniforms();
-		uniforms.add(new Vector3Uniform("lightPosition", lightPosition));
-		uniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
-		uniforms.add(new FloatUniform("specularIntensity", specularIntensity));
-		uniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
-		uniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
-		renderMaterial.create();
+		final OpenGL20Program solidProgram = solidMaterial.getProgram();
+		solidProgram.setVertexShaderSource(Sandbox.class.getResourceAsStream("/solid.vert"));
+		solidProgram.setFragmentShaderSource(Sandbox.class.getResourceAsStream("/solid.frag"));
+		final UniformHolder solidUniforms = solidMaterial.getUniforms();
+		solidUniforms.add(new Vector3Uniform("lightPosition", lightPosition));
+		solidUniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
+		solidUniforms.add(new FloatUniform("specularIntensity", specularIntensity));
+		solidUniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
+		solidUniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
+		solidUniforms.add(new Vector3Uniform("targetPosition", org.spout.math.vector.Vector3.ZERO));
+		solidUniforms.add(new BooleanUniform("displayTarget", false));
+		solidUniforms.add(new FloatUniform("targetSize", targetSize));
+		solidUniforms.add(new ColorUniform("targetColor", targetColor));
+		solidMaterial.create();
+		final OpenGL20Program wireframeProgram = wireframeMaterial.getProgram();
+		wireframeProgram.setVertexShaderSource(Sandbox.class.getResourceAsStream("/wireframe.vert"));
+		wireframeProgram.setFragmentShaderSource(Sandbox.class.getResourceAsStream("/wireframe.frag"));
+		wireframeMaterial.create();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -346,7 +364,7 @@ public class Sandbox {
 			windowHeight = Integer.parseInt(windowSize[1].trim());
 			fieldOfView = ((Number) appearanceConfig.get("FieldOfView")).floatValue();
 			renderer.setBackgroundColor(parseColor(((String) appearanceConfig.get("BackgroundColor")), 0));
-			//defaultAABBColor = (parseColor(((String) appearanceConfig.get("AABBColor")), 1));
+			aabbColor = (parseColor(((String) appearanceConfig.get("AABBColor")), 1));
 			boxShapeColor = (parseColor(((String) appearanceConfig.get("BoxShapeColor")), 1));
 			coneShapeColor = (parseColor(((String) appearanceConfig.get("ConeShapeColor")), 1));
 			sphereShapeColor = (parseColor(((String) appearanceConfig.get("SphereShapeColor")), 1));
@@ -355,6 +373,8 @@ public class Sandbox {
 			specularIntensity = ((Number) appearanceConfig.get("SpecularIntensity")).floatValue();
 			ambientIntensity = ((Number) appearanceConfig.get("AmbientIntensity")).floatValue();
 			lightAttenuation = ((Number) appearanceConfig.get("LightAttenuation")).floatValue();
+			targetColor = (parseColor(((String) appearanceConfig.get("TargetColor")), 1));
+			targetSize = ((Number) appearanceConfig.get("TargetSize")).floatValue();
 		} catch (Exception ex) {
 			throw new IllegalStateException("Malformed config.yml: \"" + ex.getMessage() + "\".");
 		}

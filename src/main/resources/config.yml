@@ -28,3 +28,7 @@ Appearance:
     AmbientIntensity: 0.3
     # How much distance affects light intensity.
     LightAttenuation: 0.03
+    # Color of the target point
+    TargetColor: 0.9, 0.9, 0.1
+    # Size of the target point
+    TargetSize: 0.1
