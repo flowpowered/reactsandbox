@@ -1,10 +1,8 @@
 #version 120
 
-in vec3 modelPosition;
-in vec3 modelNormal;
-in vec3 viewDirection;
-
-out vec4 outputColor;
+varying vec3 modelPosition;
+varying vec3 modelNormal;
+varying vec3 viewDirection;
 
 uniform vec4 modelColor;
 uniform vec3 lightPosition;
@@ -35,5 +33,5 @@ void main() {
     vec4 specular = color * distanceIntensity * pow(clamp(dot(reflect(-lightDirection, modelNormal), viewDirection), 0, 1), 2);
     vec4 ambient = color;
 
-    outputColor = diffuse * diffuseIntensity + specular * specularIntensity + ambient * ambientIntensity;
+    gl_FragColor = diffuse * diffuseIntensity + specular * specularIntensity + ambient * ambientIntensity;
 }

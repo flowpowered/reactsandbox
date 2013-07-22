@@ -1,4 +1,4 @@
-#version 120
+#version 330
 
 out vec4 outputColor;
 

@@ -58,16 +58,18 @@ import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
+import org.spout.renderer.GLVersion;
+import org.spout.renderer.Material;
+import org.spout.renderer.Model;
 import org.spout.renderer.Model.DrawMode;
+import org.spout.renderer.Program;
+import org.spout.renderer.Renderer;
+import org.spout.renderer.Shader.ShaderType;
 import org.spout.renderer.data.Uniform.BooleanUniform;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
 import org.spout.renderer.data.UniformHolder;
-import org.spout.renderer.gl20.OpenGL20Material;
-import org.spout.renderer.gl20.OpenGL20Program;
-import org.spout.renderer.gl30.OpenGL30Model;
-import org.spout.renderer.gl30.OpenGL30Renderer;
 
 /**
  * The main class of the ReactSandbox.
@@ -92,8 +94,8 @@ public class Sandbox {
 	// Physics objects
 	private static DynamicsWorld world;
 	private static Vector3 gravity = new Vector3(0, -9.81f, 0);
-	private static final Map<CollisionBody, OpenGL30Model> shapes = new HashMap<CollisionBody, OpenGL30Model>();
-	private static final Map<CollisionBody, OpenGL30Model> aabbs = new HashMap<CollisionBody, OpenGL30Model>();
+	private static final Map<CollisionBody, Model> shapes = new HashMap<CollisionBody, Model>();
+	private static final Map<CollisionBody, Model> aabbs = new HashMap<CollisionBody, Model>();
 	// Input
 	private static boolean mouseGrabbed = true;
 	private static float cameraPitch = 0;
@@ -103,10 +105,12 @@ public class Sandbox {
 	private static float targetSize = 0.1f;
 	private static Color targetColor = new Color(1f, 1f, 0f, 1f);
 	// Rendering
-	private static OpenGL30Renderer renderer = new OpenGL30Renderer();
+	private static GLVersion glVersion;
+	private static Renderer renderer;
+	private static Color backgroundColor;
 	// Rendering material for objects
-	private static final OpenGL20Material solidMaterial = new OpenGL20Material();
-	private static final OpenGL20Material wireframeMaterial = new OpenGL20Material();
+	private static Material solidMaterial;
+	private static Material wireframeMaterial;
 	// Lighting
 	private static org.spout.math.vector.Vector3 lightPosition = new org.spout.math.vector.Vector3(0, 0, 0);
 	private static float diffuseIntensity = 0.8f;
@@ -125,6 +129,7 @@ public class Sandbox {
 			loadConfiguration();
 			setupRenderer();
 			System.out.println("Starting up");
+			System.out.println("OpenGL version: " + glVersion);
 			world = new DynamicsWorld(gravity, TIMESTEP);
 			addDefaultBodies();
 			Mouse.setGrabbed(true);
@@ -172,7 +177,8 @@ public class Sandbox {
 		final Vector3 bodyPosition = bodyTransform.getPosition();
 		final Quaternion bodyOrientation = bodyTransform.getOrientation();
 		final AABB aabb = body.getAABB();
-		final OpenGL30Model aabbModel = MeshGenerator.generateWireCuboid(new Vector3(1, 1, 1));
+		final Model aabbModel = glVersion.createModel();
+		MeshGenerator.generateWireCuboid(aabbModel, new Vector3(1, 1, 1));
 		aabbModel.setMaterial(wireframeMaterial);
 		aabbModel.setDrawMode(DrawMode.LINES);
 		aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
@@ -182,26 +188,26 @@ public class Sandbox {
 		renderer.addModel(aabbModel);
 		aabbs.put(body, aabbModel);
 		final CollisionShape shape = body.getCollisionShape();
-		final OpenGL30Model shapeModel;
+		final Model shapeModel = glVersion.createModel();
 		switch (shape.getType()) {
 			case BOX:
 				final BoxShape box = (BoxShape) shape;
-				shapeModel = MeshGenerator.generateCuboid(Vector3.multiply(box.getExtent(), 2));
+				MeshGenerator.generateCuboid(shapeModel, Vector3.multiply(box.getExtent(), 2));
 				shapeModel.getUniforms().add(new ColorUniform("modelColor", boxShapeColor));
 				break;
 			case CONE:
 				final ConeShape cone = (ConeShape) shape;
-				shapeModel = MeshGenerator.generateCone(cone.getRadius(), cone.getHeight());
+				MeshGenerator.generateCone(shapeModel, cone.getRadius(), cone.getHeight());
 				shapeModel.getUniforms().add(new ColorUniform("modelColor", coneShapeColor));
 				break;
 			case CYLINDER:
 				final CylinderShape cylinder = (CylinderShape) shape;
-				shapeModel = MeshGenerator.generateCylinder(cylinder.getRadius(), cylinder.getHeight());
+				MeshGenerator.generateCylinder(shapeModel, cylinder.getRadius(), cylinder.getHeight());
 				shapeModel.getUniforms().add(new ColorUniform("modelColor", cylinderShapeColor));
 				break;
 			case SPHERE:
 				final SphereShape sphere = (SphereShape) shape;
-				shapeModel = MeshGenerator.generateSphere(sphere.getRadius());
+				MeshGenerator.generateSphere(shapeModel, sphere.getRadius());
 				shapeModel.getUniforms().add(new ColorUniform("modelColor", sphereShapeColor));
 				break;
 			default:
@@ -217,10 +223,10 @@ public class Sandbox {
 	}
 
 	private static void removeBody(final CollisionBody body) {
-		final OpenGL30Model shapeModel = shapes.remove(body);
+		final Model shapeModel = shapes.remove(body);
 		renderer.removeModel(shapeModel);
 		shapeModel.destroy();
-		final OpenGL30Model aabbModel = aabbs.remove(body);
+		final Model aabbModel = aabbs.remove(body);
 		renderer.removeModel(aabbModel);
 		aabbModel.destroy();
 		if (body instanceof RigidBody) {
@@ -229,10 +235,10 @@ public class Sandbox {
 	}
 
 	private static void updateBodies() {
-		for (Entry<CollisionBody, OpenGL30Model> entry : shapes.entrySet()) {
+		for (Entry<CollisionBody, Model> entry : shapes.entrySet()) {
 			final CollisionBody body = entry.getKey();
-			final OpenGL30Model shape = entry.getValue();
-			final OpenGL30Model aabbModel = aabbs.get(body);
+			final Model shape = entry.getValue();
+			final Model aabbModel = aabbs.get(body);
 			final AABB aabb = body.getAABB();
 			final Transform transform = body.getTransform();
 			final Vector3 position = transform.getPosition();
@@ -326,13 +332,19 @@ public class Sandbox {
 	}
 
 	private static void setupRenderer() {
+		renderer = glVersion.createRenderer();
+		renderer.setBackgroundColor(backgroundColor);
 		renderer.setWindowTitle(WINDOW_TITLE);
 		renderer.setWindowSize(windowWidth, windowHeight);
 		renderer.setCamera(Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 1000));
 		renderer.create();
-		final OpenGL20Program solidProgram = solidMaterial.getProgram();
-		solidProgram.setVertexShaderSource(Sandbox.class.getResourceAsStream("/solid.vert"));
-		solidProgram.setFragmentShaderSource(Sandbox.class.getResourceAsStream("/solid.frag"));
+		final String path = "/" + glVersion.toString().toLowerCase() + "/";
+		solidMaterial = glVersion.createMaterial();
+		final Program solidProgram = solidMaterial.getProgram();
+		solidProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(path + "solid.vert"));
+		solidProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(path + "solid.frag"));
+		solidProgram.addAttributeLayout("position", 0);
+		solidProgram.addAttributeLayout("normal", 1);
 		final UniformHolder solidUniforms = solidMaterial.getUniforms();
 		solidUniforms.add(new Vector3Uniform("lightPosition", lightPosition));
 		solidUniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
@@ -344,9 +356,10 @@ public class Sandbox {
 		solidUniforms.add(new FloatUniform("targetSize", targetSize));
 		solidUniforms.add(new ColorUniform("targetColor", targetColor));
 		solidMaterial.create();
-		final OpenGL20Program wireframeProgram = wireframeMaterial.getProgram();
-		wireframeProgram.setVertexShaderSource(Sandbox.class.getResourceAsStream("/wireframe.vert"));
-		wireframeProgram.setFragmentShaderSource(Sandbox.class.getResourceAsStream("/wireframe.frag"));
+		wireframeMaterial = glVersion.createMaterial();
+		final Program wireframeProgram = wireframeMaterial.getProgram();
+		wireframeProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(path + "wireframe.vert"));
+		wireframeProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(path + "wireframe.frag"));
 		wireframeMaterial.create();
 	}
 
@@ -359,24 +372,25 @@ public class Sandbox {
 			final Map<String, Object> appearanceConfig = (Map<String, Object>) config.get("Appearance");
 			mouseSensitivity = ((Number) inputConfig.get("MouseSensitivity")).floatValue();
 			cameraSpeed = ((Number) inputConfig.get("CameraSpeed")).floatValue();
+			glVersion = GLVersion.valueOf(((String) appearanceConfig.get("GLVersion")).toUpperCase());
 			final String[] windowSize = ((String) appearanceConfig.get("WindowSize")).split(",");
 			windowWidth = Integer.parseInt(windowSize[0].trim());
 			windowHeight = Integer.parseInt(windowSize[1].trim());
 			fieldOfView = ((Number) appearanceConfig.get("FieldOfView")).floatValue();
-			renderer.setBackgroundColor(parseColor(((String) appearanceConfig.get("BackgroundColor")), 0));
-			aabbColor = (parseColor(((String) appearanceConfig.get("AABBColor")), 1));
-			boxShapeColor = (parseColor(((String) appearanceConfig.get("BoxShapeColor")), 1));
-			coneShapeColor = (parseColor(((String) appearanceConfig.get("ConeShapeColor")), 1));
-			sphereShapeColor = (parseColor(((String) appearanceConfig.get("SphereShapeColor")), 1));
-			cylinderShapeColor = (parseColor(((String) appearanceConfig.get("CylinderShapeColor")), 1));
+			backgroundColor = parseColor(((String) appearanceConfig.get("BackgroundColor")), 0);
+			aabbColor = parseColor(((String) appearanceConfig.get("AABBColor")), 1);
+			boxShapeColor = parseColor(((String) appearanceConfig.get("BoxShapeColor")), 1);
+			coneShapeColor = parseColor(((String) appearanceConfig.get("ConeShapeColor")), 1);
+			sphereShapeColor = parseColor(((String) appearanceConfig.get("SphereShapeColor")), 1);
+			cylinderShapeColor = parseColor(((String) appearanceConfig.get("CylinderShapeColor")), 1);
 			diffuseIntensity = ((Number) appearanceConfig.get("DiffuseIntensity")).floatValue();
 			specularIntensity = ((Number) appearanceConfig.get("SpecularIntensity")).floatValue();
 			ambientIntensity = ((Number) appearanceConfig.get("AmbientIntensity")).floatValue();
 			lightAttenuation = ((Number) appearanceConfig.get("LightAttenuation")).floatValue();
-			targetColor = (parseColor(((String) appearanceConfig.get("TargetColor")), 1));
+			targetColor = parseColor(((String) appearanceConfig.get("TargetColor")), 1);
 			targetSize = ((Number) appearanceConfig.get("TargetSize")).floatValue();
 		} catch (Exception ex) {
-			throw new IllegalStateException("Malformed config.yml: \"" + ex.getMessage() + "\".");
+			throw new IllegalStateException("Malformed config.yml: \"" + ex.getMessage() + "\".", ex);
 		}
 	}
 
