@@ -4,6 +4,8 @@ Input:
     # Speed of the camera for moving about.
     CameraSpeed: 0.2
 Appearance:
+    # OpenGL versions: GL20 or GL30
+    GLVersion: GL30
     # Window size in width and height.
     WindowSize: 1200, 800
     # Field of view in degrees. Avoid values >= 180.

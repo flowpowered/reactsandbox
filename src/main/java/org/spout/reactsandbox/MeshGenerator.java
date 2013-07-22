@@ -34,8 +34,8 @@ import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 
 import org.spout.physics.math.Vector3;
+import org.spout.renderer.Model;
 import org.spout.renderer.data.VertexData;
-import org.spout.renderer.gl30.OpenGL30Model;
 
 /**
  * Generates various shape meshes of the desired size and stores them to the models.
@@ -47,7 +47,7 @@ public class MeshGenerator {
 	 *
 	 * @param size The size of the cuboid to generate, on x, y and z
 	 */
-	public static OpenGL30Model generateWireCuboid(Vector3 size) {
+	public static void generateWireCuboid(Model destination, Vector3 size) {
 		/*
 		^
 		| y
@@ -77,8 +77,7 @@ public class MeshGenerator {
 		final Vector3 p5 = new Vector3(p.getX(), p.getY(), -p.getZ());
 		final Vector3 p3 = Vector3.negate(p5);
 		// Model data buffers
-		final OpenGL30Model model = new OpenGL30Model();
-		final VertexData vertices = model.getVertexData();
+		final VertexData vertices = destination.getVertexData();
 		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
 		final TIntList indices = vertices.getIndices();
 		// Add all of the corners
@@ -102,7 +101,6 @@ public class MeshGenerator {
 		addAll(indices, 0, 1, 1, 2, 2, 3, 3, 0);
 		// Face -z
 		addAll(indices, 0, 1, 1, 5, 5, 4, 4, 0);
-		return model;
 	}
 
 	/**
@@ -110,7 +108,7 @@ public class MeshGenerator {
 	 *
 	 * @param size The size of the cuboid to generate, on x, y and z
 	 */
-	public static OpenGL30Model generateCuboid(Vector3 size) {
+	public static void generateCuboid(Model destination, Vector3 size) {
 		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
 		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());
@@ -129,8 +127,7 @@ public class MeshGenerator {
 		final Vector3 nyN = new Vector3(0, -1, 0);
 		final Vector3 nzN = new Vector3(0, 0, -1);
 		// Model data buffers
-		final OpenGL30Model model = new OpenGL30Model();
-		final VertexData vertices = model.getVertexData();
+		final VertexData vertices = destination.getVertexData();
 		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
 		final TFloatList normals = vertices.addFloatAttribute("normals", 3);
 		final TIntList indices = vertices.getIndices();
@@ -194,7 +191,6 @@ public class MeshGenerator {
 		addVector(positions, p0);
 		addVector(normals, nzN);
 		addAll(indices, 20, 22, 21, 20, 23, 22);
-		return model;
 	}
 
 	/**
@@ -202,7 +198,7 @@ public class MeshGenerator {
 	 *
 	 * @param radius The radius of the sphere
 	 */
-	public static OpenGL30Model generateSphere(float radius) {
+	public static void generateSphere(Model destination, float radius) {
 		// Octahedron positions
 		final Vector3 v0 = new Vector3(0.0f, -1.0f, 0.0f);
 		final Vector3 v1 = new Vector3(1.0f, 0.0f, 0.0f);
@@ -242,8 +238,7 @@ public class MeshGenerator {
 			triangle.v2.normalize().multiply(radius);
 		}
 		// Model data buffers
-		final OpenGL30Model model = new OpenGL30Model();
-		final VertexData vertices = model.getVertexData();
+		final VertexData vertices = destination.getVertexData();
 		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
 		final TFloatList normals = vertices.addFloatAttribute("normals", 3);
 		final TIntList indices = vertices.getIndices();
@@ -259,7 +254,6 @@ public class MeshGenerator {
 			addVector(normals, normal);
 			addAll(indices, index++, index++, index++);
 		}
-		return model;
 	}
 
 	/**
@@ -268,7 +262,7 @@ public class MeshGenerator {
 	 * @param radius The radius of the base and top
 	 * @param height The height (distance from the base to the top)
 	 */
-	public static OpenGL30Model generateCylinder(float radius, float height) {
+	public static void generateCylinder(Model destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cylinder in the middle
 		final float halfHeight = height / 2;
 		// Center positions in the top and bottom faces
@@ -287,8 +281,7 @@ public class MeshGenerator {
 					radius * (float) -Math.sin(angleRads)));
 		}
 		// Model data buffers
-		final OpenGL30Model model = new OpenGL30Model();
-		final VertexData vertices = model.getVertexData();
+		final VertexData vertices = destination.getVertexData();
 		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
 		final TFloatList normals = vertices.addFloatAttribute("normals", 3);
 		final TIntList indices = vertices.getIndices();
@@ -337,7 +330,6 @@ public class MeshGenerator {
 			addVector(normals, n);
 			addAll(indices, index++, index++, index++);
 		}
-		return model;
 	}
 
 	/**
@@ -346,7 +338,7 @@ public class MeshGenerator {
 	 * @param radius The radius of the base
 	 * @param height The height (distance from the base to the apex)
 	 */
-	public static OpenGL30Model generateCone(float radius, float height) {
+	public static void generateCone(Model destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cone in the middle
 		final float halfHeight = height / 2;
 		// Apex of the cone
@@ -365,8 +357,7 @@ public class MeshGenerator {
 					radius * (float) -Math.sin(angleRads)));
 		}
 		// Model data buffers
-		final OpenGL30Model model = new OpenGL30Model();
-		final VertexData vertices = model.getVertexData();
+		final VertexData vertices = destination.getVertexData();
 		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
 		final TFloatList normals = vertices.addFloatAttribute("normals", 3);
 		final TIntList indices = vertices.getIndices();
@@ -396,7 +387,6 @@ public class MeshGenerator {
 			addVector(normals, n);
 			addAll(indices, index++, index++, index++);
 		}
-		return model;
 	}
 
 	private static void addVector(TFloatList to, Vector3 v) {
