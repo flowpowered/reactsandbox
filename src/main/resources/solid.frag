@@ -1,4 +1,4 @@
-#version 330
+#version 120
 
 in vec3 modelPosition;
 in vec3 modelNormal;
