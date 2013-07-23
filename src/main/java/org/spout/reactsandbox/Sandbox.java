@@ -240,6 +240,26 @@ public class Sandbox {
 		if (body instanceof RigidBody) {
 			world.destroyRigidBody((RigidBody) body);
 		}
+		selected = null;
+	}
+
+	private static void throwBody(final CollisionShapeType type) {
+		CollisionShape shape = null;
+		switch (type) {
+			case BOX:
+				shape = new BoxShape(1f, 1f, 1f);
+				break;
+			case CONE:
+				shape = new ConeShape(1f, 1f);
+				break;
+			case CYLINDER:
+				shape = new CylinderShape(1f, 1f);
+				break;
+			case SPHERE:
+				shape = new SphereShape(1f);
+				break;
+		}
+		final RigidBody body = addMobileBody(shape, 10f, SandboxUtil.toReactVector3(renderer.getCamera().getForward()), Quaternion.identity());
 	}
 
 	private static void updateBodies() {
@@ -261,13 +281,25 @@ public class Sandbox {
 		final boolean mouseGrabbedBefore = mouseGrabbed;
 		while (Keyboard.next()) {
 			if (Keyboard.getEventKeyState()) {
+				switch (Keyboard.getEventKey()) {
+					case Keyboard.KEY_ESCAPE:
+						mouseGrabbed ^= true;
+						break;
+					case Keyboard.KEY_X:
+						removeBody(selected);
+						break;
+					case Keyboard.KEY_T:
+
+				}
 				if (Keyboard.getEventKey() == Keyboard.KEY_ESCAPE) {
 					mouseGrabbed ^= true;
 				}
-				if (Keyboard.getEventKey() == Keyboard.KEY_X) {
+				else if (Keyboard.getEventKey() == Keyboard.KEY_X) {
 					if (selected != null) {
 						removeBody(selected);
 					}
+				} else if (Keyboard.getEventKey() == Keyboard.KEY_T) {
+					throwBody(CollisionShapeType.BOX);
 				}
 			}
 		}
