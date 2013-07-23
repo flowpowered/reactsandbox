@@ -39,6 +39,7 @@ import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
+import org.lwjgl.opengl.GL11;
 import org.yaml.snakeyaml.Yaml;
 
 import org.spout.physics.body.CollisionBody;
@@ -84,6 +85,7 @@ public class Sandbox {
 	private static final int TIMESTEP_MILLISEC = Math.round(TIMESTEP * 1000);
 	private static final RigidBodyMaterial WOOD_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0.6f, 0.4f));
 	// Settings
+	private static boolean cullingEnabled = true;
 	private static float mouseSensitivity = 0.08f;
 	private static float cameraSpeed = 0.2f;
 	private static int windowWidth = 1200;
@@ -133,7 +135,8 @@ public class Sandbox {
 			loadConfiguration();
 			setupRenderer();
 			System.out.println("Starting up");
-			System.out.println("OpenGL version: " + glVersion);
+			System.out.println("Render Mode: " + glVersion);
+			System.out.println("OpenGL Version: " + GL11.glGetString(GL11.GL_VERSION));
 			world = new DynamicsWorld(gravity, TIMESTEP);
 			addDefaultBodies();
 			Mouse.setGrabbed(true);
@@ -382,6 +385,7 @@ public class Sandbox {
 		renderer.setWindowTitle(WINDOW_TITLE);
 		renderer.setWindowSize(windowWidth, windowHeight);
 		renderer.setCamera(Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 1000));
+		renderer.setCullingEnabled(cullingEnabled);
 		renderer.create();
 		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/";
 		// Solid material
@@ -465,6 +469,7 @@ public class Sandbox {
 			lightAttenuation = ((Number) appearanceConfig.get("LightAttenuation")).floatValue();
 			targetColor = parseColor(((String) appearanceConfig.get("TargetColor")), 1);
 			targetSize = ((Number) appearanceConfig.get("TargetSize")).floatValue();
+			cullingEnabled = ((Boolean) appearanceConfig.get("CullingEnabled")).booleanValue();
 		} catch (Exception ex) {
 			throw new IllegalStateException("Malformed config.yml: \"" + ex.getMessage() + "\".", ex);
 		}
