@@ -45,6 +45,7 @@ public class MeshGenerator {
 	 * Generate a cuboid shaped wireframe (the outline of the cuboid). The center is at the middle of
 	 * the cuboid.
 	 *
+	 * @param destination Where to save the mesh
 	 * @param size The size of the cuboid to generate, on x, y and z
 	 */
 	public static void generateWireCuboid(Model destination, Vector3 size) {
@@ -106,6 +107,7 @@ public class MeshGenerator {
 	/**
 	 * Generates a solid cuboid mesh. The center is at the middle of the cuboid.
 	 *
+	 * @param destination Where to save the mesh
 	 * @param size The size of the cuboid to generate, on x, y and z
 	 */
 	public static void generateCuboid(Model destination, Vector3 size) {
@@ -194,8 +196,23 @@ public class MeshGenerator {
 	}
 
 	/**
+	 * Generates a solid cuboid mesh with texture UV. The center is at the middle of the cuboid.
+	 *
+	 * @param destination Where to save the mesh
+	 * @param size The size of the cuboid to generate, on x, y and z
+	 */
+	public static void generateTexturedCuboid(Model destination, Vector3 size) {
+		generateCuboid(destination, size);
+		final TFloatList texture = destination.getVertexData().addFloatAttribute("textureCoords", 2);
+		for (int i = 0; i < 6; i++) {
+			addAll(texture, 0, 0, 0, 1, 1, 0, 1, 1);
+		}
+	}
+
+	/**
 	 * Generates a solid spherical mesh. The center is at the middle of the sphere.
 	 *
+	 * @param destination Where to save the mesh
 	 * @param radius The radius of the sphere
 	 */
 	public static void generateSphere(Model destination, float radius) {
@@ -259,6 +276,7 @@ public class MeshGenerator {
 	/**
 	 * Generates a cylindrical solid mesh. The center is at middle of the of the cylinder.
 	 *
+	 * @param destination Where to save the mesh
 	 * @param radius The radius of the base and top
 	 * @param height The height (distance from the base to the top)
 	 */
@@ -335,6 +353,7 @@ public class MeshGenerator {
 	/**
 	 * Generates a conical solid mesh. The center is at the middle of the cone.
 	 *
+	 * @param destination Where to save the mesh
 	 * @param radius The radius of the base
 	 * @param height The height (distance from the base to the apex)
 	 */
@@ -396,6 +415,10 @@ public class MeshGenerator {
 	}
 
 	private static void addAll(TIntList to, int... f) {
+		to.add(f);
+	}
+
+	private static void addAll(TFloatList to, float... f) {
 		to.add(f);
 	}
 

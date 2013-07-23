@@ -50,6 +50,7 @@ import org.spout.physics.collision.RayCaster.IntersectedBody;
 import org.spout.physics.collision.shape.AABB;
 import org.spout.physics.collision.shape.BoxShape;
 import org.spout.physics.collision.shape.CollisionShape;
+import org.spout.physics.collision.shape.CollisionShape.CollisionShapeType;
 import org.spout.physics.collision.shape.ConeShape;
 import org.spout.physics.collision.shape.CylinderShape;
 import org.spout.physics.collision.shape.SphereShape;
@@ -65,6 +66,8 @@ import org.spout.renderer.Model.DrawMode;
 import org.spout.renderer.Program;
 import org.spout.renderer.Renderer;
 import org.spout.renderer.Shader.ShaderType;
+import org.spout.renderer.Texture;
+import org.spout.renderer.Texture.FilterMode;
 import org.spout.renderer.data.Uniform.BooleanUniform;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
@@ -110,6 +113,7 @@ public class Sandbox {
 	private static Color backgroundColor;
 	// Rendering material for objects
 	private static Material solidMaterial;
+	private static Material texturedMaterial;
 	private static Material wireframeMaterial;
 	// Lighting
 	private static org.spout.math.vector.Vector3 lightPosition = new org.spout.math.vector.Vector3(0, 0, 0);
@@ -192,8 +196,8 @@ public class Sandbox {
 		switch (shape.getType()) {
 			case BOX:
 				final BoxShape box = (BoxShape) shape;
-				MeshGenerator.generateCuboid(shapeModel, Vector3.multiply(box.getExtent(), 2));
-				shapeModel.getUniforms().add(new ColorUniform("modelColor", boxShapeColor));
+				MeshGenerator.generateTexturedCuboid(shapeModel, Vector3.multiply(box.getExtent(), 2));
+				//shapeModel.getUniforms().add(new ColorUniform("modelColor", boxShapeColor));
 				break;
 			case CONE:
 				final ConeShape cone = (ConeShape) shape;
@@ -213,7 +217,11 @@ public class Sandbox {
 			default:
 				throw new IllegalArgumentException("Unsupported collision shape: " + shape.getType());
 		}
-		shapeModel.setMaterial(solidMaterial);
+		if (shape.getType() == CollisionShapeType.BOX) {
+			shapeModel.setMaterial(texturedMaterial);
+		} else {
+			shapeModel.setMaterial(solidMaterial);
+		}
 		shapeModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
 		shapeModel.setRotation(SandboxUtil.toMathQuaternion(bodyOrientation));
 		shapeModel.create();
@@ -302,6 +310,7 @@ public class Sandbox {
 		}
 		camera.setPosition(SandboxUtil.toMathVector3(position));
 		solidMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
+		texturedMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
 	}
 
 	private static void handleSelection() {
@@ -310,6 +319,7 @@ public class Sandbox {
 			selected = null;
 		}
 		solidMaterial.getUniforms().getBoolean("displayTarget").set(false);
+		texturedMaterial.getUniforms().getBoolean("displayTarget").set(false);
 		final IntersectedBody targeted = world.findClosestIntersectingBody(
 				SandboxUtil.toReactVector3(renderer.getCamera().getPosition()),
 				SandboxUtil.toReactVector3(renderer.getCamera().getForward()));
@@ -317,7 +327,9 @@ public class Sandbox {
 			selected = targeted.getBody();
 			aabbs.get(selected).getUniforms().getColor("modelColor").set(Color.BLUE);
 			solidMaterial.getUniforms().getVector3("targetPosition").set(SandboxUtil.toMathVector3(targeted.getIntersectionPoint()));
+			texturedMaterial.getUniforms().getVector3("targetPosition").set(SandboxUtil.toMathVector3(targeted.getIntersectionPoint()));
 			solidMaterial.getUniforms().getBoolean("displayTarget").set(true);
+			texturedMaterial.getUniforms().getBoolean("displayTarget").set(true);
 		}
 	}
 
@@ -331,20 +343,23 @@ public class Sandbox {
 		addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
 	}
 
-	private static void setupRenderer() {
+	private static void setupRenderer() throws Exception {
 		renderer = glVersion.createRenderer();
 		renderer.setBackgroundColor(backgroundColor);
 		renderer.setWindowTitle(WINDOW_TITLE);
 		renderer.setWindowSize(windowWidth, windowHeight);
 		renderer.setCamera(Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 1000));
 		renderer.create();
-		final String path = "/" + glVersion.toString().toLowerCase() + "/";
+		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/";
+		// Solid material
 		solidMaterial = glVersion.createMaterial();
 		final Program solidProgram = solidMaterial.getProgram();
-		solidProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(path + "solid.vert"));
-		solidProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(path + "solid.frag"));
-		solidProgram.addAttributeLayout("position", 0);
-		solidProgram.addAttributeLayout("normal", 1);
+		solidProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(shaderPath + "solid.vert"));
+		solidProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "solid.frag"));
+		if (glVersion == GLVersion.GL20) {
+			solidProgram.addAttributeLayout("position", 0);
+			solidProgram.addAttributeLayout("normal", 1);
+		}
 		final UniformHolder solidUniforms = solidMaterial.getUniforms();
 		solidUniforms.add(new Vector3Uniform("lightPosition", lightPosition));
 		solidUniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
@@ -356,10 +371,38 @@ public class Sandbox {
 		solidUniforms.add(new FloatUniform("targetSize", targetSize));
 		solidUniforms.add(new ColorUniform("targetColor", targetColor));
 		solidMaterial.create();
+		// Textured material
+		texturedMaterial = glVersion.createMaterial();
+		final Program texturedProgram = texturedMaterial.getProgram();
+		texturedProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(shaderPath + "textured.vert"));
+		texturedProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "textured.frag"));
+		if (glVersion == GLVersion.GL20) {
+			texturedProgram.addAttributeLayout("position", 0);
+			texturedProgram.addAttributeLayout("normal", 1);
+			texturedProgram.addAttributeLayout("textureCoords", 2);
+		}
+		final UniformHolder texturedUniforms = texturedMaterial.getUniforms();
+		texturedUniforms.add(new Vector3Uniform("lightPosition", lightPosition));
+		texturedUniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
+		texturedUniforms.add(new FloatUniform("specularIntensity", specularIntensity));
+		texturedUniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
+		texturedUniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
+		texturedUniforms.add(new Vector3Uniform("targetPosition", org.spout.math.vector.Vector3.ZERO));
+		texturedUniforms.add(new BooleanUniform("displayTarget", false));
+		texturedUniforms.add(new FloatUniform("targetSize", targetSize));
+		texturedUniforms.add(new ColorUniform("targetColor", targetColor));
+		texturedMaterial.create();
+		final Texture texture = glVersion.createTexture();
+		texture.setSource(Sandbox.class.getResourceAsStream("/textures/wood.jpg"));
+		texture.setMagFilter(FilterMode.NEAREST);
+		texture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
+		texture.create();
+		texturedMaterial.addTexture(texture);
+		// Wireframe material
 		wireframeMaterial = glVersion.createMaterial();
 		final Program wireframeProgram = wireframeMaterial.getProgram();
-		wireframeProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(path + "wireframe.vert"));
-		wireframeProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(path + "wireframe.frag"));
+		wireframeProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(shaderPath + "wireframe.vert"));
+		wireframeProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "wireframe.frag"));
 		wireframeMaterial.create();
 	}
 
