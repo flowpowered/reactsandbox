@@ -243,7 +243,6 @@ public class Sandbox {
 		if (body instanceof RigidBody) {
 			world.destroyRigidBody((RigidBody) body);
 		}
-		selected = null;
 	}
 
 	private static void spawnBody(final CollisionShapeType type) {
@@ -262,7 +261,9 @@ public class Sandbox {
 				shape = new SphereShape(1f);
 				break;
 		}
-		addMobileBody(shape, 10.0f, SandboxUtil.toReactVector3(renderer.getCamera().getPosition().add(renderer.getCamera().getForward().mul(5))), SandboxUtil.toReactQuaternion(renderer.getCamera().getRotation()));
+		addMobileBody(shape, 10.0f,
+				SandboxUtil.toReactVector3(renderer.getCamera().getPosition().add(renderer.getCamera().getForward().mul(5))),
+				SandboxUtil.toReactQuaternion(renderer.getCamera().getRotation()));
 	}
 
 	private static void updateBodies() {
@@ -293,14 +294,12 @@ public class Sandbox {
 		while (Mouse.next()) {
 			if (Mouse.getEventButtonState()) {
 				switch (Mouse.getEventButton()) {
-					case 0: //Left Button
+					case 0: // Left Button
 						spawnBody(CollisionShapeType.BOX);
 						break;
-					case 1: //Right Button
+					case 1: // Right Button
 						removeBody(selected);
-						break;
-					case 2: //Middle Button
-						break;
+						selected = null;
 				}
 			}
 		}
@@ -479,19 +478,19 @@ public class Sandbox {
 		final String[] nativeLibs;
 		if (SystemUtils.IS_OS_WINDOWS) {
 			nativeLibs = new String[]{
-				"jinput-dx8_64.dll", "jinput-dx8.dll", "jinput-raw_64.dll", "jinput-raw.dll",
-				"jinput-wintab.dll", "lwjgl.dll", "lwjgl64.dll", "OpenAL32.dll", "OpenAL64.dll"
+					"jinput-dx8_64.dll", "jinput-dx8.dll", "jinput-raw_64.dll", "jinput-raw.dll",
+					"jinput-wintab.dll", "lwjgl.dll", "lwjgl64.dll", "OpenAL32.dll", "OpenAL64.dll"
 			};
 			osPath = "windows/";
 		} else if (SystemUtils.IS_OS_MAC) {
 			nativeLibs = new String[]{
-				"libjinput-osx.jnilib", "liblwjgl.jnilib", "openal.dylib"
+					"libjinput-osx.jnilib", "liblwjgl.jnilib", "openal.dylib"
 			};
 			osPath = "mac/";
 		} else if (SystemUtils.IS_OS_LINUX) {
 			nativeLibs = new String[]{
-				"liblwjgl.so", "liblwjgl64.so", "libopenal.so", "libopenal64.so", "libjinput-linux.so",
-				"libjinput-linux64.so"
+					"liblwjgl.so", "liblwjgl64.so", "libopenal.so", "libopenal64.so", "libjinput-linux.so",
+					"libjinput-linux64.so"
 			};
 			osPath = "linux/";
 		} else {
