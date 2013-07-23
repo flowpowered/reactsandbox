@@ -54,13 +54,23 @@ public class SandboxUtil {
 	}
 
 	/**
-	 * Converts from Math to React Quaternion.
+	 * Converts from React to Math Quaternion.
 	 *
 	 * @param q The React Quaternion
 	 * @return The equivalent Math Quaternion
 	 */
 	public static org.spout.math.imaginary.Quaternion toMathQuaternion(Quaternion q) {
 		return new org.spout.math.imaginary.Quaternion(q.getX(), q.getY(), q.getZ(), q.getW());
+	}
+
+	/**
+	 * Converts from Math to React Quaternion
+	 *
+	 * @param q The Math Quaternion
+	 * @return The equivalent React Quaternion
+	 */
+	public static Quaternion toReactQuaternion(org.spout.math.imaginary.Quaternion q) {
+		return new Quaternion(q.getX(), q.getY(), q.getZ(), q.getW());
 	}
 
 	/**
