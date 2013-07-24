@@ -80,10 +80,10 @@ import org.spout.renderer.data.UniformHolder;
  */
 public class Sandbox {
 	// Constants
-	private static final String WINDOW_TITLE = "React Sandbox";
+	private static final String WINDOW_TITLE = "Sandbox";
 	private static final float TIMESTEP = 1f / 60;
 	private static final int TIMESTEP_MILLISEC = Math.round(TIMESTEP * 1000);
-	private static final RigidBodyMaterial WOOD_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0.6f, 0.4f));
+	private static final RigidBodyMaterial PHYSICS_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0f, 1f));
 	// Settings
 	private static boolean cullingEnabled = true;
 	private static float mouseSensitivity = 0.08f;
@@ -92,7 +92,6 @@ public class Sandbox {
 	private static int windowHeight = 800;
 	private static float fieldOfView = 75;
 	private static Color aabbColor;
-	private static Color boxShapeColor;
 	private static Color coneShapeColor;
 	private static Color cylinderShapeColor;
 	private static Color sphereShapeColor;
@@ -167,14 +166,12 @@ public class Sandbox {
 
 	private static ImmobileRigidBody addImmobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
 		final ImmobileRigidBody body = world.createImmobileRigidBody(new Transform(position, orientation), mass, shape);
-		body.setMaterial(WOOD_MATERIAL);
 		addBody(body);
 		return body;
 	}
 
 	private static MobileRigidBody addMobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
 		final MobileRigidBody body = world.createMobileRigidBody(new Transform(position, orientation), mass, shape);
-		body.setMaterial(WOOD_MATERIAL);
 		addBody(body);
 		return body;
 	}
@@ -200,7 +197,6 @@ public class Sandbox {
 			case BOX:
 				final BoxShape box = (BoxShape) shape;
 				MeshGenerator.generateTexturedCuboid(shapeModel, Vector3.multiply(box.getExtent(), 2));
-				//shapeModel.getUniforms().add(new ColorUniform("modelColor", boxShapeColor));
 				break;
 			case CONE:
 				final ConeShape cone = (ConeShape) shape;
@@ -275,7 +271,7 @@ public class Sandbox {
 			final Model shape = entry.getValue();
 			final Model aabbModel = aabbs.get(body);
 			final AABB aabb = body.getAABB();
-			final Transform transform = body.getTransform();
+			final Transform transform = body.getInterpolatedTransform();
 			final Vector3 position = transform.getPosition();
 			aabbModel.setPosition(SandboxUtil.toMathVector3(position));
 			aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
@@ -369,13 +365,13 @@ public class Sandbox {
 	}
 
 	private static void addDefaultBodies() {
-		addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
-		addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
-		addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1));
-		addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1));
-		addMobileBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
-		addImmobileBody(new BoxShape(new Vector3(10, 1, 10)), 20, new Vector3(0, 1.8f, 0), Quaternion.identity());
-		addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity());
+		addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
+		addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
+		addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1)).setMaterial(PHYSICS_MATERIAL);
+		addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
+		addMobileBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
+		addImmobileBody(new BoxShape(new Vector3(25, 1, 25)), 100, new Vector3(0, 1.8f, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
+		addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
 	}
 
 	private static void setupRenderer() throws Exception {
@@ -458,7 +454,6 @@ public class Sandbox {
 			fieldOfView = ((Number) appearanceConfig.get("FieldOfView")).floatValue();
 			backgroundColor = parseColor(((String) appearanceConfig.get("BackgroundColor")), 0);
 			aabbColor = parseColor(((String) appearanceConfig.get("AABBColor")), 1);
-			boxShapeColor = parseColor(((String) appearanceConfig.get("BoxShapeColor")), 1);
 			coneShapeColor = parseColor(((String) appearanceConfig.get("ConeShapeColor")), 1);
 			sphereShapeColor = parseColor(((String) appearanceConfig.get("SphereShapeColor")), 1);
 			cylinderShapeColor = parseColor(((String) appearanceConfig.get("CylinderShapeColor")), 1);
