@@ -17,7 +17,7 @@ Appearance:
     # Shape color for "Box" in RGB floats.
     BoxShapeColor: 0.2, 0.65, 0.69
     # Shape color for "Cone" in RGB floats.
-    ConeShapeColor: 0.1, 0.1, 0.1
+    ConeShapeColor: 0.25, 0.25, 0.25
     # Shape color for "Cylinder" in RGB floats.
     CylinderShapeColor: 0.8, 0.1, 0.8
     # Shape color for "Sphere" in RGB floats.
@@ -30,9 +30,5 @@ Appearance:
     AmbientIntensity: 0.3
     # How much distance affects light intensity.
     LightAttenuation: 0.03
-    # Color of the target point
-    TargetColor: 0.9, 0.9, 0.1
-    # Size of the target point
-    TargetSize: 0.1
     # If back face culling is enabled
     CullingEnabled: true
