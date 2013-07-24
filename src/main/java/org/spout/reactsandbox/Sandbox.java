@@ -409,7 +409,7 @@ public class Sandbox {
 		texturedMaterial.create();
 		final Texture texture = glVersion.createTexture();
 		texture.setSource(Sandbox.class.getResourceAsStream("/textures/wood.jpg"));
-		texture.setMagFilter(FilterMode.NEAREST);
+		texture.setMagFilter(FilterMode.LINEAR);
 		texture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		texture.create();
 		texturedMaterial.addTexture(texture);
