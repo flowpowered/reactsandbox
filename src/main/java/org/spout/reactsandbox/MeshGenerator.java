@@ -41,6 +41,42 @@ import org.spout.renderer.data.VertexData;
  * Generates various shape meshes of the desired size and stores them to the models.
  */
 public class MeshGenerator {
+	/*
+	^
+	| y
+	|
+	|     x
+	------->
+	\
+	 \
+	  \ z
+	   V
+	The axis system
+	*/
+	public static void generateCrosshairs(Model destination, float length) {
+		/*
+		  \ |
+		   \|
+		----O-----
+		    |\
+		    | \
+		 */
+		// Model data buffers
+		final VertexData vertices = destination.getVertexData();
+		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
+		final TIntList indices = vertices.getIndices();
+		length /= 2;
+		// Add the x axis line
+		addAll(positions, -length, 0, 0, length, 0, 0);
+		addAll(indices, 0, 1);
+		// Add the y axis line
+		addAll(positions, 0, -length, 0, 0, length, 0);
+		addAll(indices, 2, 3);
+		// Add the z axis line
+		addAll(positions, 0, 0, -length, 0, 0, length);
+		addAll(indices, 4, 5);
+	}
+
 	/**
 	 * Generate a cuboid shaped wireframe (the outline of the cuboid). The center is at the middle of
 	 * the cuboid.
@@ -50,15 +86,6 @@ public class MeshGenerator {
 	 */
 	public static void generateWireCuboid(Model destination, Vector3 size) {
 		/*
-		^
-		| y
-		|
-		|     x
-		------->
-		\
-		 \
-		  \ z
-		   V
 		4------5
 		|\     |\
 		| 7------6
@@ -111,6 +138,15 @@ public class MeshGenerator {
 	 * @param size The size of the cuboid to generate, on x, y and z
 	 */
 	public static void generateCuboid(Model destination, Vector3 size) {
+		/*
+		4------5
+		|\     |\
+		| 7------6
+		| |    | |
+		0-|----1 |
+		 \|     \|
+		  3------2
+		 */
 		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
 		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());

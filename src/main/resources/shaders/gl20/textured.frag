@@ -11,19 +11,9 @@ uniform float lightAttenuation;
 uniform float diffuseIntensity;
 uniform float specularIntensity;
 uniform float ambientIntensity;
-uniform vec3 targetPosition;
-uniform float targetSize;
-uniform vec4 targetColor;
-uniform bool displayTarget;
 
 void main() {
-    vec4 color;
-    vec3 targetDifference = targetPosition - modelPosition;
-    if (displayTarget && dot(targetDifference, targetDifference) <= targetSize * targetSize) {
-        color = targetColor;
-    } else {
-        color = texture2D(diffuse, textureUV);
-    }
+    vec4 color = texture2D(diffuse, textureUV);
 
     vec3 lightDifference = lightPosition - modelPosition;
     float lightDistance = length(lightDifference);

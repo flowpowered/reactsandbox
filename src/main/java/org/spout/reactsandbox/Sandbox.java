@@ -63,13 +63,12 @@ import org.spout.renderer.Camera;
 import org.spout.renderer.GLVersion;
 import org.spout.renderer.Material;
 import org.spout.renderer.Model;
-import org.spout.renderer.Model.DrawMode;
+import org.spout.renderer.Model.DrawingMode;
 import org.spout.renderer.Program;
 import org.spout.renderer.Renderer;
 import org.spout.renderer.Shader.ShaderType;
 import org.spout.renderer.Texture;
 import org.spout.renderer.Texture.FilterMode;
-import org.spout.renderer.data.Uniform.BooleanUniform;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
@@ -83,7 +82,7 @@ public class Sandbox {
 	private static final String WINDOW_TITLE = "Sandbox";
 	private static final float TIMESTEP = 1f / 60;
 	private static final int TIMESTEP_MILLISEC = Math.round(TIMESTEP * 1000);
-	private static final RigidBodyMaterial PHYSICS_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0f, 1f));
+	private static final RigidBodyMaterial PHYSICS_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0.2f, 0.8f));
 	// Settings
 	private static boolean cullingEnabled = true;
 	private static float mouseSensitivity = 0.08f;
@@ -106,8 +105,6 @@ public class Sandbox {
 	private static float cameraYaw = 0;
 	// Selection
 	private static CollisionBody selected = null;
-	private static float targetSize = 0.1f;
-	private static Color targetColor = new Color(1f, 1f, 0f, 1f);
 	// Rendering
 	private static GLVersion glVersion;
 	private static Renderer renderer;
@@ -184,7 +181,7 @@ public class Sandbox {
 		final Model aabbModel = glVersion.createModel();
 		MeshGenerator.generateWireCuboid(aabbModel, new Vector3(1, 1, 1));
 		aabbModel.setMaterial(wireframeMaterial);
-		aabbModel.setDrawMode(DrawMode.LINES);
+		aabbModel.setDrawingMode(DrawingMode.LINES);
 		aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
 		aabbModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
 		aabbModel.getUniforms().add(new ColorUniform("modelColor", aabbColor));
@@ -248,19 +245,19 @@ public class Sandbox {
 		CollisionShape shape = null;
 		switch (type) {
 			case BOX:
-				shape = new BoxShape(1f, 1f, 1f);
+				shape = new BoxShape(1, 1, 1);
 				break;
 			case CONE:
-				shape = new ConeShape(1f, 1f);
+				shape = new ConeShape(1, 1);
 				break;
 			case CYLINDER:
-				shape = new CylinderShape(1f, 1f);
+				shape = new CylinderShape(1f, 1);
 				break;
 			case SPHERE:
-				shape = new SphereShape(1f);
+				shape = new SphereShape(1);
 				break;
 		}
-		addMobileBody(shape, 10.0f,
+		addMobileBody(shape, 10,
 				SandboxUtil.toReactVector3(renderer.getCamera().getPosition().add(renderer.getCamera().getForward().mul(5))),
 				SandboxUtil.toReactQuaternion(renderer.getCamera().getRotation()));
 	}
@@ -349,18 +346,12 @@ public class Sandbox {
 			aabbs.get(selected).getUniforms().getColor("modelColor").set(aabbColor);
 			selected = null;
 		}
-		solidMaterial.getUniforms().getBoolean("displayTarget").set(false);
-		texturedMaterial.getUniforms().getBoolean("displayTarget").set(false);
 		final IntersectedBody targeted = world.findClosestIntersectingBody(
 				SandboxUtil.toReactVector3(renderer.getCamera().getPosition()),
 				SandboxUtil.toReactVector3(renderer.getCamera().getForward()));
 		if (targeted != null && targeted.getBody() instanceof RigidBody) {
 			selected = targeted.getBody();
 			aabbs.get(selected).getUniforms().getColor("modelColor").set(Color.BLUE);
-			solidMaterial.getUniforms().getVector3("targetPosition").set(SandboxUtil.toMathVector3(targeted.getIntersectionPoint()));
-			texturedMaterial.getUniforms().getVector3("targetPosition").set(SandboxUtil.toMathVector3(targeted.getIntersectionPoint()));
-			solidMaterial.getUniforms().getBoolean("displayTarget").set(true);
-			texturedMaterial.getUniforms().getBoolean("displayTarget").set(true);
 		}
 	}
 
@@ -379,7 +370,7 @@ public class Sandbox {
 		renderer.setBackgroundColor(backgroundColor);
 		renderer.setWindowTitle(WINDOW_TITLE);
 		renderer.setWindowSize(windowWidth, windowHeight);
-		renderer.setCamera(Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 1000));
+		renderer.setCamera(Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 100));
 		renderer.setCullingEnabled(cullingEnabled);
 		renderer.create();
 		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/";
@@ -398,10 +389,6 @@ public class Sandbox {
 		solidUniforms.add(new FloatUniform("specularIntensity", specularIntensity));
 		solidUniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
 		solidUniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
-		solidUniforms.add(new Vector3Uniform("targetPosition", org.spout.math.vector.Vector3.ZERO));
-		solidUniforms.add(new BooleanUniform("displayTarget", false));
-		solidUniforms.add(new FloatUniform("targetSize", targetSize));
-		solidUniforms.add(new ColorUniform("targetColor", targetColor));
 		solidMaterial.create();
 		// Textured material
 		texturedMaterial = glVersion.createMaterial();
@@ -419,10 +406,6 @@ public class Sandbox {
 		texturedUniforms.add(new FloatUniform("specularIntensity", specularIntensity));
 		texturedUniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
 		texturedUniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
-		texturedUniforms.add(new Vector3Uniform("targetPosition", org.spout.math.vector.Vector3.ZERO));
-		texturedUniforms.add(new BooleanUniform("displayTarget", false));
-		texturedUniforms.add(new FloatUniform("targetSize", targetSize));
-		texturedUniforms.add(new ColorUniform("targetColor", targetColor));
 		texturedMaterial.create();
 		final Texture texture = glVersion.createTexture();
 		texture.setSource(Sandbox.class.getResourceAsStream("/textures/wood.jpg"));
@@ -436,6 +419,17 @@ public class Sandbox {
 		wireframeProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(shaderPath + "wireframe.vert"));
 		wireframeProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "wireframe.frag"));
 		wireframeMaterial.create();
+		// Setup the crosshairs
+		Model crosshairsModel = glVersion.createModel();
+		MeshGenerator.generateCrosshairs(crosshairsModel, 0.04f);
+		crosshairsModel.setMaterial(wireframeMaterial);
+		crosshairsModel.setDrawingMode(DrawingMode.LINES);
+		crosshairsModel.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
+		// This will make it a GUI! The camera matrix shouldn't be altered with GUI elements
+		final float aspect = (float) windowWidth / windowHeight;
+		crosshairsModel.setCamera(Camera.createOrthographic(-1, 1, 1 / aspect, -1 / aspect, 0.001f, 100));
+		crosshairsModel.create();
+		renderer.addModel(crosshairsModel);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -461,9 +455,7 @@ public class Sandbox {
 			specularIntensity = ((Number) appearanceConfig.get("SpecularIntensity")).floatValue();
 			ambientIntensity = ((Number) appearanceConfig.get("AmbientIntensity")).floatValue();
 			lightAttenuation = ((Number) appearanceConfig.get("LightAttenuation")).floatValue();
-			targetColor = parseColor(((String) appearanceConfig.get("TargetColor")), 1);
-			targetSize = ((Number) appearanceConfig.get("TargetSize")).floatValue();
-			cullingEnabled = ((Boolean) appearanceConfig.get("CullingEnabled")).booleanValue();
+			cullingEnabled = (Boolean) appearanceConfig.get("CullingEnabled");
 		} catch (Exception ex) {
 			throw new IllegalStateException("Malformed config.yml: \"" + ex.getMessage() + "\".", ex);
 		}
