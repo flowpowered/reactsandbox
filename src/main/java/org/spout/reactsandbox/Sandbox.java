@@ -73,6 +73,8 @@ import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
 import org.spout.renderer.data.UniformHolder;
+import org.spout.renderer.data.VertexData;
+import org.spout.renderer.loader.ObjFileLoader;
 
 /**
  * The main class of the ReactSandbox.
@@ -109,6 +111,7 @@ public class Sandbox {
 	private static GLVersion glVersion;
 	private static Renderer renderer;
 	private static Color backgroundColor;
+	private static final VertexData diamondModel = ObjFileLoader.loadObjFile(Sandbox.class.getResourceAsStream("/models/diamond.obj"));
 	// Rendering material for objects
 	private static Material solidMaterial;
 	private static Material texturedMaterial;
@@ -196,8 +199,7 @@ public class Sandbox {
 				MeshGenerator.generateTexturedCuboid(shapeModel, Vector3.multiply(box.getExtent(), 2));
 				break;
 			case CONE:
-				final ConeShape cone = (ConeShape) shape;
-				MeshGenerator.generateCone(shapeModel, cone.getRadius(), cone.getHeight());
+				shapeModel.getVertexData().copy(diamondModel);
 				shapeModel.getUniforms().add(new ColorUniform("modelColor", coneShapeColor));
 				break;
 			case CYLINDER:
