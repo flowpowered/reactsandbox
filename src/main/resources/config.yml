@@ -21,14 +21,14 @@ Appearance:
     # Shape color for "Cylinder" in RGB floats.
     CylinderShapeColor: 0.8, 0.1, 0.8
     # Shape color for "Sphere" in RGB floats.
-    SphereShapeColor: 1, 1, 1
-    # Diffuse intensity in each RGB float component.
-    DiffuseIntensity: 0.8
-    # Specular intensity in each RGB float component.
-    SpecularIntensity: 0.2
-    # Ambient light intensity in each float RGB component.
+    SphereShapeColor: 0.9, 0.9, 0.9
+    # Diffuse intensity in float.
+    DiffuseIntensity: 0.6
+    # Specular intensity in float.
+    SpecularIntensity: 2
+    # Ambient light intensity in float.
     AmbientIntensity: 0.3
     # How much distance affects light intensity.
-    LightAttenuation: 0.03
+    LightAttenuation: 0.003
     # If back face culling is enabled
     CullingEnabled: true

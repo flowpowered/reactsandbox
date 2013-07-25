@@ -69,6 +69,7 @@ import org.spout.renderer.Renderer;
 import org.spout.renderer.Shader.ShaderType;
 import org.spout.renderer.Texture;
 import org.spout.renderer.Texture.FilterMode;
+import org.spout.renderer.Texture.TextureFormat;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
@@ -402,6 +403,8 @@ public class Sandbox {
 			texturedProgram.addAttributeLayout("normal", 1);
 			texturedProgram.addAttributeLayout("textureCoords", 2);
 		}
+		texturedProgram.addTextureLayout("diffuse", 0);
+		texturedProgram.addTextureLayout("specular", 1);
 		final UniformHolder texturedUniforms = texturedMaterial.getUniforms();
 		texturedUniforms.add(new Vector3Uniform("lightPosition", lightPosition));
 		texturedUniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
@@ -409,17 +412,32 @@ public class Sandbox {
 		texturedUniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
 		texturedUniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
 		texturedMaterial.create();
-		final Texture texture = glVersion.createTexture();
-		texture.setSource(Sandbox.class.getResourceAsStream("/textures/wood.jpg"));
-		texture.setMagFilter(FilterMode.LINEAR);
-		texture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
-		texture.create();
-		texturedMaterial.addTexture(texture);
+		// Wood diffuse texture
+		final Texture diffuseTexture = glVersion.createTexture();
+		diffuseTexture.setSource(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.jpg"));
+		diffuseTexture.setFormat(TextureFormat.RGB);
+		diffuseTexture.setMagFilter(FilterMode.LINEAR);
+		diffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
+		diffuseTexture.setUnit(0);
+		diffuseTexture.create();
+		texturedMaterial.addTexture(diffuseTexture);
+		// Wood specular texture
+		final Texture specularTexture = glVersion.createTexture();
+		specularTexture.setSource(Sandbox.class.getResourceAsStream("/textures/wood_specular.png"));
+		specularTexture.setFormat(TextureFormat.RED);
+		specularTexture.setMagFilter(FilterMode.LINEAR);
+		specularTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
+		specularTexture.setUnit(1);
+		specularTexture.create();
+		texturedMaterial.addTexture(specularTexture);
 		// Wireframe material
 		wireframeMaterial = glVersion.createMaterial();
 		final Program wireframeProgram = wireframeMaterial.getProgram();
 		wireframeProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(shaderPath + "wireframe.vert"));
 		wireframeProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "wireframe.frag"));
+		if (glVersion == GLVersion.GL20) {
+			wireframeProgram.addAttributeLayout("position", 0);
+		}
 		wireframeMaterial.create();
 		// Setup the crosshairs
 		Model crosshairsModel = glVersion.createModel();
@@ -430,6 +448,8 @@ public class Sandbox {
 		// This will make it a GUI! The camera matrix shouldn't be altered with GUI elements
 		final float aspect = (float) windowWidth / windowHeight;
 		crosshairsModel.setCamera(Camera.createOrthographic(-1, 1, 1 / aspect, -1 / aspect, 0.001f, 100));
+		// Necessary for GL20 because there's no depth clamping. The GUI models must be just in front of the camera
+		crosshairsModel.setPosition(new org.spout.math.vector.Vector3(0, 0, -0.001f));
 		crosshairsModel.create();
 		renderer.addModel(crosshairsModel);
 	}

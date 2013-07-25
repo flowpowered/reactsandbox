@@ -17,9 +17,20 @@ void main() {
     vec3 lightDirection = lightDifference / lightDistance;
     float distanceIntensity = 1 / (1 + lightAttenuation * lightDistance);
 
-    vec4 diffuse = modelColor * distanceIntensity * clamp(dot(modelNormal, lightDirection), 0, 1);
-    vec4 specular = modelColor * distanceIntensity * pow(clamp(dot(reflect(-lightDirection, modelNormal), viewDirection), 0, 1), 2);
-    vec4 ambient = modelColor;
+    float diffuseTerm =
+        diffuseIntensity *
+        distanceIntensity *
+        clamp(dot(modelNormal, lightDirection), 0, 1);
 
-    gl_FragColor = diffuse * diffuseIntensity + specular * specularIntensity + ambient * ambientIntensity;
+    float specularTerm =
+        specularIntensity *
+        distanceIntensity *
+        pow(clamp(dot(reflect(-lightDirection, modelNormal), viewDirection), 0, 1), 20);
+
+    float ambientTerm =
+        ambientIntensity;
+
+    vec4 color = modelColor;
+
+    gl_FragColor = color * (diffuseTerm + specularTerm + ambientTerm);
 }
