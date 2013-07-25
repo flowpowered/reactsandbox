@@ -291,7 +291,7 @@ public class Sandbox {
 			}
 		}
 		while (Mouse.next()) {
-			if (Mouse.getEventButtonState()) {
+			if (Mouse.getEventButtonState() && mouseGrabbed) {
 				switch (Mouse.getEventButton()) {
 					case 0: // Left Button
 						spawnBody(CollisionShapeType.BOX);
