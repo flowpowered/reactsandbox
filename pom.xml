@@ -1,23 +1,28 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<!-- Project information -->
 	<name>ReactSandbox</name>
 	<groupId>org.spout</groupId>
 	<artifactId>reactsandbox</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0-SNAPSHOT</version>
+	<packaging>jar</packaging>
 	<url>http://www.spout.org</url>
 	<inceptionYear>2013</inceptionYear>
 	<description>Visual debugging and testing for the React physics library.</description>
 
+	<!-- Parent information -->
+	<parent>
+		<groupId>org.spout</groupId>
+		<artifactId>shared-parent</artifactId>
+		<version>1</version>
+	</parent>
+
 	<!-- Build properties -->
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<buildNumber>0</buildNumber>
+		<buildNumber>0</buildNumber><!-- DO NOT TOUCH! -->
 		<mainClass>${project.groupId}.${project.artifactId}.Sandbox</mainClass>
-		<reactVersion>0.0.1-SNAPSHOT</reactVersion>
 	</properties>
 
 	<!-- Organization information -->
@@ -26,15 +31,27 @@
 		<url>http://www.spout.org</url>
 	</organization>
 
+	<!-- Project developers -->
+	<developers>
+		<developer>
+			<id>DDoS</id>
+			<name>Aleksi Sapon</name>
+			<email>qctechs@gmail.com</email>
+		</developer>
+		<developer>
+			<id>Wulfspider</id>
+			<name>Luke Spragg</name>
+			<email>the@wulf.im</email>
+		</developer>
+	</developers>
+
 	<!-- License information -->
 	<licenses>
 		<license>
 			<name>Spout License Version 1</name>
 			<url>http://spout.in/licensev1</url>
 			<distribution>repo</distribution>
-			<comments>GNU Lesser General Public License Version 3, but with a provision that files
-				are released under the MIT license 180 days after they are published.
-			</comments>
+			<comments>GNU Lesser General Public License Version 3, but with a provision that files are released under the MIT license 180 days after they are published.</comments>
 		</license>
 	</licenses>
 
@@ -45,7 +62,7 @@
 		<url>https://github.com/SpoutDev/ReactSandbox</url>
 	</scm>
 
-	<!-- Continous integration -->
+	<!-- Continuous integration -->
 	<ciManagement>
 		<system>travis</system>
 		<url>https://travis-ci.org/SpoutDev/ReactSandbox</url>
@@ -57,49 +74,37 @@
 		<url>http://spoutdev.atlassian.net/browse/REACT</url>
 	</issueManagement>
 
-	<!-- Dependency repositories -->
-	<repositories>
-		<repository>
-			<id>spout-repo</id>
-			<url>http://nexus.spout.org/content/groups/public</url>
-			<snapshots>
-				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
-			</snapshots>
-		</repository>
-	</repositories>
-
 	<!-- Project dependencies -->
 	<dependencies>
 		<!-- Include in final JAR -->
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>2.3</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.spout</groupId>
-			<artifactId>caustic</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.spout</groupId>
-			<artifactId>react</artifactId>
-			<version>${reactVersion}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.yaml</groupId>
-			<artifactId>snakeyaml</artifactId>
-			<version>1.12</version>
+			<version>2.4</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.1</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.spout</groupId>
+			<artifactId>caustic</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.spout</groupId>
+			<artifactId>react</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.yaml</groupId>
+			<artifactId>snakeyaml</artifactId>
+			<version>1.12</version>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
@@ -174,8 +179,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.1</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>1.7</source>
+					<target>1.7</target>
 					<compilerArguments>
 						<O>-Xlint:all</O>
 						<O>-Xlint:-path</O>
@@ -201,11 +206,26 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>2.0</version>
+				<version>2.1</version>
 				<executions>
 					<execution>
 						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
 							<minimizeJar>true</minimizeJar>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>lib/**</exclude>
+										<exclude>templates/**</exclude>
+										<exclude>META-INF/*.xml</exclude>
+										<exclude>META-INF/*.txt</exclude>
+										<exclude>**/LICENSE</exclude>
+										<exclude>**/NOTICE</exclude>
+										<exclude>**/DEPENDENCIES</exclude>
+									</excludes>
+								</filter>
+							</filters>
 						</configuration>
 						<phase>package</phase>
 						<goals>
