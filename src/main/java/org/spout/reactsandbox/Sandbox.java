@@ -119,6 +119,7 @@ public class Sandbox {
 	private static Material solidMaterial;
 	private static Material texturedMaterial;
 	private static Material wireframeMaterial;
+	private static Material mobMaterial;
 	// Lighting
 	private static org.spout.math.vector.Vector3 lightPosition = new org.spout.math.vector.Vector3(0, 0, 0);
 	private static float diffuseIntensity = 0.8f;
@@ -136,6 +137,7 @@ public class Sandbox {
 			deploy();
 			loadConfiguration();
 			setupRenderer();
+			addMob();
 			System.out.println("Starting up");
 			System.out.println("Render Mode: " + glVersion);
 			System.out.println("OpenGL Version: " + GL11.glGetString(GL11.GL_VERSION));
@@ -353,6 +355,7 @@ public class Sandbox {
 		camera.setPosition(SandboxUtil.toMathVector3(position));
 		solidMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
 		texturedMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
+		mobMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
 	}
 
 	private static void handleSelection() {
@@ -377,6 +380,42 @@ public class Sandbox {
 		addMobileBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
 		addImmobileBody(new BoxShape(new Vector3(25, 1, 25)), 100, new Vector3(0, 1.8f, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
 		addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
+	}
+
+	private static void addMob() {
+		mobMaterial = glVersion.createMaterial();
+		final Program program = mobMaterial.getProgram();
+		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/";
+		program.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(shaderPath + "textured.vert"));
+		program.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "textured.frag"));
+		if (glVersion == GLVersion.GL20) {
+			program.addAttributeLayout("position", 0);
+			program.addAttributeLayout("normal", 1);
+			program.addAttributeLayout("textureCoords", 2);
+		}
+		program.addTextureLayout("diffuse", 0);
+		final UniformHolder uniforms = mobMaterial.getUniforms();
+		uniforms.add(new Vector3Uniform("lightPosition", lightPosition));
+		uniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
+		uniforms.add(new FloatUniform("specularIntensity", specularIntensity));
+		uniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
+		uniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
+		mobMaterial.create();
+		final Texture texture = glVersion.createTexture();
+		texture.setSource(Sandbox.class.getResourceAsStream("/textures/creeper.png"));
+		texture.setFormat(TextureFormat.RGB);
+		// For low res, always use NEAREST
+		texture.setMagFilter(FilterMode.NEAREST);
+		texture.setMinFilter(FilterMode.NEAREST);
+		texture.setUnit(0);
+		texture.create();
+		mobMaterial.addTexture(texture);
+		final Model mobModel = glVersion.createModel();
+		mobModel.getVertexData().copy(ObjFileLoader.loadObjFile(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
+		mobModel.setMaterial(mobMaterial);
+		mobModel.setPosition(SandboxUtil.toMathVector3(new Vector3(10, 10, 0)));
+		mobModel.create();
+		renderer.addModel(mobModel);
 	}
 
 	private static void setupRenderer() throws Exception {

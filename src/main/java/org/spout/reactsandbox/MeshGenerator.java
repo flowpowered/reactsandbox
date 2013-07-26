@@ -140,6 +140,15 @@ public class MeshGenerator {
 	 * @param size The size of the cuboid to generate, on x, y and z
 	 */
 	public static void generateCuboid(Model destination, Vector3 size) {
+		/*
+		4------5
+		|\     |\
+		| 7------6
+		| |    | |
+		0-|----1 |
+		 \|     \|
+		  3------2
+		 */
 		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
 		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());
@@ -238,17 +247,17 @@ public class MeshGenerator {
 		final float yRatio = size.getY() / max;
 		final float zRatio = size.getZ() / max;
 		// Face x
-		addAll(texture, 0, 0, 0, yRatio, zRatio, 0, zRatio, yRatio);
+		addAll(texture, 0, 0, yRatio, 0, 0, zRatio, yRatio, zRatio);
 		// Face y
-		addAll(texture, 0, 0, 0, xRatio, zRatio, 0, zRatio, xRatio);
+		addAll(texture, 0, 0, xRatio, 0, 0, zRatio, xRatio, zRatio);
 		// Face z
-		addAll(texture, 0, 0, 0, yRatio, xRatio, 0, xRatio, yRatio);
+		addAll(texture, 0, 0, yRatio, 0, 0, xRatio, yRatio, xRatio);
 		// Face -x
-		addAll(texture, 0, 0, 0, yRatio, zRatio, 0, zRatio, yRatio);
+		addAll(texture, 0, 0, yRatio, 0, 0, zRatio, yRatio, zRatio);
 		// Face -y
-		addAll(texture, 0, 0, 0, zRatio, xRatio, 0, xRatio, zRatio);
+		addAll(texture, 0, 0, zRatio, 0, 0, xRatio, zRatio, xRatio);
 		// Face -z
-		addAll(texture, 0, 0, 0, yRatio, xRatio, 0, xRatio, yRatio);
+		addAll(texture, 0, 0, yRatio, 0, 0, xRatio, yRatio, xRatio);
 	}
 
 	/**
