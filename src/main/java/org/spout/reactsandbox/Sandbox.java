@@ -47,6 +47,8 @@ import org.spout.physics.body.ImmobileRigidBody;
 import org.spout.physics.body.MobileRigidBody;
 import org.spout.physics.body.RigidBody;
 import org.spout.physics.body.RigidBodyMaterial;
+import org.spout.physics.collision.CollisionListener;
+import org.spout.physics.collision.ContactInfo;
 import org.spout.physics.collision.RayCaster.IntersectedBody;
 import org.spout.physics.collision.shape.AABB;
 import org.spout.physics.collision.shape.BoxShape;
@@ -140,6 +142,15 @@ public class Sandbox {
 			world = new DynamicsWorld(gravity, TIMESTEP);
 			addDefaultBodies();
 			Mouse.setGrabbed(true);
+
+			world.addListener(new CollisionListener() {
+				@Override
+				public boolean onCollide(CollisionBody collisionBody, CollisionBody collisionBody2, ContactInfo info) {
+					return collisionBody.getCollisionShape().getType() == CollisionShapeType.SPHERE
+							|| collisionBody2.getCollisionShape().getType() == CollisionShapeType.SPHERE;
+				}
+			});
+
 			world.start();
 			renderer.getCamera().setPosition(SandboxUtil.toMathVector3(new Vector3(0, 5, 10)));
 			while (!Display.isCloseRequested()) {
