@@ -140,15 +140,6 @@ public class MeshGenerator {
 	 * @param size The size of the cuboid to generate, on x, y and z
 	 */
 	public static void generateCuboid(Model destination, Vector3 size) {
-		/*
-		4------5
-		|\     |\
-		| 7------6
-		| |    | |
-		0-|----1 |
-		 \|     \|
-		  3------2
-		 */
 		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
 		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());
@@ -242,9 +233,22 @@ public class MeshGenerator {
 	public static void generateTexturedCuboid(Model destination, Vector3 size) {
 		generateCuboid(destination, size);
 		final TFloatList texture = destination.getVertexData().addFloatAttribute("textureCoords", 2);
-		for (int i = 0; i < 6; i++) {
-			addAll(texture, 0, 0, 0, 1, 1, 0, 1, 1);
-		}
+		final float max = size.get(size.getMaxAxis());
+		final float xRatio = size.getX() / max;
+		final float yRatio = size.getY() / max;
+		final float zRatio = size.getZ() / max;
+		// Face x
+		addAll(texture, 0, 0, 0, yRatio, zRatio, 0, zRatio, yRatio);
+		// Face y
+		addAll(texture, 0, 0, 0, xRatio, zRatio, 0, zRatio, xRatio);
+		// Face z
+		addAll(texture, 0, 0, 0, yRatio, xRatio, 0, xRatio, yRatio);
+		// Face -x
+		addAll(texture, 0, 0, 0, yRatio, zRatio, 0, zRatio, yRatio);
+		// Face -y
+		addAll(texture, 0, 0, 0, zRatio, xRatio, 0, xRatio, zRatio);
+		// Face -z
+		addAll(texture, 0, 0, 0, yRatio, xRatio, 0, xRatio, yRatio);
 	}
 
 	/**
@@ -262,7 +266,7 @@ public class MeshGenerator {
 		final Vector3 v4 = new Vector3(0.0f, 0.0f, -1.0f);
 		final Vector3 v5 = new Vector3(0.0f, 1.0f, 0.0f);
 		// Build a list of triangles
-		final List<Triangle> triangles = new ArrayList<Triangle>();
+		final List<Triangle> triangles = new ArrayList<>();
 		triangles.addAll(Arrays.asList(
 				new Triangle(v0, v1, v2),
 				new Triangle(v0, v2, v3),
@@ -273,7 +277,7 @@ public class MeshGenerator {
 				new Triangle(v3, v5, v4),
 				new Triangle(v4, v5, v1)));
 		// List to store the subdivided triangles
-		final List<Triangle> newTriangles = new ArrayList<Triangle>();
+		final List<Triangle> newTriangles = new ArrayList<>();
 		for (int i = 0; i < 3; i++) {
 			// Subdivide all of the triangles by splitting the edges
 			for (Triangle triangle : triangles) {
@@ -300,7 +304,7 @@ public class MeshGenerator {
 		// Add the triangle faces to the data buffers
 		int index = 0;
 		// Keep track of already added vertices, so we can reuse them for a smaller mesh
-		final TObjectIntMap<Vector3> addedVertices = new TObjectIntHashMap<Vector3>();
+		final TObjectIntMap<Vector3> addedVertices = new TObjectIntHashMap<>();
 		for (Triangle triangle : triangles) {
 			final Vector3 vt0 = triangle.getV0();
 			final Vector3 vt1 = triangle.getV1();
@@ -343,7 +347,7 @@ public class MeshGenerator {
 		// 0,0,0 will be halfway up the cylinder in the middle
 		final float halfHeight = height / 2;
 		// The positions at the rims of the cylinders
-		final List<Vector3> rims = new ArrayList<Vector3>();
+		final List<Vector3> rims = new ArrayList<>();
 		for (int angle = 0; angle < 360; angle += 15) {
 			final double angleRads = Math.toRadians(angle);
 			rims.add(new Vector3(
@@ -406,7 +410,7 @@ public class MeshGenerator {
 		// 0,0,0 will be halfway up the cone in the middle
 		final float halfHeight = height / 2;
 		// The positions at the bottom rim of the cone
-		final List<Vector3> rim = new ArrayList<Vector3>();
+		final List<Vector3> rim = new ArrayList<>();
 		for (int angle = 0; angle < 360; angle += 15) {
 			final double angleRads = Math.toRadians(angle);
 			rim.add(new Vector3(

@@ -100,8 +100,8 @@ public class Sandbox {
 	// Physics objects
 	private static DynamicsWorld world;
 	private static Vector3 gravity = new Vector3(0, -9.81f, 0);
-	private static final Map<CollisionBody, Model> shapes = new HashMap<CollisionBody, Model>();
-	private static final Map<CollisionBody, Model> aabbs = new HashMap<CollisionBody, Model>();
+	private static final Map<CollisionBody, Model> shapes = new HashMap<>();
+	private static final Map<CollisionBody, Model> aabbs = new HashMap<>();
 	// Input
 	private static boolean mouseGrabbed = true;
 	private static float cameraPitch = 0;
@@ -440,7 +440,7 @@ public class Sandbox {
 		}
 		wireframeMaterial.create();
 		// Setup the crosshairs
-		Model crosshairsModel = glVersion.createModel();
+		final Model crosshairsModel = glVersion.createModel();
 		MeshGenerator.generateCrosshairs(crosshairsModel, 0.04f);
 		crosshairsModel.setMaterial(wireframeMaterial);
 		crosshairsModel.setDrawingMode(DrawingMode.LINES);
