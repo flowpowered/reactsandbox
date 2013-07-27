@@ -29,6 +29,6 @@ Appearance:
     # Ambient light intensity in float.
     AmbientIntensity: 0.3
     # How much distance affects light intensity.
-    LightAttenuation: 0.003
+    LightAttenuation: 0.01
     # If back face culling is enabled
     CullingEnabled: true
