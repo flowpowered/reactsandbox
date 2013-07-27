@@ -112,7 +112,7 @@ public class Sandbox {
 	private static GLVersion glVersion;
 	private static Renderer renderer;
 	private static Color backgroundColor;
-	private static final VertexData diamondModel = ObjFileLoader.loadObjFile(Sandbox.class.getResourceAsStream("/models/diamond.obj"));
+	private static final VertexData diamondModel = ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/diamond.obj"));
 	// Rendering material for objects
 	private static Material solidMaterial;
 	private static Material texturedMaterial;
@@ -400,7 +400,7 @@ public class Sandbox {
 		texture.create();
 		mobMaterial.addTexture(texture);
 		final Model mobModel = glVersion.createModel();
-		mobModel.getVertexData().copy(ObjFileLoader.loadObjFile(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
+		mobModel.getVertexData().copy(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
 		mobModel.setMaterial(mobMaterial);
 		mobModel.setPosition(SandboxUtil.toMathVector3(new Vector3(10, 10, 0)));
 		mobModel.create();

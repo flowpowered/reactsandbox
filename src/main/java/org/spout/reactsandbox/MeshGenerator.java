@@ -37,6 +37,7 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.Model;
+import org.spout.renderer.data.VertexAttribute.FloatVertexAttribute;
 import org.spout.renderer.data.VertexData;
 
 /**
@@ -65,7 +66,9 @@ public class MeshGenerator {
 		 */
 		// Model data buffers
 		final VertexData vertices = destination.getVertexData();
-		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
+		final FloatVertexAttribute positionsAttribute = new FloatVertexAttribute("positions", 3);
+		vertices.addAttribute(0, positionsAttribute);
+		final TFloatList positions = positionsAttribute.getData();
 		final TIntList indices = vertices.getIndices();
 		length /= 2;
 		// Add the x axis line
@@ -108,7 +111,9 @@ public class MeshGenerator {
 		final Vector3 p3 = Vector3.negate(p5);
 		// Model data buffers
 		final VertexData vertices = destination.getVertexData();
-		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
+		final FloatVertexAttribute positionsAttribute = new FloatVertexAttribute("positions", 3);
+		vertices.addAttribute(0, positionsAttribute);
+		final TFloatList positions = positionsAttribute.getData();
 		final TIntList indices = vertices.getIndices();
 		// Add all of the corners
 		addVector(positions, p0);
@@ -168,8 +173,12 @@ public class MeshGenerator {
 		final Vector3 nzN = new Vector3(0, 0, -1);
 		// Model data buffers
 		final VertexData vertices = destination.getVertexData();
-		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
-		final TFloatList normals = vertices.addFloatAttribute("normals", 3);
+		final FloatVertexAttribute positionsAttribute = new FloatVertexAttribute("positions", 3);
+		vertices.addAttribute(0, positionsAttribute);
+		final TFloatList positions = positionsAttribute.getData();
+		final FloatVertexAttribute normalsAttribute = new FloatVertexAttribute("normals", 3);
+		vertices.addAttribute(1, normalsAttribute);
+		final TFloatList normals = normalsAttribute.getData();
 		final TIntList indices = vertices.getIndices();
 		// Face x
 		addVector(positions, p2);
@@ -241,7 +250,9 @@ public class MeshGenerator {
 	 */
 	public static void generateTexturedCuboid(Model destination, Vector3 size) {
 		generateCuboid(destination, size);
-		final TFloatList texture = destination.getVertexData().addFloatAttribute("textureCoords", 2);
+		final FloatVertexAttribute textureAttribute = new FloatVertexAttribute("textureCoords", 2);
+		destination.getVertexData().addAttribute(2, textureAttribute);
+		final TFloatList texture = textureAttribute.getData();
 		final float max = size.get(size.getMaxAxis());
 		final float xRatio = size.getX() / max;
 		final float yRatio = size.getY() / max;
@@ -307,8 +318,12 @@ public class MeshGenerator {
 		}
 		// Model data buffers
 		final VertexData vertices = destination.getVertexData();
-		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
-		final TFloatList normals = vertices.addFloatAttribute("normals", 3);
+		final FloatVertexAttribute positionsAttribute = new FloatVertexAttribute("positions", 3);
+		vertices.addAttribute(0, positionsAttribute);
+		final TFloatList positions = positionsAttribute.getData();
+		final FloatVertexAttribute normalsAttribute = new FloatVertexAttribute("normals", 3);
+		vertices.addAttribute(1, normalsAttribute);
+		final TFloatList normals = normalsAttribute.getData();
 		final TIntList indices = vertices.getIndices();
 		// Add the triangle faces to the data buffers
 		int index = 0;
@@ -366,8 +381,12 @@ public class MeshGenerator {
 		}
 		// Model data buffers
 		final VertexData vertices = destination.getVertexData();
-		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
-		final TFloatList normals = vertices.addFloatAttribute("normals", 3);
+		final FloatVertexAttribute positionsAttribute = new FloatVertexAttribute("positions", 3);
+		vertices.addAttribute(0, positionsAttribute);
+		final TFloatList positions = positionsAttribute.getData();
+		final FloatVertexAttribute normalsAttribute = new FloatVertexAttribute("normals", 3);
+		vertices.addAttribute(1, normalsAttribute);
+		final TFloatList normals = normalsAttribute.getData();
 		final TIntList indices = vertices.getIndices();
 		// The normals for the triangles of the top and bottom faces
 		final Vector3 topNormal = new Vector3(0, 1, 0);
@@ -429,8 +448,12 @@ public class MeshGenerator {
 		}
 		// Model data buffers
 		final VertexData vertices = destination.getVertexData();
-		final TFloatList positions = vertices.addFloatAttribute("positions", 3);
-		final TFloatList normals = vertices.addFloatAttribute("normals", 3);
+		final FloatVertexAttribute positionsAttribute = new FloatVertexAttribute("positions", 3);
+		vertices.addAttribute(0, positionsAttribute);
+		final TFloatList positions = positionsAttribute.getData();
+		final FloatVertexAttribute normalsAttribute = new FloatVertexAttribute("normals", 3);
+		vertices.addAttribute(1, normalsAttribute);
+		final TFloatList normals = normalsAttribute.getData();
 		final TIntList indices = vertices.getIndices();
 		// Apex of the cone
 		final Vector3 top = new Vector3(0, halfHeight, 0);
