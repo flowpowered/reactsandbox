@@ -1,7 +1,7 @@
 #version 120
 
-varying vec3 modelPosition;
-varying vec3 modelNormal;
+varying vec3 worldPosition;
+varying vec3 worldNormal;
 varying vec3 viewDirection;
 varying vec2 textureUV;
 
@@ -14,7 +14,7 @@ uniform float specularIntensity;
 uniform float ambientIntensity;
 
 void main() {
-    vec3 lightDifference = lightPosition - modelPosition;
+    vec3 lightDifference = lightPosition - worldPosition;
     float lightDistance = length(lightDifference);
     vec3 lightDirection = lightDifference / lightDistance;
     float distanceIntensity = 1 / (1 + lightAttenuation * lightDistance);
@@ -22,13 +22,13 @@ void main() {
     float diffuseTerm =
         diffuseIntensity *
         distanceIntensity *
-        clamp(dot(modelNormal, lightDirection), 0, 1);
+        clamp(dot(worldNormal, lightDirection), 0, 1);
 
     float specularTerm =
         texture2D(specular, textureUV).r *
         specularIntensity *
         distanceIntensity *
-        pow(clamp(dot(reflect(-lightDirection, modelNormal), viewDirection), 0, 1), 20);
+        pow(clamp(dot(reflect(-lightDirection, worldNormal), viewDirection), 0, 1), 20);
 
     float ambientTerm =
         ambientIntensity;
