@@ -27,6 +27,7 @@
 package org.spout.reactsandbox;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.HashMap;
@@ -76,6 +77,7 @@ import org.spout.renderer.data.Uniform.Vector3Uniform;
 import org.spout.renderer.data.UniformHolder;
 import org.spout.renderer.data.VertexData;
 import org.spout.renderer.loader.ObjFileLoader;
+import org.spout.renderer.util.StringModel;
 
 /**
  * The main class of the ReactSandbox.
@@ -106,13 +108,17 @@ public class Sandbox {
 	private static boolean mouseGrabbed = true;
 	private static float cameraPitch = 0;
 	private static float cameraYaw = 0;
+	// Performance monitoring
+	private static final FPSMonitor fpsMonitor = new FPSMonitor();
 	// Selection
 	private static CollisionBody selected = null;
 	// Rendering
 	private static GLVersion glVersion;
 	private static Renderer renderer;
 	private static Color backgroundColor;
+	private static Camera guiCamera;
 	private static final VertexData diamondModel = ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/diamond.obj"));
+	private static StringModel fpsMonitorModel;
 	// Rendering material for objects
 	private static Material solidMaterial;
 	private static Material texturedMaterial;
@@ -136,6 +142,7 @@ public class Sandbox {
 			loadConfiguration();
 			setupRenderer();
 			addMob();
+			addFPSMonitor();
 			System.out.println("Starting up");
 			System.out.println("Render Mode: " + glVersion);
 			System.out.println("OpenGL Version: " + GL11.glGetString(GL11.GL_VERSION));
@@ -144,12 +151,14 @@ public class Sandbox {
 			Mouse.setGrabbed(true);
 			world.start();
 			renderer.getCamera().setPosition(SandboxUtil.toMathVector3(new Vector3(0, 5, 10)));
+			fpsMonitor.start();
 			while (!Display.isCloseRequested()) {
 				final long start = System.nanoTime();
 				processInput();
 				world.update();
 				handleSelection();
 				updateBodies();
+				updateFPSMonitor();
 				renderer.render();
 				final long delta = Math.round((System.nanoTime() - start) / 1000000d);
 				Thread.sleep(Math.max(TIMESTEP_MILLISEC - delta, 0));
@@ -187,7 +196,7 @@ public class Sandbox {
 		final Model aabbModel = glVersion.createModel();
 		MeshGenerator.generateWireCuboid(aabbModel, new Vector3(1, 1, 1));
 		aabbModel.setMaterial(wireframeMaterial);
-		aabbModel.setDrawingMode(DrawingMode.LINES);
+		aabbModel.getVertexArray().setDrawingMode(DrawingMode.LINES);
 		aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
 		aabbModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
 		aabbModel.getUniforms().add(new ColorUniform("modelColor", aabbColor));
@@ -282,6 +291,11 @@ public class Sandbox {
 		}
 	}
 
+	private static void updateFPSMonitor() {
+		fpsMonitor.update();
+		fpsMonitorModel.setString("FPS: " + fpsMonitor.getFPS());
+	}
+
 	private static void processInput() {
 		final boolean mouseGrabbedBefore = mouseGrabbed;
 		while (Keyboard.next()) {
@@ -371,6 +385,20 @@ public class Sandbox {
 		addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
 	}
 
+	private static void addFPSMonitor() {
+		final StringModel model = new StringModel();
+		model.setGLVersion(glVersion);
+		model.setGlyphs("FPS: 0123456789");
+		model.setFont(new Font("Arial", Font.PLAIN, 128));
+		model.create();
+		model.setCamera(guiCamera);
+		model.setPosition(new org.spout.math.vector.Vector3(-0.97, 0.6, -0.001f));
+		model.setScale(new org.spout.math.vector.Vector3(0.3, 0.3, 0.3));
+		model.setString("FPS: " + fpsMonitor.getFPS());
+		renderer.addModel(model);
+		fpsMonitorModel = model;
+	}
+
 	private static void addMob() {
 		mobMaterial = glVersion.createMaterial();
 		final Program program = mobMaterial.getProgram();
@@ -391,16 +419,16 @@ public class Sandbox {
 		uniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
 		mobMaterial.create();
 		final Texture texture = glVersion.createTexture();
-		texture.setSource(Sandbox.class.getResourceAsStream("/textures/creeper.png"));
+		texture.setImage(Sandbox.class.getResourceAsStream("/textures/creeper.png"));
 		texture.setFormat(TextureFormat.RGB);
-		// For low res, always use NEAREST
+		// For low resolution textures, always use NEAREST
 		texture.setMagFilter(FilterMode.NEAREST);
 		texture.setMinFilter(FilterMode.NEAREST);
 		texture.setUnit(0);
 		texture.create();
 		mobMaterial.addTexture(texture);
 		final Model mobModel = glVersion.createModel();
-		mobModel.getVertexData().copy(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
+		ObjFileLoader.load(mobModel.getVertexData(), Sandbox.class.getResourceAsStream("/models/creeper.obj"));
 		mobModel.setMaterial(mobMaterial);
 		mobModel.setPosition(SandboxUtil.toMathVector3(new Vector3(10, 10, 0)));
 		mobModel.create();
@@ -453,7 +481,7 @@ public class Sandbox {
 		texturedMaterial.create();
 		// Wood diffuse texture
 		final Texture diffuseTexture = glVersion.createTexture();
-		diffuseTexture.setSource(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.jpg"));
+		diffuseTexture.setImage(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.jpg"));
 		diffuseTexture.setFormat(TextureFormat.RGB);
 		diffuseTexture.setMagFilter(FilterMode.LINEAR);
 		diffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
@@ -462,7 +490,7 @@ public class Sandbox {
 		texturedMaterial.addTexture(diffuseTexture);
 		// Wood specular texture
 		final Texture specularTexture = glVersion.createTexture();
-		specularTexture.setSource(Sandbox.class.getResourceAsStream("/textures/wood_specular.png"));
+		specularTexture.setImage(Sandbox.class.getResourceAsStream("/textures/wood_specular.png"));
 		specularTexture.setFormat(TextureFormat.RED);
 		specularTexture.setMagFilter(FilterMode.LINEAR);
 		specularTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
@@ -482,11 +510,12 @@ public class Sandbox {
 		final Model crosshairsModel = glVersion.createModel();
 		MeshGenerator.generateCrosshairs(crosshairsModel, 0.04f);
 		crosshairsModel.setMaterial(wireframeMaterial);
-		crosshairsModel.setDrawingMode(DrawingMode.LINES);
+		crosshairsModel.getVertexArray().setDrawingMode(DrawingMode.LINES);
 		crosshairsModel.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
 		// This will make it a GUI! The camera matrix shouldn't be altered with GUI elements
 		final float aspect = (float) windowWidth / windowHeight;
-		crosshairsModel.setCamera(Camera.createOrthographic(-1, 1, 1 / aspect, -1 / aspect, 0.001f, 100));
+		guiCamera = Camera.createOrthographic(1, -1, 1 / aspect, -1 / aspect, 0.001f, 100);
+		crosshairsModel.setCamera(guiCamera);
 		// Necessary for GL20 because there's no depth clamping. The GUI models must be just in front of the camera
 		crosshairsModel.setPosition(new org.spout.math.vector.Vector3(0, 0, -0.001f));
 		crosshairsModel.create();
