@@ -93,7 +93,7 @@ public class MeshGenerator {
 		addAll(positions, 0, 0, -length, 0, 0, length);
 		addAll(indices, 4, 5);
 		// Put the mesh in the vertex data
-		positionsAttribute.put(positions);
+		positionsAttribute.setData(positions);
 		return destination;
 	}
 
@@ -155,7 +155,7 @@ public class MeshGenerator {
 		// Face -z
 		addAll(indices, 0, 1, 1, 5, 5, 4, 4, 0);
 		// Put the mesh in the vertex data
-		positionsAttribute.put(positions);
+		positionsAttribute.setData(positions);
 		return destination;
 	}
 
@@ -265,8 +265,8 @@ public class MeshGenerator {
 		addVector(normals, nzN);
 		addAll(indices, 20, 22, 21, 20, 23, 22);
 		// Put the mesh in the vertex data
-		positionsAttribute.put(positions);
-		normalsAttribute.put(normals);
+		positionsAttribute.setData(positions);
+		normalsAttribute.setData(normals);
 		return destination;
 	}
 
@@ -302,7 +302,7 @@ public class MeshGenerator {
 		// Face -z
 		addAll(texture, 0, 0, yRatio, 0, 0, xRatio, yRatio, xRatio);
 		// Put the mesh in the vertex data
-		textureAttribute.put(texture);
+		textureAttribute.setData(texture);
 		return destination;
 	}
 
@@ -397,8 +397,8 @@ public class MeshGenerator {
 			}
 		}
 		// Put the mesh in the vertex data
-		positionsAttribute.put(positions);
-		normalsAttribute.put(normals);
+		positionsAttribute.setData(positions);
+		normalsAttribute.setData(normals);
 		return destination;
 	}
 
@@ -471,8 +471,8 @@ public class MeshGenerator {
 			addAll(indices, currentIndex + 3, nextIndex + 3, nextIndex + 2);
 		}
 		// Put the mesh in the vertex data
-		positionsAttribute.put(positions);
-		normalsAttribute.put(normals);
+		positionsAttribute.setData(positions);
+		normalsAttribute.setData(normals);
 		return destination;
 	}
 
@@ -542,8 +542,8 @@ public class MeshGenerator {
 			addAll(indices, currentIndex + 2, 0, nextIndex + 2);
 		}
 		// Put the mesh in the vertex data
-		positionsAttribute.put(positions);
-		normalsAttribute.put(normals);
+		positionsAttribute.setData(positions);
+		normalsAttribute.setData(normals);
 		return destination;
 	}
 
