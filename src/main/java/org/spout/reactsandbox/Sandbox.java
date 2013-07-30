@@ -153,15 +153,13 @@ public class Sandbox {
 			renderer.getCamera().setPosition(SandboxUtil.toMathVector3(new Vector3(0, 5, 10)));
 			fpsMonitor.start();
 			while (!Display.isCloseRequested()) {
-				final long start = System.nanoTime();
 				processInput();
 				world.update();
 				handleSelection();
 				updateBodies();
 				updateFPSMonitor();
 				renderer.render();
-				final long delta = Math.round((System.nanoTime() - start) / 1000000d);
-				Thread.sleep(Math.max(TIMESTEP_MILLISEC - delta, 0));
+				Display.sync(60);
 			}
 			System.out.println("Shutting down");
 			world.stop();
