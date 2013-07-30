@@ -263,7 +263,7 @@ public class Sandbox {
 				shape = new ConeShape(1, 1);
 				break;
 			case CYLINDER:
-				shape = new CylinderShape(1f, 1);
+				shape = new CylinderShape(1, 1);
 				break;
 			case SPHERE:
 				shape = new SphereShape(1);
@@ -391,7 +391,7 @@ public class Sandbox {
 		model.create();
 		model.setCamera(guiCamera);
 		model.setPosition(new org.spout.math.vector.Vector3(-0.97, 0.6, -0.001f));
-		model.setScale(new org.spout.math.vector.Vector3(0.3, 0.3, 0.3));
+		model.setScale(new org.spout.math.vector.Vector3(0.35, 0.35, 0.35));
 		model.setString("FPS: " + fpsMonitor.getFPS());
 		renderer.addModel(model);
 		fpsMonitorModel = model;
