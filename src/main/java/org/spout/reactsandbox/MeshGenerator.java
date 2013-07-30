@@ -37,7 +37,6 @@ import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 
 import org.spout.physics.math.Vector3;
-import org.spout.renderer.Model;
 import org.spout.renderer.data.VertexAttribute;
 import org.spout.renderer.data.VertexAttribute.DataType;
 import org.spout.renderer.data.VertexData;
@@ -58,7 +57,16 @@ public class MeshGenerator {
 	   V
 	The axis system
 	*/
-	public static void generateCrosshairs(Model destination, float length) {
+
+	/**
+	 * Generate a crosshairs shaped wireframe in 3D. The center is at the intersection point of the
+	 * three lines.
+	 *
+	 * @param destination Where to save the mesh (can be null)
+	 * @param length The length for the three lines
+	 * @return The vertex data
+	 */
+	public static VertexData generateCrosshairs(VertexData destination, float length) {
 		/*
 		  \ |
 		   \|
@@ -67,11 +75,13 @@ public class MeshGenerator {
 		    | \
 		 */
 		// Model data buffers
-		final VertexData vertices = destination.getVertexData();
+		if (destination == null) {
+			destination = new VertexData();
+		}
 		final VertexAttribute positionsAttribute = new VertexAttribute("positions", DataType.FLOAT, 3);
-		vertices.addAttribute(0, positionsAttribute);
+		destination.addAttribute(0, positionsAttribute);
 		final TFloatList positions = new TFloatArrayList();
-		final TIntList indices = vertices.getIndices();
+		final TIntList indices = destination.getIndices();
 		length /= 2;
 		// Add the x axis line
 		addAll(positions, -length, 0, 0, length, 0, 0);
@@ -84,16 +94,18 @@ public class MeshGenerator {
 		addAll(indices, 4, 5);
 		// Put the mesh in the vertex data
 		positionsAttribute.put(positions);
+		return destination;
 	}
 
 	/**
 	 * Generate a cuboid shaped wireframe (the outline of the cuboid). The center is at the middle of
 	 * the cuboid.
 	 *
-	 * @param destination Where to save the mesh
+	 * @param destination Where to save the mesh (can be null)
 	 * @param size The size of the cuboid to generate, on x, y and z
+	 * @return The vertex data
 	 */
-	public static void generateWireCuboid(Model destination, Vector3 size) {
+	public static VertexData generateWireCuboid(VertexData destination, Vector3 size) {
 		/*
 		4------5
 		|\     |\
@@ -114,11 +126,13 @@ public class MeshGenerator {
 		final Vector3 p5 = new Vector3(p.getX(), p.getY(), -p.getZ());
 		final Vector3 p3 = Vector3.negate(p5);
 		// Model data buffers
-		final VertexData vertices = destination.getVertexData();
+		if (destination == null) {
+			destination = new VertexData();
+		}
 		final VertexAttribute positionsAttribute = new VertexAttribute("positions", DataType.FLOAT, 3);
-		vertices.addAttribute(0, positionsAttribute);
+		destination.addAttribute(0, positionsAttribute);
 		final TFloatList positions = new TFloatArrayList();
-		final TIntList indices = vertices.getIndices();
+		final TIntList indices = destination.getIndices();
 		// Add all of the corners
 		addVector(positions, p0);
 		addVector(positions, p1);
@@ -142,15 +156,17 @@ public class MeshGenerator {
 		addAll(indices, 0, 1, 1, 5, 5, 4, 4, 0);
 		// Put the mesh in the vertex data
 		positionsAttribute.put(positions);
+		return destination;
 	}
 
 	/**
 	 * Generates a solid cuboid mesh. The center is at the middle of the cuboid.
 	 *
-	 * @param destination Where to save the mesh
+	 * @param destination Where to save the mesh (can be null)
 	 * @param size The size of the cuboid to generate, on x, y and z
+	 * @return The vertex data
 	 */
-	public static void generateCuboid(Model destination, Vector3 size) {
+	public static VertexData generateCuboid(VertexData destination, Vector3 size) {
 		/*
 		4------5
 		|\     |\
@@ -178,14 +194,16 @@ public class MeshGenerator {
 		final Vector3 nyN = new Vector3(0, -1, 0);
 		final Vector3 nzN = new Vector3(0, 0, -1);
 		// Model data buffers
-		final VertexData vertices = destination.getVertexData();
+		if (destination == null) {
+			destination = new VertexData();
+		}
 		final VertexAttribute positionsAttribute = new VertexAttribute("positions", DataType.FLOAT, 3);
-		vertices.addAttribute(0, positionsAttribute);
+		destination.addAttribute(0, positionsAttribute);
 		final TFloatList positions = new TFloatArrayList();
 		final VertexAttribute normalsAttribute = new VertexAttribute("normals", DataType.FLOAT, 3);
-		vertices.addAttribute(1, normalsAttribute);
+		destination.addAttribute(1, normalsAttribute);
 		final TFloatList normals = new TFloatArrayList();
-		final TIntList indices = vertices.getIndices();
+		final TIntList indices = destination.getIndices();
 		// Face x
 		addVector(positions, p2);
 		addVector(normals, nx);
@@ -249,19 +267,24 @@ public class MeshGenerator {
 		// Put the mesh in the vertex data
 		positionsAttribute.put(positions);
 		normalsAttribute.put(normals);
+		return destination;
 	}
 
 	/**
 	 * Generates a solid cuboid mesh with texture UV. The center is at the middle of the cuboid.
 	 *
-	 * @param destination Where to save the mesh
+	 * @param destination Where to save the mesh (can be null)
 	 * @param size The size of the cuboid to generate, on x, y and z
+	 * @return The vertex data
 	 */
-	public static void generateTexturedCuboid(Model destination, Vector3 size) {
-		generateCuboid(destination, size);
+	public static VertexData generateTexturedCuboid(VertexData destination, Vector3 size) {
+		// Generate the basic mesh
+		destination = generateCuboid(destination, size);
+		// Model data buffers
 		final VertexAttribute textureAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, 2);
-		destination.getVertexData().addAttribute(2, textureAttribute);
+		destination.addAttribute(2, textureAttribute);
 		final TFloatList texture = new TFloatArrayList();
+		// Add the texture coords
 		final float max = size.get(size.getMaxAxis());
 		final float xRatio = size.getX() / max;
 		final float yRatio = size.getY() / max;
@@ -280,15 +303,17 @@ public class MeshGenerator {
 		addAll(texture, 0, 0, yRatio, 0, 0, xRatio, yRatio, xRatio);
 		// Put the mesh in the vertex data
 		textureAttribute.put(texture);
+		return destination;
 	}
 
 	/**
 	 * Generates a solid spherical mesh. The center is at the middle of the sphere.
 	 *
-	 * @param destination Where to save the mesh
+	 * @param destination Where to save the mesh (can be null)
 	 * @param radius The radius of the sphere
+	 * @return The vertex data
 	 */
-	public static void generateSphere(Model destination, float radius) {
+	public static VertexData generateSphere(VertexData destination, float radius) {
 		// Octahedron positions
 		final Vector3 v0 = new Vector3(0.0f, -1.0f, 0.0f);
 		final Vector3 v1 = new Vector3(1.0f, 0.0f, 0.0f);
@@ -328,14 +353,16 @@ public class MeshGenerator {
 			triangle.getV2().normalize().multiply(radius);
 		}
 		// Model data buffers
-		final VertexData vertices = destination.getVertexData();
+		if (destination == null) {
+			destination = new VertexData();
+		}
 		final VertexAttribute positionsAttribute = new VertexAttribute("positions", DataType.FLOAT, 3);
-		vertices.addAttribute(0, positionsAttribute);
+		destination.addAttribute(0, positionsAttribute);
 		final TFloatList positions = new TFloatArrayList();
 		final VertexAttribute normalsAttribute = new VertexAttribute("normals", DataType.FLOAT, 3);
-		vertices.addAttribute(1, normalsAttribute);
+		destination.addAttribute(1, normalsAttribute);
 		final TFloatList normals = new TFloatArrayList();
-		final TIntList indices = vertices.getIndices();
+		final TIntList indices = destination.getIndices();
 		// Add the triangle faces to the data buffers
 		int index = 0;
 		// Keep track of already added vertices, so we can reuse them for a smaller mesh
@@ -372,16 +399,18 @@ public class MeshGenerator {
 		// Put the mesh in the vertex data
 		positionsAttribute.put(positions);
 		normalsAttribute.put(normals);
+		return destination;
 	}
 
 	/**
 	 * Generates a cylindrical solid mesh. The center is at middle of the of the cylinder.
 	 *
-	 * @param destination Where to save the mesh
+	 * @param destination Where to save the mesh (can be null)
 	 * @param radius The radius of the base and top
 	 * @param height The height (distance from the base to the top)
+	 * @return The vertex data
 	 */
-	public static void generateCylinder(Model destination, float radius, float height) {
+	public static VertexData generateCylinder(VertexData destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cylinder in the middle
 		final float halfHeight = height / 2;
 		// The positions at the rims of the cylinders
@@ -394,14 +423,16 @@ public class MeshGenerator {
 					radius * (float) -Math.sin(angleRads)));
 		}
 		// Model data buffers
-		final VertexData vertices = destination.getVertexData();
+		if (destination == null) {
+			destination = new VertexData();
+		}
 		final VertexAttribute positionsAttribute = new VertexAttribute("positions", DataType.FLOAT, 3);
-		vertices.addAttribute(0, positionsAttribute);
+		destination.addAttribute(0, positionsAttribute);
 		final TFloatList positions = new TFloatArrayList();
 		final VertexAttribute normalsAttribute = new VertexAttribute("normals", DataType.FLOAT, 3);
-		vertices.addAttribute(1, normalsAttribute);
+		destination.addAttribute(1, normalsAttribute);
 		final TFloatList normals = new TFloatArrayList();
-		final TIntList indices = vertices.getIndices();
+		final TIntList indices = destination.getIndices();
 		// The normals for the triangles of the top and bottom faces
 		final Vector3 topNormal = new Vector3(0, 1, 0);
 		final Vector3 bottomNormal = new Vector3(0, -1, 0);
@@ -442,16 +473,18 @@ public class MeshGenerator {
 		// Put the mesh in the vertex data
 		positionsAttribute.put(positions);
 		normalsAttribute.put(normals);
+		return destination;
 	}
 
 	/**
 	 * Generates a conical solid mesh. The center is at the middle of the cone.
 	 *
-	 * @param destination Where to save the mesh
+	 * @param destination Where to save the mesh (can be null)
 	 * @param radius The radius of the base
 	 * @param height The height (distance from the base to the apex)
+	 * @return The vertex data
 	 */
-	public static void generateCone(Model destination, float radius, float height) {
+	public static VertexData generateCone(VertexData destination, float radius, float height) {
 		// 0,0,0 will be halfway up the cone in the middle
 		final float halfHeight = height / 2;
 		// The positions at the bottom rim of the cone
@@ -464,14 +497,16 @@ public class MeshGenerator {
 					radius * (float) -Math.sin(angleRads)));
 		}
 		// Model data buffers
-		final VertexData vertices = destination.getVertexData();
+		if (destination == null) {
+			destination = new VertexData();
+		}
 		final VertexAttribute positionsAttribute = new VertexAttribute("positions", DataType.FLOAT, 3);
-		vertices.addAttribute(0, positionsAttribute);
+		destination.addAttribute(0, positionsAttribute);
 		final TFloatList positions = new TFloatArrayList();
 		final VertexAttribute normalsAttribute = new VertexAttribute("normals", DataType.FLOAT, 3);
-		vertices.addAttribute(1, normalsAttribute);
-		final TFloatList normals =new TFloatArrayList();
-		final TIntList indices = vertices.getIndices();
+		destination.addAttribute(1, normalsAttribute);
+		final TFloatList normals = new TFloatArrayList();
+		final TIntList indices = destination.getIndices();
 		// Apex of the cone
 		final Vector3 top = new Vector3(0, halfHeight, 0);
 		// The normal for the triangle of the bottom face
@@ -509,6 +544,7 @@ public class MeshGenerator {
 		// Put the mesh in the vertex data
 		positionsAttribute.put(positions);
 		normalsAttribute.put(normals);
+		return destination;
 	}
 
 	private static Vector3 mean(Vector3 v0, Vector3 v1) {

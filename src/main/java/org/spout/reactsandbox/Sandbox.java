@@ -62,6 +62,7 @@ import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
 import org.spout.renderer.GLVersion;
+import org.spout.renderer.InstancedModel;
 import org.spout.renderer.Material;
 import org.spout.renderer.Model;
 import org.spout.renderer.Program;
@@ -85,8 +86,8 @@ import org.spout.renderer.util.StringModel;
 public class Sandbox {
 	// Constants
 	private static final String WINDOW_TITLE = "Sandbox";
-	private static final float TIMESTEP = 1f / 60;
-	private static final int TIMESTEP_MILLISEC = Math.round(TIMESTEP * 1000);
+	private static final int TARGET_FPS = 60;
+	private static final float TIMESTEP = 1f / TARGET_FPS;
 	private static final RigidBodyMaterial PHYSICS_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0.2f, 0.8f));
 	// Settings
 	private static boolean cullingEnabled = true;
@@ -150,7 +151,7 @@ public class Sandbox {
 			addDefaultBodies();
 			Mouse.setGrabbed(true);
 			world.start();
-			renderer.getCamera().setPosition(SandboxUtil.toMathVector3(new Vector3(0, 5, 10)));
+			renderer.getCamera().setPosition(new org.spout.math.vector.Vector3(0, 5, 10));
 			fpsMonitor.start();
 			while (!Display.isCloseRequested()) {
 				processInput();
@@ -159,7 +160,7 @@ public class Sandbox {
 				updateBodies();
 				updateFPSMonitor();
 				renderer.render();
-				Display.sync(60);
+				Display.sync(TARGET_FPS);
 			}
 			System.out.println("Shutting down");
 			world.stop();
@@ -192,7 +193,7 @@ public class Sandbox {
 		final Quaternion bodyOrientation = bodyTransform.getOrientation();
 		final AABB aabb = body.getAABB();
 		final Model aabbModel = glVersion.createModel();
-		MeshGenerator.generateWireCuboid(aabbModel, new Vector3(1, 1, 1));
+		aabbModel.getVertexArray().setVertexData(MeshGenerator.generateWireCuboid(null, new Vector3(1, 1, 1)));
 		aabbModel.setMaterial(wireframeMaterial);
 		aabbModel.getVertexArray().setDrawingMode(DrawingMode.LINES);
 		aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
@@ -203,28 +204,30 @@ public class Sandbox {
 		aabbs.put(body, aabbModel);
 		final CollisionShape shape = body.getCollisionShape();
 		final Model shapeModel = glVersion.createModel();
+		final VertexData data;
 		switch (shape.getType()) {
 			case BOX:
 				final BoxShape box = (BoxShape) shape;
-				MeshGenerator.generateTexturedCuboid(shapeModel, Vector3.multiply(box.getExtent(), 2));
+				data = MeshGenerator.generateTexturedCuboid(null, Vector3.multiply(box.getExtent(), 2));
 				break;
 			case CONE:
-				shapeModel.getVertexData().copy(diamondModel);
+				data = diamondModel;
 				shapeModel.getUniforms().add(new ColorUniform("modelColor", coneShapeColor));
 				break;
 			case CYLINDER:
 				final CylinderShape cylinder = (CylinderShape) shape;
-				MeshGenerator.generateCylinder(shapeModel, cylinder.getRadius(), cylinder.getHeight());
+				data = MeshGenerator.generateCylinder(null, cylinder.getRadius(), cylinder.getHeight());
 				shapeModel.getUniforms().add(new ColorUniform("modelColor", cylinderShapeColor));
 				break;
 			case SPHERE:
 				final SphereShape sphere = (SphereShape) shape;
-				MeshGenerator.generateSphere(shapeModel, sphere.getRadius());
+				data = MeshGenerator.generateSphere(null, sphere.getRadius());
 				shapeModel.getUniforms().add(new ColorUniform("modelColor", sphereShapeColor));
 				break;
 			default:
 				throw new IllegalArgumentException("Unsupported collision shape: " + shape.getType());
 		}
+		shapeModel.getVertexArray().setVertexData(data);
 		if (shape.getType() == CollisionShapeType.BOX) {
 			shapeModel.setMaterial(texturedMaterial);
 		} else {
@@ -308,7 +311,7 @@ public class Sandbox {
 			if (Mouse.getEventButtonState() && mouseGrabbed) {
 				switch (Mouse.getEventButton()) {
 					case 0: // Left Button
-						spawnBody(CollisionShapeType.BOX);
+						spawnBody(CollisionShapeType.CONE);
 						break;
 					case 1: // Right Button
 						removeBody(selected);
@@ -426,11 +429,18 @@ public class Sandbox {
 		texture.create();
 		mobMaterial.addTexture(texture);
 		final Model mobModel = glVersion.createModel();
-		ObjFileLoader.load(mobModel.getVertexData(), Sandbox.class.getResourceAsStream("/models/creeper.obj"));
+		mobModel.getVertexArray().setVertexData(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
 		mobModel.setMaterial(mobMaterial);
-		mobModel.setPosition(SandboxUtil.toMathVector3(new Vector3(10, 10, 0)));
+		mobModel.setPosition(new org.spout.math.vector.Vector3(10, 10, 0));
+		mobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(-90, 0, 1, 0));
 		mobModel.create();
 		renderer.addModel(mobModel);
+		// Add a second mob, instanced from the first one
+		final Model instancedMobModel = new InstancedModel(mobModel);
+		instancedMobModel.create();
+		instancedMobModel.setPosition(new org.spout.math.vector.Vector3(-10, 10, 0));
+		instancedMobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(90, 0, 1, 0));
+		renderer.addModel(instancedMobModel);
 	}
 
 	private static void setupRenderer() throws Exception {
@@ -506,7 +516,7 @@ public class Sandbox {
 		wireframeMaterial.create();
 		// Setup the crosshairs
 		final Model crosshairsModel = glVersion.createModel();
-		MeshGenerator.generateCrosshairs(crosshairsModel, 0.04f);
+		crosshairsModel.getVertexArray().setVertexData(MeshGenerator.generateCrosshairs(null, 0.04f));
 		crosshairsModel.setMaterial(wireframeMaterial);
 		crosshairsModel.getVertexArray().setDrawingMode(DrawingMode.LINES);
 		crosshairsModel.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
