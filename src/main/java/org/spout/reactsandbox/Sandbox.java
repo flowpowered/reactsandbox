@@ -420,8 +420,8 @@ public class Sandbox {
 		uniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
 		mobMaterial.create();
 		final Texture texture = glVersion.createTexture();
-		texture.setImage(Sandbox.class.getResourceAsStream("/textures/creeper.png"));
 		texture.setFormat(TextureFormat.RGB);
+		texture.setImageData(Sandbox.class.getResourceAsStream("/textures/creeper.png"));
 		// For low resolution textures, always use NEAREST
 		texture.setMagFilter(FilterMode.NEAREST);
 		texture.setMinFilter(FilterMode.NEAREST);
@@ -489,8 +489,8 @@ public class Sandbox {
 		texturedMaterial.create();
 		// Wood diffuse texture
 		final Texture diffuseTexture = glVersion.createTexture();
-		diffuseTexture.setImage(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.jpg"));
 		diffuseTexture.setFormat(TextureFormat.RGB);
+		diffuseTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.jpg"));
 		diffuseTexture.setMagFilter(FilterMode.LINEAR);
 		diffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		diffuseTexture.setUnit(0);
@@ -498,8 +498,8 @@ public class Sandbox {
 		texturedMaterial.addTexture(diffuseTexture);
 		// Wood specular texture
 		final Texture specularTexture = glVersion.createTexture();
-		specularTexture.setImage(Sandbox.class.getResourceAsStream("/textures/wood_specular.png"));
 		specularTexture.setFormat(TextureFormat.RED);
+		specularTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/wood_specular.png"));
 		specularTexture.setMagFilter(FilterMode.LINEAR);
 		specularTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		specularTexture.setUnit(1);

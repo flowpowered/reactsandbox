@@ -50,8 +50,8 @@ public class FPSMonitor {
 		elapsedTime += time - lastUpdateTime;
 		lastUpdateTime = time;
 		frameCount++;
-		if (elapsedTime >= 500) {
-			framesPerSecond = frameCount * 2;
+		if (elapsedTime >= 1000) {
+			framesPerSecond = frameCount;
 			frameCount = 0;
 			elapsedTime = 0;
 		}
