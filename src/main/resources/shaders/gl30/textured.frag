@@ -5,7 +5,7 @@ in vec3 worldNormal;
 in vec3 viewDirection;
 in vec2 textureUV;
 
-out vec4 outputColor;
+layout(location = 0) out vec4 outputColor;
 
 uniform sampler2D diffuse;
 uniform sampler2D specular;

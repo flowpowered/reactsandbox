@@ -36,6 +36,7 @@ import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 
+import org.spout.math.vector.Vector2;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.data.VertexAttribute;
 import org.spout.renderer.data.VertexAttribute.DataType;
@@ -59,7 +60,7 @@ public class MeshGenerator {
 	*/
 
 	/**
-	 * Generate a crosshairs shaped wireframe in 3D. The center is at the intersection point of the
+	 * Generates a crosshairs shaped wireframe in 3D. The center is at the intersection point of the
 	 * three lines.
 	 *
 	 * @param destination Where to save the mesh (can be null)
@@ -98,7 +99,7 @@ public class MeshGenerator {
 	}
 
 	/**
-	 * Generate a cuboid shaped wireframe (the outline of the cuboid). The center is at the middle of
+	 * Generates a cuboid shaped wireframe (the outline of the cuboid). The center is at the middle of
 	 * the cuboid.
 	 *
 	 * @param destination Where to save the mesh (can be null)
@@ -156,6 +157,53 @@ public class MeshGenerator {
 		addAll(indices, 0, 1, 1, 5, 5, 4, 4, 0);
 		// Put the mesh in the vertex data
 		positionsAttribute.setData(positions);
+		return destination;
+	}
+
+	/**
+	 * Generates a textured plane on xy. The center is at the middle of the plane.
+	 *
+	 * @param destination Where to save the mesh (can be null)
+	 * @param size The size of the plane to generate, on x and y
+	 * @return The vertex data
+	 */
+	public static VertexData generateScreenPlane(VertexData destination, Vector2 size) {
+		/*
+		2-----3
+		|     |
+		|     |
+		0-----1
+		 */
+		// Corner positions
+		final Vector2 p = size.div(2);
+		final Vector3 p3 = new Vector3(p.getX(), p.getY(), 0);
+		final Vector3 p2 = new Vector3(-p.getX(), p.getY(), 0);
+		final Vector3 p1 = new Vector3(p.getX(), -p.getY(), 0);
+		final Vector3 p0 = new Vector3(-p.getX(), -p.getY(), 0);
+		// Model data buffers
+		if (destination == null) {
+			destination = new VertexData();
+		}
+		final VertexAttribute positionsAttribute = new VertexAttribute("positions", DataType.FLOAT, 3);
+		destination.addAttribute(0, positionsAttribute);
+		final TFloatList positions = new TFloatArrayList();
+		final VertexAttribute textureAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, 2);
+		destination.addAttribute(1, textureAttribute);
+		final TFloatList texture = new TFloatArrayList();
+		final TIntList indices = destination.getIndices();
+		// Face
+		addVector(positions, p0);
+		addAll(texture, 0, 0);
+		addVector(positions, p1);
+		addAll(texture, 1, 0);
+		addVector(positions, p2);
+		addAll(texture, 0, 1);
+		addVector(positions, p3);
+		addAll(texture, 1, 1);
+		addAll(indices, 0, 3, 2, 0, 1, 3);
+		// Put the mesh in the vertex data
+		positionsAttribute.setData(positions);
+		textureAttribute.setData(texture);
 		return destination;
 	}
 
@@ -552,6 +600,11 @@ public class MeshGenerator {
 				(v0.getX() + v1.getX()) / 2,
 				(v0.getY() + v1.getY()) / 2,
 				(v0.getZ() + v1.getZ()) / 2);
+	}
+
+	private static void addVector(TFloatList to, Vector2 v) {
+		to.add(v.getX());
+		to.add(v.getY());
 	}
 
 	private static void addVector(TFloatList to, Vector3 v) {

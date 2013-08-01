@@ -4,7 +4,7 @@ in vec3 worldPosition;
 in vec3 worldNormal;
 in vec3 viewDirection;
 
-out vec4 outputColor;
+layout(location = 0) out vec4 outputColor;
 
 uniform vec4 modelColor;
 uniform vec3 lightPosition;

@@ -1,6 +1,6 @@
 #version 330
 
-out vec4 outputColor;
+layout(location = 0) out vec4 outputColor;
 
 uniform vec4 modelColor;
 

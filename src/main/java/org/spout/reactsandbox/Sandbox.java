@@ -30,6 +30,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,6 +44,7 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 import org.yaml.snakeyaml.Yaml;
 
+import org.spout.math.vector.Vector2;
 import org.spout.physics.body.CollisionBody;
 import org.spout.physics.body.ImmobileRigidBody;
 import org.spout.physics.body.MobileRigidBody;
@@ -61,17 +63,21 @@ import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
+import org.spout.renderer.FrameBuffer;
+import org.spout.renderer.FrameBuffer.AttachmentPoint;
 import org.spout.renderer.GLVersion;
 import org.spout.renderer.InstancedModel;
 import org.spout.renderer.Material;
 import org.spout.renderer.Model;
 import org.spout.renderer.Program;
+import org.spout.renderer.RenderBuffer;
 import org.spout.renderer.Renderer;
 import org.spout.renderer.Shader.ShaderType;
 import org.spout.renderer.Texture;
 import org.spout.renderer.Texture.FilterMode;
-import org.spout.renderer.Texture.TextureFormat;
+import org.spout.renderer.Texture.ImageFormat;
 import org.spout.renderer.VertexArray.DrawingMode;
+import org.spout.renderer.data.RenderList;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
@@ -117,7 +123,10 @@ public class Sandbox {
 	private static GLVersion glVersion;
 	private static Renderer renderer;
 	private static Color backgroundColor;
-	private static Camera guiCamera;
+	private static Camera modelCamera;
+	private static RenderList modelList;
+	private static RenderList guiList;
+	private static RenderList screenList;
 	private static final VertexData diamondModel = ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/diamond.obj"));
 	private static StringModel fpsMonitorModel;
 	// Rendering material for objects
@@ -125,6 +134,7 @@ public class Sandbox {
 	private static Material texturedMaterial;
 	private static Material wireframeMaterial;
 	private static Material mobMaterial;
+	private static Material screenMaterial;
 	// Lighting
 	private static org.spout.math.vector.Vector3 lightPosition = new org.spout.math.vector.Vector3(0, 0, 0);
 	private static float diffuseIntensity = 0.8f;
@@ -142,17 +152,15 @@ public class Sandbox {
 			deploy();
 			loadConfiguration();
 			setupRenderer();
-			addMob();
+			addCrosshairs();
 			addFPSMonitor();
-			System.out.println("Starting up");
-			System.out.println("Render Mode: " + glVersion);
-			System.out.println("OpenGL Version: " + GL11.glGetString(GL11.GL_VERSION));
-			world = new DynamicsWorld(gravity, TIMESTEP);
-			addDefaultBodies();
-			Mouse.setGrabbed(true);
-			world.start();
-			renderer.getCamera().setPosition(new org.spout.math.vector.Vector3(0, 5, 10));
+			addScreen();
+			addMob();
+			setupPhysics();
+			startupLog();
+			modelCamera.setPosition(new org.spout.math.vector.Vector3(0, 5, 10));
 			fpsMonitor.start();
+			Mouse.setGrabbed(true);
 			while (!Display.isCloseRequested()) {
 				processInput();
 				world.update();
@@ -162,9 +170,8 @@ public class Sandbox {
 				renderer.render();
 				Display.sync(TARGET_FPS);
 			}
-			System.out.println("Shutting down");
+			shutdownLog();
 			world.stop();
-			Mouse.setGrabbed(false);
 			renderer.destroy();
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -200,7 +207,7 @@ public class Sandbox {
 		aabbModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
 		aabbModel.getUniforms().add(new ColorUniform("modelColor", aabbColor));
 		aabbModel.create();
-		renderer.addModel(aabbModel);
+		modelList.add(aabbModel);
 		aabbs.put(body, aabbModel);
 		final CollisionShape shape = body.getCollisionShape();
 		final Model shapeModel = glVersion.createModel();
@@ -236,7 +243,7 @@ public class Sandbox {
 		shapeModel.setPosition(SandboxUtil.toMathVector3(bodyPosition));
 		shapeModel.setRotation(SandboxUtil.toMathQuaternion(bodyOrientation));
 		shapeModel.create();
-		renderer.addModel(shapeModel);
+		modelList.add(shapeModel);
 		shapes.put(body, shapeModel);
 		return body;
 	}
@@ -246,10 +253,10 @@ public class Sandbox {
 			return;
 		}
 		final Model shapeModel = shapes.remove(body);
-		renderer.removeModel(shapeModel);
+		modelList.remove(shapeModel);
 		shapeModel.destroy();
 		final Model aabbModel = aabbs.remove(body);
-		renderer.removeModel(aabbModel);
+		modelList.remove(aabbModel);
 		aabbModel.destroy();
 		if (body instanceof RigidBody) {
 			world.destroyRigidBody((RigidBody) body);
@@ -273,8 +280,8 @@ public class Sandbox {
 				break;
 		}
 		addMobileBody(shape, 10,
-				SandboxUtil.toReactVector3(renderer.getCamera().getPosition().add(renderer.getCamera().getForward().mul(5))),
-				SandboxUtil.toReactQuaternion(renderer.getCamera().getRotation()));
+				SandboxUtil.toReactVector3(modelCamera.getPosition().add(modelCamera.getForward().mul(5))),
+				SandboxUtil.toReactQuaternion(modelCamera.getRotation()));
 	}
 
 	private static void updateBodies() {
@@ -319,7 +326,6 @@ public class Sandbox {
 				}
 			}
 		}
-		final Camera camera = renderer.getCamera();
 		if (Display.isActive()) {
 			if (mouseGrabbed != mouseGrabbedBefore) {
 				Mouse.setGrabbed(!mouseGrabbedBefore);
@@ -331,13 +337,13 @@ public class Sandbox {
 				cameraYaw += Mouse.getDY() * mouseSensitivity;
 				cameraYaw %= 360;
 				final Quaternion yaw = SandboxUtil.angleAxisToQuaternion(cameraYaw, 1, 0, 0);
-				camera.setRotation(SandboxUtil.toMathQuaternion(Quaternion.multiply(pitch, yaw)));
+				modelCamera.setRotation(SandboxUtil.toMathQuaternion(Quaternion.multiply(pitch, yaw)));
 			}
 		}
-		final Vector3 right = SandboxUtil.toReactVector3(camera.getRight());
-		final Vector3 up = SandboxUtil.toReactVector3(camera.getUp());
-		final Vector3 forward = SandboxUtil.toReactVector3(camera.getForward());
-		final Vector3 position = SandboxUtil.toReactVector3(camera.getPosition());
+		final Vector3 right = SandboxUtil.toReactVector3(modelCamera.getRight());
+		final Vector3 up = SandboxUtil.toReactVector3(modelCamera.getUp());
+		final Vector3 forward = SandboxUtil.toReactVector3(modelCamera.getForward());
+		final Vector3 position = SandboxUtil.toReactVector3(modelCamera.getPosition());
 		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
 			position.add(Vector3.multiply(forward, cameraSpeed));
 		}
@@ -356,7 +362,7 @@ public class Sandbox {
 		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
 			position.add(Vector3.multiply(up, -cameraSpeed));
 		}
-		camera.setPosition(SandboxUtil.toMathVector3(position));
+		modelCamera.setPosition(SandboxUtil.toMathVector3(position));
 		solidMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
 		texturedMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
 		mobMaterial.getUniforms().getVector3("lightPosition").set(SandboxUtil.toMathVector3(position));
@@ -368,15 +374,26 @@ public class Sandbox {
 			selected = null;
 		}
 		final IntersectedBody targeted = world.findClosestIntersectingBody(
-				SandboxUtil.toReactVector3(renderer.getCamera().getPosition()),
-				SandboxUtil.toReactVector3(renderer.getCamera().getForward()));
+				SandboxUtil.toReactVector3(modelCamera.getPosition()),
+				SandboxUtil.toReactVector3(modelCamera.getForward()));
 		if (targeted != null && targeted.getBody() instanceof RigidBody) {
 			selected = targeted.getBody();
 			aabbs.get(selected).getUniforms().getColor("modelColor").set(Color.BLUE);
 		}
 	}
 
-	private static void addDefaultBodies() {
+	private static void startupLog() {
+		System.out.println("Starting up");
+		System.out.println("Render Mode: " + glVersion);
+		System.out.println("OpenGL Version: " + GL11.glGetString(GL11.GL_VERSION));
+	}
+
+	private static void shutdownLog() {
+		System.out.println("Shutting down");
+	}
+
+	private static void setupPhysics() {
+		world = new DynamicsWorld(gravity, TIMESTEP);
 		addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
 		addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
 		addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1)).setMaterial(PHYSICS_MATERIAL);
@@ -384,6 +401,19 @@ public class Sandbox {
 		addMobileBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
 		addImmobileBody(new BoxShape(new Vector3(25, 1, 25)), 100, new Vector3(0, 1.8f, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
 		addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
+		world.start();
+	}
+
+	private static void addCrosshairs() {
+		final Model model = glVersion.createModel();
+		model.getVertexArray().setVertexData(MeshGenerator.generateCrosshairs(null, 0.04f));
+		model.setMaterial(wireframeMaterial);
+		model.getVertexArray().setDrawingMode(DrawingMode.LINES);
+		model.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
+		// Necessary for GL20 because there's no depth clamping. The GUI models must be just in front of the camera
+		model.setPosition(new org.spout.math.vector.Vector3(0, 0, -0.001f));
+		model.create();
+		guiList.add(model);
 	}
 
 	private static void addFPSMonitor() {
@@ -392,66 +422,61 @@ public class Sandbox {
 		model.setGlyphs("FPS: 0123456789");
 		model.setFont(new Font("Arial", Font.PLAIN, 128));
 		model.create();
-		model.setCamera(guiCamera);
 		model.setPosition(new org.spout.math.vector.Vector3(-0.97, 0.6, -0.001f));
 		model.setScale(new org.spout.math.vector.Vector3(0.35, 0.35, 0.35));
 		model.setString("FPS: " + fpsMonitor.getFPS());
-		renderer.addModel(model);
+		guiList.add(model);
 		fpsMonitorModel = model;
 	}
 
 	private static void addMob() {
-		mobMaterial = glVersion.createMaterial();
-		final Program program = mobMaterial.getProgram();
-		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/";
-		program.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(shaderPath + "textured.vert"));
-		program.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "textured.frag"));
-		if (glVersion == GLVersion.GL20) {
-			program.addAttributeLayout("position", 0);
-			program.addAttributeLayout("normal", 1);
-			program.addAttributeLayout("textureCoords", 2);
-		}
-		program.addTextureLayout("diffuse", 0);
-		final UniformHolder uniforms = mobMaterial.getUniforms();
-		uniforms.add(new Vector3Uniform("lightPosition", lightPosition));
-		uniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
-		uniforms.add(new FloatUniform("specularIntensity", specularIntensity));
-		uniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
-		uniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
-		mobMaterial.create();
-		final Texture texture = glVersion.createTexture();
-		texture.setFormat(TextureFormat.RGB);
-		texture.setImageData(Sandbox.class.getResourceAsStream("/textures/creeper.png"));
-		// For low resolution textures, always use NEAREST
-		texture.setMagFilter(FilterMode.NEAREST);
-		texture.setMinFilter(FilterMode.NEAREST);
-		texture.setUnit(0);
-		texture.create();
-		mobMaterial.addTexture(texture);
-		final Model mobModel = glVersion.createModel();
-		mobModel.getVertexArray().setVertexData(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
-		mobModel.setMaterial(mobMaterial);
-		mobModel.setPosition(new org.spout.math.vector.Vector3(10, 10, 0));
-		mobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(-90, 0, 1, 0));
-		mobModel.create();
-		renderer.addModel(mobModel);
+		final Model model = glVersion.createModel();
+		model.getVertexArray().setVertexData(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
+		model.setMaterial(mobMaterial);
+		model.setPosition(new org.spout.math.vector.Vector3(10, 10, 0));
+		model.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(-90, 0, 1, 0));
+		model.create();
+		modelList.add(model);
 		// Add a second mob, instanced from the first one
-		final Model instancedMobModel = new InstancedModel(mobModel);
+		final Model instancedMobModel = new InstancedModel(model);
 		instancedMobModel.create();
 		instancedMobModel.setPosition(new org.spout.math.vector.Vector3(-10, 10, 0));
 		instancedMobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(90, 0, 1, 0));
-		renderer.addModel(instancedMobModel);
+		modelList.add(instancedMobModel);
+	}
+
+	private static void addScreen() {
+		final Model model = glVersion.createModel();
+		final float aspect = (float) windowHeight / windowWidth;
+		model.getVertexArray().setVertexData(MeshGenerator.generateScreenPlane(null, new Vector2(2, 2 * aspect)));
+		model.setMaterial(screenMaterial);
+		model.setPosition(new org.spout.math.vector.Vector3(0, 0, -0.001f));
+		model.create();
+		screenList.add(model);
 	}
 
 	private static void setupRenderer() throws Exception {
+		// Create the renderer
 		renderer = glVersion.createRenderer();
 		renderer.setBackgroundColor(backgroundColor);
 		renderer.setWindowTitle(WINDOW_TITLE);
 		renderer.setWindowSize(windowWidth, windowHeight);
-		renderer.setCamera(Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 100));
 		renderer.setCullingEnabled(cullingEnabled);
 		renderer.create();
+		// Rendering cameras
+		modelCamera = Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 100);
+		final float aspect = (float) windowHeight / windowWidth;
+		final Camera guiCamera = Camera.createOrthographic(1, -1, 1 * aspect, -1 * aspect, 0.001f, 100);
+		// Create and add the render lists
+		modelList = new RenderList("models", modelCamera, 0);
+		guiList = new RenderList("gui", guiCamera, 1);
+		screenList = new RenderList("screen", guiCamera, 2);
+		renderer.addRenderList(modelList);
+		renderer.addRenderList(guiList);
+		renderer.addRenderList(screenList);
+		// Path to the shaders of the correct version
 		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/";
+
 		// Solid material
 		solidMaterial = glVersion.createMaterial();
 		final Program solidProgram = solidMaterial.getProgram();
@@ -468,6 +493,7 @@ public class Sandbox {
 		solidUniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
 		solidUniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
 		solidMaterial.create();
+
 		// Textured material
 		texturedMaterial = glVersion.createMaterial();
 		final Program texturedProgram = texturedMaterial.getProgram();
@@ -489,7 +515,7 @@ public class Sandbox {
 		texturedMaterial.create();
 		// Wood diffuse texture
 		final Texture diffuseTexture = glVersion.createTexture();
-		diffuseTexture.setFormat(TextureFormat.RGB);
+		diffuseTexture.setFormat(ImageFormat.RGB);
 		diffuseTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.jpg"));
 		diffuseTexture.setMagFilter(FilterMode.LINEAR);
 		diffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
@@ -498,13 +524,14 @@ public class Sandbox {
 		texturedMaterial.addTexture(diffuseTexture);
 		// Wood specular texture
 		final Texture specularTexture = glVersion.createTexture();
-		specularTexture.setFormat(TextureFormat.RED);
+		specularTexture.setFormat(ImageFormat.RED);
 		specularTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/wood_specular.png"));
 		specularTexture.setMagFilter(FilterMode.LINEAR);
 		specularTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		specularTexture.setUnit(1);
 		specularTexture.create();
 		texturedMaterial.addTexture(specularTexture);
+
 		// Wireframe material
 		wireframeMaterial = glVersion.createMaterial();
 		final Program wireframeProgram = wireframeMaterial.getProgram();
@@ -514,20 +541,68 @@ public class Sandbox {
 			wireframeProgram.addAttributeLayout("position", 0);
 		}
 		wireframeMaterial.create();
-		// Setup the crosshairs
-		final Model crosshairsModel = glVersion.createModel();
-		crosshairsModel.getVertexArray().setVertexData(MeshGenerator.generateCrosshairs(null, 0.04f));
-		crosshairsModel.setMaterial(wireframeMaterial);
-		crosshairsModel.getVertexArray().setDrawingMode(DrawingMode.LINES);
-		crosshairsModel.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
-		// This will make it a GUI! The camera matrix shouldn't be altered with GUI elements
-		final float aspect = (float) windowWidth / windowHeight;
-		guiCamera = Camera.createOrthographic(1, -1, 1 / aspect, -1 / aspect, 0.001f, 100);
-		crosshairsModel.setCamera(guiCamera);
-		// Necessary for GL20 because there's no depth clamping. The GUI models must be just in front of the camera
-		crosshairsModel.setPosition(new org.spout.math.vector.Vector3(0, 0, -0.001f));
-		crosshairsModel.create();
-		renderer.addModel(crosshairsModel);
+
+		// Mob material
+		mobMaterial = glVersion.createMaterial();
+		final Program mobProgram = mobMaterial.getProgram();
+		mobProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(shaderPath + "textured.vert"));
+		mobProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "textured.frag"));
+		if (glVersion == GLVersion.GL20) {
+			mobProgram.addAttributeLayout("position", 0);
+			mobProgram.addAttributeLayout("normal", 1);
+			mobProgram.addAttributeLayout("textureCoords", 2);
+		}
+		mobProgram.addTextureLayout("diffuse", 0);
+		final UniformHolder mobUniforms = mobMaterial.getUniforms();
+		mobUniforms.add(new Vector3Uniform("lightPosition", lightPosition));
+		mobUniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
+		mobUniforms.add(new FloatUniform("specularIntensity", specularIntensity));
+		mobUniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
+		mobUniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
+		mobMaterial.create();
+		final Texture mobTexture = glVersion.createTexture();
+		mobTexture.setFormat(ImageFormat.RGB);
+		mobTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/creeper.png"));
+		// For low resolution textures, always use NEAREST
+		mobTexture.setMagFilter(FilterMode.NEAREST);
+		mobTexture.setMinFilter(FilterMode.NEAREST);
+		mobTexture.setUnit(0);
+		mobTexture.create();
+		mobMaterial.addTexture(mobTexture);
+
+		// Screen material
+		screenMaterial = glVersion.createMaterial();
+		final Program screenProgram = screenMaterial.getProgram();
+		screenProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(shaderPath + "screen.vert"));
+		screenProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "screen.frag"));
+		if (glVersion == GLVersion.GL20) {
+			screenProgram.addAttributeLayout("position", 0);
+			screenProgram.addAttributeLayout("textureCoords", 1);
+		}
+		screenProgram.addTextureLayout("diffuse", 0);
+		screenMaterial.create();
+		final Texture screenTexture = glVersion.createTexture();
+		screenTexture.setFormat(ImageFormat.RGBA);
+		// Image data will be filled by the frame buffer
+		screenTexture.setImageData((ByteBuffer) null, windowWidth, windowHeight);
+		screenTexture.setMagFilter(FilterMode.LINEAR);
+		screenTexture.setMinFilter(FilterMode.LINEAR);
+		screenTexture.setUnit(0);
+		screenTexture.create();
+		screenMaterial.addTexture(screenTexture);
+		// Create the frame buffer
+		final FrameBuffer frameBuffer = glVersion.createFrameBuffer();
+		// Attach the texture for the color
+		frameBuffer.attach(AttachmentPoint.COLOR0, screenTexture);
+		// And a render buffer for the depth
+		final RenderBuffer renderBuffer = glVersion.createRenderBuffer();
+		renderBuffer.setFormat(ImageFormat.DEPTH);
+		renderBuffer.setSize(windowWidth, windowHeight);
+		renderBuffer.create();
+		frameBuffer.attach(AttachmentPoint.DEPTH, renderBuffer);
+		// Add the frame buffer to the model list so it will render to it
+		frameBuffer.create();
+		modelList.setFrameBuffer(frameBuffer);
 	}
 
 	@SuppressWarnings("unchecked")
