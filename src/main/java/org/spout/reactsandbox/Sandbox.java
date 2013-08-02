@@ -62,7 +62,7 @@ import org.spout.physics.engine.DynamicsWorld;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
-import org.spout.renderer.data.Camera;
+import org.spout.renderer.Camera;
 import org.spout.renderer.gl.FrameBuffer;
 import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
 import org.spout.renderer.gl.GLVersion;
