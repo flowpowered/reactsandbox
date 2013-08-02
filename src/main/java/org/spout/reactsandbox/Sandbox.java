@@ -516,7 +516,7 @@ public class Sandbox {
 		// Wood diffuse texture
 		final Texture diffuseTexture = glVersion.createTexture();
 		diffuseTexture.setFormat(ImageFormat.RGB);
-		diffuseTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.jpg"));
+		diffuseTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"));
 		diffuseTexture.setMagFilter(FilterMode.LINEAR);
 		diffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		diffuseTexture.setUnit(0);
