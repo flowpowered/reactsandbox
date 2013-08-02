@@ -65,7 +65,7 @@ import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
 import org.spout.renderer.gl.FrameBuffer;
 import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
-import org.spout.renderer.gl.GLVersion;
+import org.spout.renderer.GLVersion;
 import org.spout.renderer.util.InstancedModel;
 import org.spout.renderer.gl.Material;
 import org.spout.renderer.gl.Model;
