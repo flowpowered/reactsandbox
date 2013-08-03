@@ -430,67 +430,23 @@ public class Sandbox {
 			System.out.println(e);
 			return;
 		}
-
 		final StringModel sandbox = new StringModel();
 		sandbox.setGLVersion(glVersion);
-		sandbox.setGlyphs("Sandbox");
+		sandbox.setGlyphs("SandboxPweryCusticR,& ");
 		sandbox.setFont(ubuntu.deriveFont(Font.PLAIN, 15));
 		sandbox.setWindowWidth(windowWidth);
 		sandbox.create();
-		sandbox.setColor(new Color(193, 153, 83));
-		sandbox.setPosition(new org.spout.math.vector.Vector3(0, aspect / 2 + 0.32, -0.001));
-		sandbox.setString("Sandbox");
+		sandbox.setPosition(new org.spout.math.vector.Vector3(0.005, aspect / 2 + 0.315, -0.001));
+		final String white = "#ffffffff", brown = "#ffC19953", green = "#ff00ff00", cyan = "#ff4fB5ff";
+		sandbox.setString(brown + "Sandbox\n" + white + "Powered by " + green + "Caustic" + white + " & " + cyan + "React");
 		guiList.add(sandbox);
-
-		final StringModel inbetween = new StringModel();
-		inbetween.setGLVersion(glVersion);
-		inbetween.setGlyphs("Powerdby, ");
-		inbetween.setFont(ubuntu.deriveFont(Font.PLAIN, 15));
-		inbetween.setWindowWidth(windowWidth);
-		inbetween.create();
-		inbetween.setPosition(new org.spout.math.vector.Vector3(0.05, aspect / 2 + 0.32, -0.001));
-		inbetween.setString(", Powered by ");
-		guiList.add(inbetween);
-
-		final StringModel caustic = new StringModel();
-		caustic.setGLVersion(glVersion);
-		caustic.setGlyphs("Caustic");
-		caustic.setFont(ubuntu.deriveFont(Font.PLAIN, 15));
-		caustic.setWindowWidth(windowWidth);
-		caustic.create();
-		caustic.setColor(Color.GREEN);
-		caustic.setPosition(new org.spout.math.vector.Vector3(0.130, aspect / 2 + 0.32, -0.001));
-		caustic.setString("Caustic");
-		guiList.add(caustic);
-
-		final StringModel and = new StringModel();
-		and.setGLVersion(glVersion);
-		and.setGlyphs("&");
-		and.setFont(ubuntu.deriveFont(Font.PLAIN, 15));
-		and.setWindowWidth(windowWidth);
-		and.create();
-		and.setPosition(new org.spout.math.vector.Vector3(0.175, aspect / 2 + 0.32, -0.001));
-		and.setString("&");
-		guiList.add(and);
-
-		final StringModel react = new StringModel();
-		react.setGLVersion(glVersion);
-		react.setGlyphs("React");
-		react.setFont(ubuntu.deriveFont(Font.PLAIN, 15));
-		react.setWindowWidth(windowWidth);
-		react.create();
-		react.setColor(new Color(79, 181, 255));
-		react.setPosition(new org.spout.math.vector.Vector3(0.190, aspect / 2 + 0.32, -0.001));
-		react.setString("React");
-		guiList.add(react);
-
 		final StringModel model = new StringModel();
 		model.setGLVersion(glVersion);
 		model.setGlyphs("FPS: 0123456789");
 		model.setFont(ubuntu.deriveFont(Font.PLAIN, 15));
 		model.setWindowWidth(windowWidth);
 		model.create();
-		model.setPosition(new org.spout.math.vector.Vector3(0, aspect / 2 + 0.3, -0.001));
+		model.setPosition(new org.spout.math.vector.Vector3(0.005, aspect / 2 + 0.285, -0.001));
 		model.setString("FPS: " + fpsMonitor.getFPS());
 		guiList.add(model);
 		fpsMonitorModel = model;
