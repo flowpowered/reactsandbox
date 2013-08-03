@@ -63,27 +63,28 @@ import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
-import org.spout.renderer.gl.FrameBuffer;
-import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
 import org.spout.renderer.GLVersion;
-import org.spout.renderer.util.InstancedModel;
-import org.spout.renderer.gl.Material;
-import org.spout.renderer.gl.Model;
-import org.spout.renderer.gl.Program;
-import org.spout.renderer.gl.RenderBuffer;
-import org.spout.renderer.gl.Renderer;
-import org.spout.renderer.gl.Shader.ShaderType;
-import org.spout.renderer.gl.Texture;
-import org.spout.renderer.gl.Texture.FilterMode;
-import org.spout.renderer.gl.Texture.ImageFormat;
-import org.spout.renderer.gl.VertexArray.DrawingMode;
 import org.spout.renderer.data.RenderList;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
 import org.spout.renderer.data.UniformHolder;
 import org.spout.renderer.data.VertexData;
+import org.spout.renderer.gl.FrameBuffer;
+import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
+import org.spout.renderer.gl.Material;
+import org.spout.renderer.gl.Model;
+import org.spout.renderer.gl.Program;
+import org.spout.renderer.gl.RenderBuffer;
+import org.spout.renderer.gl.Renderer;
+import org.spout.renderer.gl.Renderer.Capability;
+import org.spout.renderer.gl.Shader.ShaderType;
+import org.spout.renderer.gl.Texture;
+import org.spout.renderer.gl.Texture.FilterMode;
+import org.spout.renderer.gl.Texture.ImageFormat;
+import org.spout.renderer.gl.VertexArray.DrawingMode;
 import org.spout.renderer.loader.ObjFileLoader;
+import org.spout.renderer.util.InstancedModel;
 import org.spout.renderer.util.StringModel;
 
 /**
@@ -125,6 +126,7 @@ public class Sandbox {
 	private static Color backgroundColor;
 	private static Camera modelCamera;
 	private static RenderList modelList;
+	private static RenderList transparencyList;
 	private static RenderList guiList;
 	private static RenderList screenList;
 	private static final VertexData diamondModel = ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/diamond.obj"));
@@ -154,8 +156,9 @@ public class Sandbox {
 			setupRenderer();
 			addCrosshairs();
 			addFPSMonitor();
-			addScreen();
+			addScreenPlane();
 			addMob();
+			addTransparentPlane();
 			setupPhysics();
 			startupLog();
 			modelCamera.setPosition(new org.spout.math.vector.Vector3(0, 5, 10));
@@ -200,7 +203,7 @@ public class Sandbox {
 		final Quaternion bodyOrientation = bodyTransform.getOrientation();
 		final AABB aabb = body.getAABB();
 		final Model aabbModel = glVersion.createModel();
-		aabbModel.getVertexArray().setVertexData(MeshGenerator.generateWireCuboid(null, new Vector3(1, 1, 1)));
+		aabbModel.getVertexArray().setData(MeshGenerator.generateWireCuboid(null, new Vector3(1, 1, 1)));
 		aabbModel.setMaterial(wireframeMaterial);
 		aabbModel.getVertexArray().setDrawingMode(DrawingMode.LINES);
 		aabbModel.setScale(SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
@@ -234,7 +237,7 @@ public class Sandbox {
 			default:
 				throw new IllegalArgumentException("Unsupported collision shape: " + shape.getType());
 		}
-		shapeModel.getVertexArray().setVertexData(data);
+		shapeModel.getVertexArray().setData(data);
 		if (shape.getType() == CollisionShapeType.BOX) {
 			shapeModel.setMaterial(texturedMaterial);
 		} else {
@@ -406,12 +409,12 @@ public class Sandbox {
 
 	private static void addCrosshairs() {
 		final Model model = glVersion.createModel();
-		model.getVertexArray().setVertexData(MeshGenerator.generateCrosshairs(null, 0.04f));
+		model.getVertexArray().setData(MeshGenerator.generateCrosshairs(null, 0.02f));
 		model.setMaterial(wireframeMaterial);
 		model.getVertexArray().setDrawingMode(DrawingMode.LINES);
 		model.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
 		// Necessary for GL20 because there's no depth clamping. The GUI models must be just in front of the camera
-		model.setPosition(new org.spout.math.vector.Vector3(0, 0, -0.001f));
+		model.setPosition(new org.spout.math.vector.Vector3(0.5, ((float) windowHeight / windowWidth) / 2, -0.001));
 		model.create();
 		guiList.add(model);
 	}
@@ -420,10 +423,11 @@ public class Sandbox {
 		final StringModel model = new StringModel();
 		model.setGLVersion(glVersion);
 		model.setGlyphs("FPS: 0123456789");
-		model.setFont(new Font("Arial", Font.PLAIN, 128));
+		model.setFont(new Font("Arial", Font.PLAIN, 24));
+		model.setWindowWidth(windowWidth);
 		model.create();
-		model.setPosition(new org.spout.math.vector.Vector3(-0.97, 0.6, -0.001f));
-		model.setScale(new org.spout.math.vector.Vector3(0.35, 0.35, 0.35));
+		final float aspect = (float) windowHeight / windowWidth;
+		model.setPosition(new org.spout.math.vector.Vector3(0, aspect / 2 + 0.3, -0.001));
 		model.setString("FPS: " + fpsMonitor.getFPS());
 		guiList.add(model);
 		fpsMonitorModel = model;
@@ -431,7 +435,7 @@ public class Sandbox {
 
 	private static void addMob() {
 		final Model model = glVersion.createModel();
-		model.getVertexArray().setVertexData(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
+		model.getVertexArray().setData(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
 		model.setMaterial(mobMaterial);
 		model.setPosition(new org.spout.math.vector.Vector3(10, 10, 0));
 		model.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(-90, 0, 1, 0));
@@ -445,12 +449,22 @@ public class Sandbox {
 		modelList.add(instancedMobModel);
 	}
 
-	private static void addScreen() {
+	private static void addTransparentPlane() {
+		final Model model = glVersion.createModel();
+		model.getVertexArray().setData(MeshGenerator.generatePlane(null, new Vector2(4, 4)));
+		model.setMaterial(solidMaterial);
+		model.getUniforms().add(new ColorUniform("modelColor", new Color(1f, 1f, 1f, 0.5f)));
+		model.setPosition(new org.spout.math.vector.Vector3(0, 10, -10));
+		model.create();
+		transparencyList.add(model);
+	}
+
+	private static void addScreenPlane() {
 		final Model model = glVersion.createModel();
 		final float aspect = (float) windowHeight / windowWidth;
-		model.getVertexArray().setVertexData(MeshGenerator.generateScreenPlane(null, new Vector2(2, 2 * aspect)));
+		model.getVertexArray().setData(MeshGenerator.generateTexturedPlane(null, new Vector2(1, aspect)));
 		model.setMaterial(screenMaterial);
-		model.setPosition(new org.spout.math.vector.Vector3(0, 0, -0.001f));
+		model.setPosition(new org.spout.math.vector.Vector3(0.5, aspect / 2, -0.001f));
 		model.create();
 		screenList.add(model);
 	}
@@ -458,22 +472,38 @@ public class Sandbox {
 	private static void setupRenderer() throws Exception {
 		// Create the renderer
 		renderer = glVersion.createRenderer();
-		renderer.setBackgroundColor(backgroundColor);
 		renderer.setWindowTitle(WINDOW_TITLE);
 		renderer.setWindowSize(windowWidth, windowHeight);
-		renderer.setCullingEnabled(cullingEnabled);
 		renderer.create();
+		renderer.setClearColor(backgroundColor);
 		// Rendering cameras
 		modelCamera = Camera.createPerspective(fieldOfView, windowWidth, windowHeight, 0.001f, 100);
-		final float aspect = (float) windowHeight / windowWidth;
-		final Camera guiCamera = Camera.createOrthographic(1, -1, 1 * aspect, -1 * aspect, 0.001f, 100);
-		// Create and add the render lists
+		final Camera guiCamera = Camera.createOrthographic(1, 0, (float) windowHeight / windowWidth, 0, 0.001f, 100);
+		// Model list
 		modelList = new RenderList("models", modelCamera, 0);
-		guiList = new RenderList("gui", guiCamera, 1);
-		screenList = new RenderList("screen", guiCamera, 2);
+		modelList.addCapability(Capability.DEPTH_TEST);
+		if (cullingEnabled) {
+			modelList.addCapability(Capability.CULL_FACE);
+		}
+		if (glVersion == GLVersion.GL30) {
+			modelList.addCapability(Capability.DEPTH_CLAMP);
+		}
 		renderer.addRenderList(modelList);
-		renderer.addRenderList(guiList);
+		// Transparency list
+		transparencyList = new RenderList("transparency", modelCamera, 1);
+		transparencyList.addCapabilities(Capability.BLEND, Capability.DEPTH_TEST);
+		if (glVersion == GLVersion.GL30) {
+			transparencyList.addCapability(Capability.DEPTH_CLAMP);
+		}
+		renderer.addRenderList(transparencyList);
+		// Screen list
+		screenList = new RenderList("screen", guiCamera, 2);
+		screenList.addCapability(Capability.CULL_FACE);
 		renderer.addRenderList(screenList);
+		// GUI list
+		guiList = new RenderList("gui", guiCamera, 3);
+		guiList.addCapabilities(Capability.CULL_FACE, Capability.DEPTH_TEST, Capability.BLEND);
+		renderer.addRenderList(guiList);
 		// Path to the shaders of the correct version
 		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/";
 
@@ -577,7 +607,7 @@ public class Sandbox {
 		screenProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "screen.frag"));
 		if (glVersion == GLVersion.GL20) {
 			screenProgram.addAttributeLayout("position", 0);
-			screenProgram.addAttributeLayout("textureCoords", 1);
+			screenProgram.addAttributeLayout("textureCoords", 2);
 		}
 		screenProgram.addTextureLayout("diffuse", 0);
 		screenMaterial.create();
@@ -600,8 +630,9 @@ public class Sandbox {
 		renderBuffer.setSize(windowWidth, windowHeight);
 		renderBuffer.create();
 		frameBuffer.attach(AttachmentPoint.DEPTH, renderBuffer);
-		// Add the frame buffer to the model list so it will render to it
+		// Add the frame buffer to the model and transparency lists so they will render to it
 		frameBuffer.create();
+		transparencyList.setFrameBuffer(frameBuffer);
 		modelList.setFrameBuffer(frameBuffer);
 	}
 

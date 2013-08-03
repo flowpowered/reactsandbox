@@ -74,7 +74,7 @@ public class MeshGenerator {
 		----O-----
 		    |\
 		    | \
-		 */
+		*/
 		// Model data buffers
 		if (destination == null) {
 			destination = new VertexData();
@@ -115,7 +115,7 @@ public class MeshGenerator {
 		0-|----1 |
 		 \|     \|
 		  3------2
-		 */
+		*/
 		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
 		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());
@@ -161,25 +161,27 @@ public class MeshGenerator {
 	}
 
 	/**
-	 * Generates a textured plane on xy. The center is at the middle of the plane.
+	 * Generates a plane on xy. The center is at the middle of the plane.
 	 *
 	 * @param destination Where to save the mesh (can be null)
 	 * @param size The size of the plane to generate, on x and y
 	 * @return The vertex data
 	 */
-	public static VertexData generateScreenPlane(VertexData destination, Vector2 size) {
+	public static VertexData generatePlane(VertexData destination, Vector2 size) {
 		/*
 		2-----3
 		|     |
 		|     |
 		0-----1
-		 */
+		*/
 		// Corner positions
 		final Vector2 p = size.div(2);
 		final Vector3 p3 = new Vector3(p.getX(), p.getY(), 0);
 		final Vector3 p2 = new Vector3(-p.getX(), p.getY(), 0);
 		final Vector3 p1 = new Vector3(p.getX(), -p.getY(), 0);
 		final Vector3 p0 = new Vector3(-p.getX(), -p.getY(), 0);
+		// Normal
+		final Vector3 n = new Vector3(0, 0, 1);
 		// Model data buffers
 		if (destination == null) {
 			destination = new VertexData();
@@ -187,22 +189,44 @@ public class MeshGenerator {
 		final VertexAttribute positionsAttribute = new VertexAttribute("positions", DataType.FLOAT, 3);
 		destination.addAttribute(0, positionsAttribute);
 		final TFloatList positions = new TFloatArrayList();
-		final VertexAttribute textureAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, 2);
-		destination.addAttribute(1, textureAttribute);
-		final TFloatList texture = new TFloatArrayList();
+		final VertexAttribute normalsAttribute = new VertexAttribute("normals", DataType.FLOAT, 3);
+		destination.addAttribute(1, normalsAttribute);
+		final TFloatList normals = new TFloatArrayList();
 		final TIntList indices = destination.getIndices();
 		// Face
 		addVector(positions, p0);
-		addAll(texture, 0, 0);
+		addVector(normals, n);
 		addVector(positions, p1);
-		addAll(texture, 1, 0);
+		addVector(normals, n);
 		addVector(positions, p2);
-		addAll(texture, 0, 1);
+		addVector(normals, n);
 		addVector(positions, p3);
-		addAll(texture, 1, 1);
+		addVector(normals, n);
 		addAll(indices, 0, 3, 2, 0, 1, 3);
 		// Put the mesh in the vertex data
 		positionsAttribute.setData(positions);
+		normalsAttribute.setData(normals);
+		return destination;
+	}
+
+	/**
+	 * Generates a textured plane on xy. The center is at the middle of the plane.
+	 *
+	 * @param destination Where to save the mesh (can be null)
+	 * @param size The size of the plane to generate, on x and y
+	 * @return The vertex data
+	 */
+	public static VertexData generateTexturedPlane(VertexData destination, Vector2 size) {
+		destination = generatePlane(destination, size);
+		final VertexAttribute textureAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, 2);
+		destination.addAttribute(2, textureAttribute);
+		final TFloatList texture = new TFloatArrayList();
+		// Face
+		addAll(texture, 0, 0);
+		addAll(texture, 1, 0);
+		addAll(texture, 0, 1);
+		addAll(texture, 1, 1);
+		// Put the mesh in the vertex data
 		textureAttribute.setData(texture);
 		return destination;
 	}
@@ -223,7 +247,7 @@ public class MeshGenerator {
 		0-|----1 |
 		 \|     \|
 		  3------2
-		 */
+		*/
 		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
 		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());
