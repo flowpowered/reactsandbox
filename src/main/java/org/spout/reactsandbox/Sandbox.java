@@ -433,7 +433,7 @@ public class Sandbox {
 
 		final StringModel sandbox = new StringModel();
 		sandbox.setGLVersion(glVersion);
-		sandbox.setGlyphs("Ssandbox");
+		sandbox.setGlyphs("Sandbox");
 		sandbox.setFont(ubuntu.deriveFont(Font.PLAIN, 15));
 		sandbox.setWindowWidth(windowWidth);
 		sandbox.create();
@@ -444,7 +444,7 @@ public class Sandbox {
 
 		final StringModel inbetween = new StringModel();
 		inbetween.setGLVersion(glVersion);
-		inbetween.setGlyphs("Ppowerdby, ");
+		inbetween.setGlyphs("Powerdby, ");
 		inbetween.setFont(ubuntu.deriveFont(Font.PLAIN, 15));
 		inbetween.setWindowWidth(windowWidth);
 		inbetween.create();
@@ -475,7 +475,7 @@ public class Sandbox {
 
 		final StringModel react = new StringModel();
 		react.setGLVersion(glVersion);
-		react.setGlyphs("Rreact");
+		react.setGlyphs("React");
 		react.setFont(ubuntu.deriveFont(Font.PLAIN, 15));
 		react.setWindowWidth(windowWidth);
 		react.create();
