@@ -469,6 +469,14 @@ public class Sandbox {
 	}
 
 	private static void addTransparentPlane() {
+		final Font ubuntu;
+		try {
+			ubuntu = Font.createFont(Font.TRUETYPE_FONT, Sandbox.class.getResourceAsStream("/fonts/ubuntu-r.ttf"));
+		} catch (FontFormatException | IOException e) {
+			System.out.println(e);
+			return;
+		}
+
 		final Model model = glVersion.createModel();
 		model.getVertexArray().setData(MeshGenerator.generatePlane(null, new Vector2(4, 4)));
 		model.setMaterial(solidMaterial);
@@ -476,6 +484,52 @@ public class Sandbox {
 		model.setPosition(new org.spout.math.vector.Vector3(0, 10, -10));
 		model.create();
 		transparencyList.add(model);
+
+		final StringModel sandbox = new StringModel();
+		sandbox.setGLVersion(glVersion);
+		sandbox.setGlyphs("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz &.'?:()");
+		sandbox.setFont(ubuntu.deriveFont(Font.PLAIN, 145));
+		sandbox.setWindowWidth(windowWidth);
+		sandbox.create();
+		sandbox.setPosition(model.getPosition().add(-1.9f, 1.7f, 0.01f));
+		final String white = "#ffffffff", brown = "#ffC19953", green = "#ff00ff00", cyan = "#ff4fB5ff";
+		sandbox.setString(brown + "Sandbox\n" + white + "Powered by " + green + "Caustic" + white + " & " + cyan + "React\n" + white + "...\n...\n" + "I bet you didn't expect text on the glass huh?\nTry left clicking to spawn a cone (:D) and right click to delete a \nshape (D:). Don't mind the creepers, they don't go boom...");
+		transparencyList.add(sandbox);
+
+		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/";
+		final Material spoutMaterial = glVersion.createMaterial();
+		final Program spoutProgram = spoutMaterial.getProgram();
+		spoutProgram.addShaderSource(ShaderType.VERTEX, Sandbox.class.getResourceAsStream(shaderPath + "textured.vert"));
+		spoutProgram.addShaderSource(ShaderType.FRAGMENT, Sandbox.class.getResourceAsStream(shaderPath + "textured.frag"));
+		if (glVersion == GLVersion.GL20) {
+			spoutProgram.addAttributeLayout("position", 0);
+			spoutProgram.addAttributeLayout("normal", 1);
+			spoutProgram.addAttributeLayout("textureCoords", 2);
+		}
+		spoutProgram.addTextureLayout("diffuse", 0);
+		spoutProgram.addTextureLayout("specular", 1);
+		final UniformHolder texturedUniforms = spoutMaterial.getUniforms();
+		texturedUniforms.add(new Vector3Uniform("lightPosition", lightPosition));
+		texturedUniforms.add(new FloatUniform("diffuseIntensity", diffuseIntensity));
+		texturedUniforms.add(new FloatUniform("specularIntensity", specularIntensity));
+		texturedUniforms.add(new FloatUniform("ambientIntensity", ambientIntensity));
+		texturedUniforms.add(new FloatUniform("lightAttenuation", lightAttenuation));
+		spoutMaterial.create();
+
+		final Texture spoutTexture = glVersion.createTexture();
+		spoutTexture.setFormat(ImageFormat.RGBA);
+		spoutTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/spout.png"));
+		spoutTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
+		spoutTexture.setUnit(0);
+		spoutTexture.create();
+		spoutMaterial.addTexture(spoutTexture);
+
+		final Model spout = glVersion.createModel();
+		spout.getVertexArray().setData(MeshGenerator.generateTexturedPlane(null, new Vector2(1f, 1f)));
+		spout.setMaterial(spoutMaterial);
+		spout.setPosition(new org.spout.math.vector.Vector3(0, 10, -10.001));
+		spout.create();
+		modelList.add(spout);
 	}
 
 	private static void addScreenPlane() {
