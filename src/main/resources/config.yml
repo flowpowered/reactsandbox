@@ -6,6 +6,8 @@ Input:
 Appearance:
     # OpenGL versions: GL20 or GL30
     GLVersion: GL30
+    # Anti aliasing value for MSAA
+    MSAA: 4
     # Back ground color in RGB float components.
     BackgroundColor: 0.2, 0.2, 0.2
     # AABB color in RGB floats.

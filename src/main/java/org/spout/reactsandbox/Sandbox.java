@@ -329,6 +329,7 @@ public class Sandbox {
 			cameraSpeed = ((Number) inputConfig.get("CameraSpeed")).floatValue();
 			glVersion = GLVersion.valueOf(((String) appearanceConfig.get("GLVersion")).toUpperCase());
 			SandboxRenderer.setGLVersion(glVersion);
+			SandboxRenderer.setMSAA(((Number) appearanceConfig.get("MSAA")).intValue());
 			SandboxRenderer.setBackgroundColor(parseColor(((String) appearanceConfig.get("BackgroundColor")), 0));
 			SandboxRenderer.setAABBColor(parseColor(((String) appearanceConfig.get("AABBColor")), 1));
 			SandboxRenderer.setDiamondColor(parseColor(((String) appearanceConfig.get("ConeShapeColor")), 1));

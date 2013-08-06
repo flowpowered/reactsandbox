@@ -66,12 +66,14 @@ import org.spout.renderer.util.StringModel;
  *
  */
 public class SandboxRenderer {
-	// WINDOW
+	// CONSTANTS
 	private static final String WINDOW_TITLE = "Sandbox";
 	private static final Vector2 WINDOW_SIZE = new Vector2(1200, 800);
 	private static final float FIELD_OF_VIEW = 75;
 	private static final float NEAR_PLANE = 0.001f;
 	private static final float FAR_PLANE = 100;
+	// ANTI ALIASING
+	private static int MSAA = 4;
 	// SETTINGS
 	private static Color backgroundColor = Color.DARK_GRAY;
 	private static boolean cullBackFaces = true;
@@ -150,6 +152,7 @@ public class SandboxRenderer {
 		renderer = glVersion.createRenderer();
 		renderer.setWindowTitle(WINDOW_TITLE);
 		renderer.setWindowSize(WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		renderer.setMSAA(MSAA);
 		renderer.create();
 		renderer.setClearColor(backgroundColor);
 	}
@@ -277,6 +280,7 @@ public class SandboxRenderer {
 		woodDiffuseTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"));
 		woodDiffuseTexture.setMagFilter(FilterMode.LINEAR);
 		woodDiffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
+		woodDiffuseTexture.setAnisotropicFiltering(16);
 		woodDiffuseTexture.create();
 		// WOOD SPECULAR
 		woodSpecularTexture = glVersion.createTexture();
@@ -284,6 +288,7 @@ public class SandboxRenderer {
 		woodSpecularTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/wood_specular.png"));
 		woodSpecularTexture.setMagFilter(FilterMode.LINEAR);
 		woodSpecularTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
+		woodSpecularTexture.setAnisotropicFiltering(16);
 		woodSpecularTexture.create();
 		// SPOUT LOGO
 		spoutLogoTexture = glVersion.createTexture();
@@ -462,6 +467,10 @@ public class SandboxRenderer {
 
 	public static void setGLVersion(GLVersion version) {
 		glVersion = version;
+	}
+
+	public static void setMSAA(int value) {
+		MSAA = value;
 	}
 
 	public static void setCullBackFaces(boolean cull) {
