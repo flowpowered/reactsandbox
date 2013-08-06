@@ -119,7 +119,7 @@ public class Sandbox {
 			ex.printStackTrace();
 			final String name = ex.getClass().getSimpleName();
 			final String message = ex.getMessage();
-			Sys.alert("Error: " + name, message == null || message.trim().equals("") ? name : message);
+			Sys.alert("Error: " + name, message == null || message.trim().isEmpty() ? name : message);
 			System.exit(-1);
 		}
 	}
