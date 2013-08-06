@@ -58,7 +58,6 @@ import org.spout.renderer.gl.Texture.ImageFormat;
 import org.spout.renderer.gl.VertexArray;
 import org.spout.renderer.gl.VertexArray.DrawingMode;
 import org.spout.renderer.loader.ObjFileLoader;
-import org.spout.renderer.util.InstancedModel;
 import org.spout.renderer.util.InstancedStringModel;
 import org.spout.renderer.util.StringModel;
 
@@ -641,7 +640,7 @@ public class SandboxRenderer {
 		final String white = "#ffffffff", brown = "#ffC19953", green = "#ff00ff00", cyan = "#ff4fB5ff";
 		sandboxModel.setString(brown + "Sandbox\n" + white + "Powered by " + green + "Caustic" + white + " & " + cyan + "React");
 		guiRenderList.add(sandboxModel);
-		final InstancedStringModel fpsModel = new InstancedStringModel(sandboxModel);
+		final InstancedStringModel fpsModel = sandboxModel.createStringModelInstance();
 		fpsModel.setPosition(new Vector3(0.005, aspect / 2 + 0.285, -0.001));
 		fpsModel.setString("FPS: " + fpsMonitor.getFPS());
 		guiRenderList.add(fpsModel);
@@ -657,7 +656,7 @@ public class SandboxRenderer {
 		model.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(-90, 0, 1, 0));
 		modelRenderList.add(model);
 		// Add a second mob, instanced from the first one
-		final Model instancedMobModel = new InstancedModel(model);
+		final Model instancedMobModel = model.createModelInstance();
 		instancedMobModel.setPosition(new Vector3(-10, 10, 0));
 		instancedMobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(90, 0, 1, 0));
 		modelRenderList.add(instancedMobModel);
