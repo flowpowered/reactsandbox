@@ -6,10 +6,6 @@ Input:
 Appearance:
     # OpenGL versions: GL20 or GL30
     GLVersion: GL30
-    # Window size in width and height.
-    WindowSize: 1200, 800
-    # Field of view in degrees. Avoid values >= 180.
-    FieldOfView: 75
     # Back ground color in RGB float components.
     BackgroundColor: 0.2, 0.2, 0.2
     # AABB color in RGB floats.

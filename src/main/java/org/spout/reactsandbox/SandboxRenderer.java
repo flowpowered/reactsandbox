@@ -44,8 +44,8 @@ import org.spout.renderer.data.Uniform.Vector3Uniform;
 import org.spout.renderer.data.UniformHolder;
 import org.spout.renderer.gl.FrameBuffer;
 import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
-import org.spout.renderer.gl.Material;
-import org.spout.renderer.gl.Model;
+import org.spout.renderer.Material;
+import org.spout.renderer.Model;
 import org.spout.renderer.gl.Program;
 import org.spout.renderer.gl.RenderBuffer;
 import org.spout.renderer.gl.Renderer;
@@ -300,9 +300,7 @@ public class SandboxRenderer {
 	private static void initMaterials() {
 		UniformHolder uniforms;
 		// SOLID
-		solidMaterial = glVersion.createMaterial();
-		solidMaterial.setProgram(solidProgram);
-		solidMaterial.create();
+		solidMaterial = new Material(solidProgram);
 		uniforms = solidMaterial.getUniforms();
 		uniforms.add(lightPositionUniform);
 		uniforms.add(diffuseIntensityUniform);
@@ -310,14 +308,10 @@ public class SandboxRenderer {
 		uniforms.add(ambientIntensityUniform);
 		uniforms.add(lightAttenuationUniform);
 		// WIREFRAME
-		wireframeMaterial = glVersion.createMaterial();
-		wireframeMaterial.setProgram(wireframeProgram);
-		wireframeMaterial.create();
+		wireframeMaterial = new Material(wireframeProgram);
 		// CREEPER
-		creeperMaterial = glVersion.createMaterial();
-		creeperMaterial.setProgram(texturedProgram);
+		creeperMaterial = new Material(texturedProgram);
 		creeperMaterial.addTexture(0, creeperSkinTexture);
-		creeperMaterial.create();
 		uniforms = creeperMaterial.getUniforms();
 		uniforms.add(lightPositionUniform);
 		uniforms.add(diffuseIntensityUniform);
@@ -325,11 +319,9 @@ public class SandboxRenderer {
 		uniforms.add(ambientIntensityUniform);
 		uniforms.add(lightAttenuationUniform);
 		// WOOD
-		woodMaterial = glVersion.createMaterial();
-		woodMaterial.setProgram(texturedProgram);
+		woodMaterial = new Material(texturedProgram);
 		woodMaterial.addTexture(0, woodDiffuseTexture);
 		woodMaterial.addTexture(1, woodSpecularTexture);
-		woodMaterial.create();
 		uniforms = woodMaterial.getUniforms();
 		uniforms.add(lightPositionUniform);
 		uniforms.add(diffuseIntensityUniform);
@@ -337,10 +329,8 @@ public class SandboxRenderer {
 		uniforms.add(ambientIntensityUniform);
 		uniforms.add(lightAttenuationUniform);
 		// SCREEN
-		screenMaterial = glVersion.createMaterial();
-		screenMaterial.setProgram(screenProgram);
+		screenMaterial = new Material(screenProgram);
 		screenMaterial.addTexture(0, screenTexture);
-		screenMaterial.create();
 	}
 
 	private static void initRenderBuffers() {
@@ -391,20 +381,14 @@ public class SandboxRenderer {
 
 	private static void disposeRenderLists() {
 		// MODEL
+		modelRenderList.clear();
 		modelRenderList.clearCapabilities();
-		for (Model model : modelRenderList) {
-			model.destroy();
-		}
 		// TRANSPARENCY
+		transparencyRenderList.clear();
 		transparencyRenderList.clearCapabilities();
-		for (Model model : transparencyRenderList) {
-			model.destroy();
-		}
 		// GUI
+		guiRenderList.clear();
 		guiRenderList.clearCapabilities();
-		for (Model model : guiRenderList) {
-			model.destroy();
-		}
 	}
 
 	private static void disposeShaders() {
@@ -448,15 +432,15 @@ public class SandboxRenderer {
 
 	private static void disposeMaterials() {
 		// SOLID
-		solidMaterial.destroy();
+		solidMaterial = null;
 		// WIRE
-		wireframeMaterial.destroy();
+		wireframeMaterial = null;
 		// CREEPER
-		creeperMaterial.destroy();
+		creeperMaterial = null;
 		// WOOD
-		woodMaterial.destroy();
+		woodMaterial = null;
 		// SCREEN
-		screenMaterial.destroy();
+		screenMaterial = null;
 	}
 
 	private static void disposeRenderBuffers() {
@@ -545,68 +529,53 @@ public class SandboxRenderer {
 	}
 
 	public static Model addAABB(Vector3 position, Vector3 size) {
-		final Model model = glVersion.createModel();
-		model.setVertexArray(unitCubeWireVertexArray);
-		model.setMaterial(wireframeMaterial);
+		final Model model = new Model(unitCubeWireVertexArray, wireframeMaterial);
 		model.setPosition(position);
 		model.setScale(size);
-		model.create();
 		model.getUniforms().add(new ColorUniform("modelColor", aabbModelColor));
 		modelRenderList.add(model);
 		return model;
 	}
 
 	public static Model addBox(Vector3 position, Quaternion orientation, Vector3 size) {
-		final Model model = glVersion.createModel();
 		final VertexArray vertexArray = glVersion.createVertexArray();
 		vertexArray.setData(MeshGenerator.generateTexturedCuboid(null, SandboxUtil.toReactVector3(size.mul(2))));
 		vertexArray.create();
-		model.setVertexArray(vertexArray);
-		model.setMaterial(woodMaterial);
+		final Model model = new Model(vertexArray, woodMaterial);
 		model.setPosition(position);
 		model.setRotation(orientation);
-		model.create();
 		modelRenderList.add(model);
 		return model;
 	}
 
 	public static Model addDiamond(Vector3 position, Quaternion orientation) {
-		final Model model = glVersion.createModel();
-		model.setVertexArray(diamondModelVertexArray);
-		model.setMaterial(solidMaterial);
+		final Model model = new Model(diamondModelVertexArray, solidMaterial);
 		model.setPosition(position);
 		model.setRotation(orientation);
-		model.create();
 		model.getUniforms().add(new ColorUniform("modelColor", diamondModelColor));
 		modelRenderList.add(model);
 		return model;
 	}
 
 	public static Model addCylinder(Vector3 position, Quaternion orientation, float radius, float height) {
-		final Model model = glVersion.createModel();
 		final VertexArray vertexArray = glVersion.createVertexArray();
 		vertexArray.setData(MeshGenerator.generateCylinder(null, radius, height));
 		vertexArray.create();
-		model.setVertexArray(vertexArray);
-		model.setMaterial(solidMaterial);
+		final Model model = new Model(vertexArray, solidMaterial);
 		model.setPosition(position);
 		model.setRotation(orientation);
-		model.create();
 		model.getUniforms().add(new ColorUniform("modelColor", cylinderModelColor));
 		modelRenderList.add(model);
 		return model;
 	}
 
 	public static Model addSphere(Vector3 position, Quaternion orientation, float radius) {
-		final Model model = glVersion.createModel();
 		final VertexArray vertexArray = glVersion.createVertexArray();
 		vertexArray.setData(MeshGenerator.generateSphere(null, radius));
 		vertexArray.create();
-		model.setVertexArray(vertexArray);
-		model.setMaterial(solidMaterial);
+		final Model model = new Model(vertexArray, solidMaterial);
 		model.setPosition(position);
 		model.setRotation(orientation);
-		model.create();
 		model.getUniforms().add(new ColorUniform("modelColor", sphereModelColor));
 		modelRenderList.add(model);
 		return model;
@@ -629,29 +598,23 @@ public class SandboxRenderer {
 	}
 
 	private static void addScreenPlane() {
-		final Model model = glVersion.createModel();
 		final VertexArray vertexArray = glVersion.createVertexArray();
 		final float aspect = WINDOW_SIZE.getY() / WINDOW_SIZE.getX();
 		vertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2(1, aspect)));
 		vertexArray.create();
-		model.setVertexArray(vertexArray);
-		model.setMaterial(screenMaterial);
+		final Model model = new Model(vertexArray, screenMaterial);
 		model.setPosition(new Vector3(0.5, aspect / 2, -0.002));
-		model.create();
 		guiRenderList.add(model);
 	}
 
 	private static void addCrosshairs() {
-		final Model model = glVersion.createModel();
 		final VertexArray vertexArray = glVersion.createVertexArray();
 		vertexArray.setData(MeshGenerator.generateCrosshairs(null, 0.02f));
 		vertexArray.create();
-		model.setVertexArray(vertexArray);
-		model.setMaterial(wireframeMaterial);
+		final Model model = new Model(vertexArray, wireframeMaterial);
 		vertexArray.setDrawingMode(DrawingMode.LINES);
 		model.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
 		model.setPosition(new Vector3(0.5, (WINDOW_SIZE.getY() / WINDOW_SIZE.getX()) / 2, -0.001));
-		model.create();
 		guiRenderList.add(model);
 	}
 
@@ -663,19 +626,13 @@ public class SandboxRenderer {
 			System.out.println(e);
 			return;
 		}
-		final StringModel sandboxModel = new StringModel();
-		sandboxModel.setGLVersion(glVersion);
-		sandboxModel.setGlyphs("SandboxPweryCusticRF0123456789,&: ");
-		sandboxModel.setFont(ubuntu.deriveFont(Font.PLAIN, 15));
-		sandboxModel.setWindowWidth(WINDOW_SIZE.getFloorX());
-		sandboxModel.create();
+		final StringModel sandboxModel = new StringModel(glVersion, "SandboxPweryCusticRF0123456789,&: ", ubuntu.deriveFont(Font.PLAIN, 15), WINDOW_SIZE.getFloorX());
 		final float aspect = WINDOW_SIZE.getY() / WINDOW_SIZE.getX();
 		sandboxModel.setPosition(new Vector3(0.005, aspect / 2 + 0.315, -0.001));
 		final String white = "#ffffffff", brown = "#ffC19953", green = "#ff00ff00", cyan = "#ff4fB5ff";
 		sandboxModel.setString(brown + "Sandbox\n" + white + "Powered by " + green + "Caustic" + white + " & " + cyan + "React");
 		guiRenderList.add(sandboxModel);
 		final InstancedStringModel fpsModel = new InstancedStringModel(sandboxModel);
-		fpsModel.create();
 		fpsModel.setPosition(new Vector3(0.005, aspect / 2 + 0.285, -0.001));
 		fpsModel.setString("FPS: " + fpsMonitor.getFPS());
 		guiRenderList.add(fpsModel);
@@ -683,34 +640,27 @@ public class SandboxRenderer {
 	}
 
 	private static void addCreeper() {
-		final Model model = glVersion.createModel();
 		final VertexArray vertexArray = glVersion.createVertexArray();
 		vertexArray.setData(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
 		vertexArray.create();
-		model.setVertexArray(vertexArray);
-		model.setMaterial(creeperMaterial);
+		final Model model = new Model(vertexArray, creeperMaterial);
 		model.setPosition(new Vector3(10, 10, 0));
 		model.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(-90, 0, 1, 0));
-		model.create();
 		modelRenderList.add(model);
 		// Add a second mob, instanced from the first one
 		final Model instancedMobModel = new InstancedModel(model);
-		instancedMobModel.create();
 		instancedMobModel.setPosition(new Vector3(-10, 10, 0));
 		instancedMobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(90, 0, 1, 0));
 		modelRenderList.add(instancedMobModel);
 	}
 
 	private static void addTransparentPlane() {
-		final Model model = glVersion.createModel();
 		final VertexArray vertexArray = glVersion.createVertexArray();
 		vertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2(4, 4)));
 		vertexArray.create();
-		model.setVertexArray(vertexArray);
-		model.setMaterial(solidMaterial);
+		final Model model = new Model(vertexArray, solidMaterial);
 		model.getUniforms().add(new ColorUniform("modelColor", new Color(1f, 1f, 1f, 0.5f)));
 		model.setPosition(new Vector3(0, 10, -10));
-		model.create();
 		transparencyRenderList.add(model);
 	}
 

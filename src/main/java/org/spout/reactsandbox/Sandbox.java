@@ -61,7 +61,7 @@ import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
 import org.spout.renderer.GLVersion;
-import org.spout.renderer.gl.Model;
+import org.spout.renderer.Model;
 
 /**
  * The main class of the ReactSandbox.
@@ -174,10 +174,8 @@ public class Sandbox {
 		}
 		final Model shapeModel = shapes.remove(body);
 		SandboxRenderer.removeModel(shapeModel);
-		shapeModel.destroy();
 		final Model aabbModel = aabbs.remove(body);
 		SandboxRenderer.removeModel(aabbModel);
-		aabbModel.destroy();
 		if (body instanceof RigidBody) {
 			world.destroyRigidBody((RigidBody) body);
 		}
