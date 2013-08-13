@@ -1,7 +1,5 @@
 #version 330
 
-const vec3 ZERO = vec3(0, 0, 0);
-
 in vec2 textureUV;
 noperspective in vec3 viewRay;
 in vec3 lightPositionView;
@@ -32,7 +30,7 @@ void main() {
     }
 
     float depth = linearizeDepth(texture(depths, textureUV).r);
-    vec3 occlusion = texture(occlusion, textureUV).rgb;
+    float occlusion = texture(occlusion, textureUV).r;
 
     vec3 positionView = viewRay * depth;
 
@@ -46,13 +44,12 @@ void main() {
 
     float specularTerm;
     if (normalDotLight > 0) {
-        specularTerm = specularIntensity * distanceIntensity * pow(max(0, dot(reflect(lightDirection, normalView), normalize(positionView))), 20);
+        specularTerm = specularIntensity * distanceIntensity * pow(max(0, dot(reflect(lightDirection, normalView), normalize(viewRay))), 20);
     } else {
         specularTerm = 0;
     }
 
     float ambientTerm = ambientIntensity;
 
-    outputColor = color * (diffuseTerm + specularTerm + ambientTerm);
-    //outputColor = occlusion;
+    outputColor = color * (diffuseTerm + specularTerm + ambientTerm) * occlusion;
 }

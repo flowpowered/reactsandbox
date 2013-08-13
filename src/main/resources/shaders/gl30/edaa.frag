@@ -72,5 +72,7 @@ void main() {
     vec4 s1 = texture(diffuse, offset + tc2 * w);
     vec4 s2 = texture(diffuse, offset + tc3 * w);
     vec4 s3 = texture(diffuse, offset + tc4 * w);
-    outputColor = ((s0 + s1 + s2 + s3) / 4).rgb;
+    vec4 s = (s0 + s1 + s2 + s3) / 4;
+
+    outputColor = s.rgb;
 }

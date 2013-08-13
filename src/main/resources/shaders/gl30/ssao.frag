@@ -3,9 +3,9 @@
 const int MAX_KERNEL_SIZE = 128;
 
 in vec2 textureUV;
-noperspective in vec3 viewDirection;
+noperspective in vec3 viewRay;
 
-layout(location = 0) out vec3 outputOcclusion;
+layout(location = 0) out float outputOcclusion;
 
 uniform sampler2D normals;
 uniform sampler2D depths;
@@ -15,6 +15,7 @@ uniform int kernelSize;
 uniform vec3[MAX_KERNEL_SIZE] kernel;
 uniform float radius;
 uniform vec2 noiseScale;
+uniform float power;
 
 float linearizeDepth(in float depth) {
     return projectionMatrix[3][2] / (depth + projectionMatrix[2][2]);
@@ -22,29 +23,24 @@ float linearizeDepth(in float depth) {
 
 void main() {
     // Reconstruct the position of the fragment from the depth
-    float depth = texture(depths, textureUV).r;
-    depth = linearizeDepth(depth);
-    vec3 origin = viewDirection * depth;
+    float depth = linearizeDepth(texture(depths, textureUV).r);
+    vec3 origin = viewRay * depth;
 
     // Get the fragment's normal
     vec3 normal = texture(normals, textureUV).xyz;
 
-    // Construct a change of basis matrix to reorient our sample kernel along the object's normal.
-
+    // Construct a change of basis matrix to reorient our sample kernel along the object's normal
     // Extract the random vector from the noise texture
-    vec3 rvec = texture(noise, textureUV * noiseScale).xyz;
+    vec3 noiseVector = texture(noise, textureUV * noiseScale).xyz;
 
-    // Calculate the tangent and bitangent using gram-shmidt.
-    vec3 tangent = normalize(rvec - normal * dot(rvec, normal));
-    vec3 bitangent = cross(normal, tangent);
+    // Calculate the tangent and bi-tangent using Gram-Schmidt
+    vec3 tangent = normalize(noiseVector - normal * dot(noiseVector, normal));
+    vec3 biTangent = cross(normal, tangent);
 
     // Create the kernel basis matrix
-    mat3 tbn = mat3(tangent, bitangent, normal);
+    mat3 tbn = mat3(tangent, biTangent, normal);
 
     float occlusion = 0;
-
-    float f = 0;
-
     for (int i = 0; i < kernelSize; i++) {
         // Get the sample position
         vec3 sample = tbn * kernel[i];
@@ -56,21 +52,13 @@ void main() {
         offset.xy = offset.xy * 0.5 + 0.5;
 
         // Get the sample depth
-        float sampleDepth = linearizeDepth(texture(depths, offset.xy).r);
+        float sampleDepth = -linearizeDepth(texture(depths, offset.xy).r);
 
         // Range check and accumulate
         float rangeCheck = smoothstep(0, 1, radius / abs(origin.z - sampleDepth));
-        occlusion += rangeCheck * step(sampleDepth, sample.z);
-
-        f += rangeCheck;
+        occlusion += rangeCheck * step(sample.z, sampleDepth);
     }
 
-    occlusion = 1 - occlusion / kernelSize;
-
-    f /= kernelSize;
-
-    outputOcclusion = vec3(occlusion, occlusion, occlusion);
-    //outputOcclusion = vec3(depth, depth, depth);
-    //outputOcclusion = (normal + 1) / 2;
-    //outputOcclusion = vec3(v.xy, 0);
+    // Average and invert occlusion
+    outputOcclusion = pow(1 - occlusion / kernelSize, power);
 }

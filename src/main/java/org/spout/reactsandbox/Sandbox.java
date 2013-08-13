@@ -144,22 +144,22 @@ public class Sandbox {
 		final Model aabbModel = SandboxRenderer.addAABB(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
 		aabbs.put(body, aabbModel);
 		final CollisionShape shape = body.getCollisionShape();
+		final float margin = shape.getMargin() / 2;
 		final Model shapeModel;
 		switch (shape.getType()) {
 			case BOX:
 				final BoxShape box = (BoxShape) shape;
-				shapeModel = SandboxRenderer.addBox(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), SandboxUtil.toMathVector3(box.getExtent()));
+				shapeModel = SandboxRenderer.addBox(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), SandboxUtil.toMathVector3(box.getExtent()).add(margin, margin, margin));
 				break;
 			case CONE:
 				shapeModel = SandboxRenderer.addDiamond(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation));
 				break;
 			case CYLINDER:
 				final CylinderShape cylinder = (CylinderShape) shape;
-				shapeModel = SandboxRenderer.addCylinder(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), cylinder.getRadius(), cylinder.getHeight());
+				shapeModel = SandboxRenderer.addCylinder(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), cylinder.getRadius() + margin, cylinder.getHeight() + margin);
 				break;
 			case SPHERE:
-				final SphereShape sphere = (SphereShape) shape;
-				shapeModel = SandboxRenderer.addSphere(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), sphere.getRadius());
+				shapeModel = SandboxRenderer.addSphere(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), margin * 2);
 				break;
 			default:
 				throw new IllegalArgumentException("Unsupported collision shape: " + shape.getType());

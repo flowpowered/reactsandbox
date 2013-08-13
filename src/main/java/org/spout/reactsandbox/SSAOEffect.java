@@ -51,19 +51,21 @@ import org.spout.renderer.gl.Texture.InternalFormat;
 public class SSAOEffect {
 	private final GLVersion version;
 	private final Vector2 resolution;
-	private final int noiseSize;
-	private Texture noiseTexture;
 	private final int kernelSize;
-	private Vector3[] kernel;
+	private final int noiseSize;
 	private final float radius;
+	private final float power;
+	private Texture noiseTexture;
+	private Vector3[] kernel;
 	private Vector2 noiseScale;
 
-	public SSAOEffect(GLVersion version, Vector2 resolution, int kernelSize, int noiseSize, float radius) {
+	public SSAOEffect(GLVersion version, Vector2 resolution, int kernelSize, int noiseSize, float radius, float power) {
 		this.version = version;
 		this.resolution = resolution;
 		this.kernelSize = kernelSize;
 		this.noiseSize = noiseSize;
 		this.radius = radius;
+		this.power = power;
 	}
 
 	public void init() {
@@ -74,7 +76,7 @@ public class SSAOEffect {
 			scale = GenericMath.lerp(0.1f, 1, scale * scale);
 			// Create a set of random unit vectors inside a hemisphere
 			// The vectors are scaled so that the amount falls of as we get further away from the center
-			kernel[i] = new Vector3(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, -random.nextFloat()).normalize().mul(scale);
+			kernel[i] = new Vector3(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, random.nextFloat()).normalize().mul(scale);
 		}
 		noiseScale = resolution.div(noiseSize);
 		final int noiseTextureSize = noiseSize * noiseSize;
@@ -109,5 +111,8 @@ public class SSAOEffect {
 		destination.add(new Vector3ArrayUniform("kernel", kernel));
 		destination.add(new FloatUniform("radius", radius));
 		destination.add(new Vector2Uniform("noiseScale", noiseScale));
+		destination.add(new FloatUniform("power", power));
+		destination.add(new IntUniform("noiseSize", noiseSize));
+		destination.add(new Vector2Uniform("texelSize", new Vector2(1, 1).div(resolution)));
 	}
 }
