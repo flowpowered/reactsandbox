@@ -76,7 +76,7 @@ public class Sandbox {
 	private static float cameraSpeed = 0.2f;
 	// Physics objects
 	private static DynamicsWorld world;
-	private static Vector3 gravity = new Vector3(0, -9.81f, 0);
+	private static final Vector3 gravity = new Vector3(0, -9.81f, 0);
 	private static final Map<CollisionBody, Model> shapes = new HashMap<>();
 	private static final Map<CollisionBody, Model> aabbs = new HashMap<>();
 	// Input
@@ -329,7 +329,6 @@ public class Sandbox {
 			cameraSpeed = ((Number) inputConfig.get("CameraSpeed")).floatValue();
 			glVersion = GLVersion.valueOf(((String) appearanceConfig.get("GLVersion")).toUpperCase());
 			SandboxRenderer.setGLVersion(glVersion);
-			SandboxRenderer.setMSAA(((Number) appearanceConfig.get("MSAA")).intValue());
 			SandboxRenderer.setBackgroundColor(parseColor(((String) appearanceConfig.get("BackgroundColor")), 0));
 			SandboxRenderer.setAABBColor(parseColor(((String) appearanceConfig.get("AABBColor")), 1));
 			SandboxRenderer.setDiamondColor(parseColor(((String) appearanceConfig.get("ConeShapeColor")), 1));

@@ -37,24 +37,27 @@ import org.spout.math.vector.Vector2;
 import org.spout.math.vector.Vector3;
 import org.spout.renderer.Camera;
 import org.spout.renderer.GLVersion;
+import org.spout.renderer.Material;
+import org.spout.renderer.Model;
 import org.spout.renderer.data.RenderList;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
+import org.spout.renderer.data.Uniform.Vector2Uniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
 import org.spout.renderer.data.UniformHolder;
+import org.spout.renderer.data.VertexAttribute.DataType;
 import org.spout.renderer.gl.FrameBuffer;
 import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
-import org.spout.renderer.Material;
-import org.spout.renderer.Model;
 import org.spout.renderer.gl.Program;
-import org.spout.renderer.gl.RenderBuffer;
 import org.spout.renderer.gl.Renderer;
 import org.spout.renderer.gl.Renderer.Capability;
 import org.spout.renderer.gl.Shader;
 import org.spout.renderer.gl.Shader.ShaderType;
 import org.spout.renderer.gl.Texture;
 import org.spout.renderer.gl.Texture.FilterMode;
-import org.spout.renderer.gl.Texture.ImageFormat;
+import org.spout.renderer.gl.Texture.Format;
+import org.spout.renderer.gl.Texture.InternalFormat;
+import org.spout.renderer.gl.Texture.WrapMode;
 import org.spout.renderer.gl.VertexArray;
 import org.spout.renderer.gl.VertexArray.DrawingMode;
 import org.spout.renderer.loader.ObjFileLoader;
@@ -69,11 +72,9 @@ public class SandboxRenderer {
 	// CONSTANTS
 	private static final String WINDOW_TITLE = "Sandbox";
 	private static final Vector2 WINDOW_SIZE = new Vector2(1200, 800);
-	private static final float FIELD_OF_VIEW = 75;
-	private static final float NEAR_PLANE = 0.001f;
+	private static final float FIELD_OF_VIEW = 60;
+	private static final float NEAR_PLANE = 0.1f;
 	private static final float FAR_PLANE = 100;
-	// ANTI ALIASING
-	private static int MSAA = 4;
 	// SETTINGS
 	private static Color backgroundColor = Color.DARK_GRAY;
 	private static boolean cullBackFaces = true;
@@ -92,8 +93,10 @@ public class SandboxRenderer {
 	private static Renderer renderer;
 	// RENDER LISTS
 	private static final RenderList modelRenderList = new RenderList("models", modelCamera, 0);
-	private static final RenderList transparencyRenderList = new RenderList("transparency", modelCamera, 1);
-	private static final RenderList guiRenderList = new RenderList("gui", guiCamera, 2);
+	private static final RenderList ssaoRenderList = new RenderList("ssao", modelCamera, 1);
+	private static final RenderList lightingRenderList = new RenderList("lighting", modelCamera, 2);
+	private static final RenderList antiAliasingRenderList = new RenderList("antiAliasing", modelCamera, 3);
+	private static final RenderList guiRenderList = new RenderList("gui", guiCamera, 4);
 	// SHADERS
 	private static Shader solidVert;
 	private static Shader solidFrag;
@@ -101,32 +104,50 @@ public class SandboxRenderer {
 	private static Shader wireframeFrag;
 	private static Shader texturedVert;
 	private static Shader texturedFrag;
+	private static Shader ssaoVert;
+	private static Shader ssaoFrag;
+	private static Shader lightingVert;
+	private static Shader lightingFrag;
+	private static Shader antiAliasingVert;
+	private static Shader antiAliasingFrag;
 	private static Shader screenVert;
 	private static Shader screenFrag;
 	// PROGRAMS
 	private static Program solidProgram;
 	private static Program wireframeProgram;
 	private static Program texturedProgram;
+	private static Program ssaoProgram;
+	private static Program lightingProgram;
+	private static Program antiAliasingProgram;
 	private static Program screenProgram;
 	// TEXTURES
 	private static Texture creeperSkinTexture;
 	private static Texture woodDiffuseTexture;
-	private static Texture woodSpecularTexture;
 	private static Texture spoutLogoTexture;
-	private static Texture screenTexture;
+	private static Texture colorsTexture;
+	private static Texture normalsTexture;
+	private static Texture depthsTexture;
+	private static Texture ssaoTexture;
+	private static Texture auxTexture;
 	// MATERIALS
 	private static Material solidMaterial;
 	private static Material wireframeMaterial;
 	private static Material creeperMaterial;
 	private static Material woodMaterial;
+	private static Material ssaoMaterial;
+	private static Material lightingMaterial;
+	private static Material antiAliasingMaterial;
 	private static Material screenMaterial;
-	// RENDER BUFFERS
-	private static RenderBuffer depthRenderBuffer;
 	// FRAME BUFFERS
 	private static FrameBuffer modelFrameBuffer;
+	private static FrameBuffer ssaoFrameBuffer;
+	private static FrameBuffer lightingFrameBuffer;
+	private static FrameBuffer antiAliasingFrameBuffer;
 	// VERTEX ARRAYS
 	private static VertexArray unitCubeWireVertexArray;
 	private static VertexArray diamondModelVertexArray;
+	// SSAO
+	private static SSAOEffect ssaoEffect;
 	// MODEL PROPERTIES
 	private static Color aabbModelColor;
 	private static Color diamondModelColor;
@@ -143,18 +164,20 @@ public class SandboxRenderer {
 		initPrograms();
 		initTextures();
 		initMaterials();
-		initRenderBuffers();
 		initFrameBuffers();
 		initVertexArrays();
 	}
 
 	private static void initRenderer() {
+		// RENDERER
 		renderer = glVersion.createRenderer();
 		renderer.setWindowTitle(WINDOW_TITLE);
 		renderer.setWindowSize(WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
-		renderer.setMSAA(MSAA);
 		renderer.create();
 		renderer.setClearColor(backgroundColor);
+		// SSAO
+		ssaoEffect = new SSAOEffect(glVersion, WINDOW_SIZE, 16, 1, 1);
+		ssaoEffect.init();
 	}
 
 	private static void initRenderLists() {
@@ -167,15 +190,21 @@ public class SandboxRenderer {
 			modelRenderList.addCapability(Capability.DEPTH_CLAMP);
 		}
 		renderer.addRenderList(modelRenderList);
-		// TRANSPARENCY
-		transparencyRenderList.addCapabilities(Capability.DEPTH_TEST, Capability.BLEND);
-		if (glVersion == GLVersion.GL30) {
-			transparencyRenderList.addCapability(Capability.DEPTH_CLAMP);
+		// SSAO
+		if (cullBackFaces) {
+			ssaoRenderList.addCapability(Capability.CULL_FACE);
 		}
-		if (glVersion == GLVersion.GL30) {
-			transparencyRenderList.addCapability(Capability.DEPTH_CLAMP);
+		renderer.addRenderList(ssaoRenderList);
+		// LIGHTING
+		if (cullBackFaces) {
+			lightingRenderList.addCapability(Capability.CULL_FACE);
 		}
-		renderer.addRenderList(transparencyRenderList);
+		renderer.addRenderList(lightingRenderList);
+		// ANTI ALIASING
+		if (cullBackFaces) {
+			antiAliasingRenderList.addCapability(Capability.CULL_FACE);
+		}
+		renderer.addRenderList(antiAliasingRenderList);
 		// GUI
 		guiRenderList.addCapabilities(Capability.DEPTH_TEST, Capability.BLEND);
 		if (cullBackFaces) {
@@ -216,6 +245,36 @@ public class SandboxRenderer {
 		texturedFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "textured.frag"));
 		texturedFrag.setType(ShaderType.FRAGMENT);
 		texturedFrag.create();
+		// SSAO VERT
+		ssaoVert = glVersion.createShader();
+		ssaoVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssao.vert"));
+		ssaoVert.setType(ShaderType.VERTEX);
+		ssaoVert.create();
+		// SSAO FRAG
+		ssaoFrag = glVersion.createShader();
+		ssaoFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssao.frag"));
+		ssaoFrag.setType(ShaderType.FRAGMENT);
+		ssaoFrag.create();
+		// LIGHTING VERT
+		lightingVert = glVersion.createShader();
+		lightingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.vert"));
+		lightingVert.setType(ShaderType.VERTEX);
+		lightingVert.create();
+		// LIGHTING FRAG
+		lightingFrag = glVersion.createShader();
+		lightingFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.frag"));
+		lightingFrag.setType(ShaderType.FRAGMENT);
+		lightingFrag.create();
+		// ANTI ALIASING VERT
+		antiAliasingVert = glVersion.createShader();
+		antiAliasingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "edaa.vert"));
+		antiAliasingVert.setType(ShaderType.VERTEX);
+		antiAliasingVert.create();
+		// ANTI ALIASING FRAG
+		antiAliasingFrag = glVersion.createShader();
+		antiAliasingFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "edaa.frag"));
+		antiAliasingFrag.setType(ShaderType.FRAGMENT);
+		antiAliasingFrag.create();
 		// SCREEN VERT
 		screenVert = glVersion.createShader();
 		screenVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "screen.vert"));
@@ -256,15 +315,47 @@ public class SandboxRenderer {
 			texturedProgram.addAttributeLayout("textureCoords", 2);
 		}
 		texturedProgram.addTextureLayout("diffuse", 0);
-		texturedProgram.addTextureLayout("specular", 1);
 		texturedProgram.create();
+		// SSAO
+		ssaoProgram = glVersion.createProgram();
+		ssaoProgram.addShader(ssaoVert);
+		ssaoProgram.addShader(ssaoFrag);
+		if (glVersion == GLVersion.GL20) {
+			ssaoProgram.addAttributeLayout("position", 0);
+		}
+		ssaoProgram.addTextureLayout("normals", 0);
+		ssaoProgram.addTextureLayout("depths", 1);
+		ssaoProgram.addTextureLayout("noise", 2);
+		ssaoProgram.create();
+		// LIGHTING
+		lightingProgram = glVersion.createProgram();
+		lightingProgram.addShader(lightingVert);
+		lightingProgram.addShader(lightingFrag);
+		if (glVersion == GLVersion.GL20) {
+			lightingProgram.addAttributeLayout("position", 0);
+		}
+		lightingProgram.addTextureLayout("colors", 0);
+		lightingProgram.addTextureLayout("normals", 1);
+		lightingProgram.addTextureLayout("depths", 2);
+		lightingProgram.addTextureLayout("occlusion", 3);
+		lightingProgram.create();
+		// ANTI ALIASING
+		antiAliasingProgram = glVersion.createProgram();
+		antiAliasingProgram.addShader(antiAliasingVert);
+		antiAliasingProgram.addShader(antiAliasingFrag);
+		if (glVersion == GLVersion.GL20) {
+			antiAliasingProgram.addAttributeLayout("position", 0);
+		}
+		antiAliasingProgram.addTextureLayout("diffuse", 0);
+		antiAliasingProgram.addTextureLayout("normals", 1);
+		antiAliasingProgram.addTextureLayout("depths", 2);
+		antiAliasingProgram.create();
 		// SCREEN
 		screenProgram = glVersion.createProgram();
 		screenProgram.addShader(screenVert);
 		screenProgram.addShader(screenFrag);
 		if (glVersion == GLVersion.GL20) {
 			screenProgram.addAttributeLayout("position", 0);
-			screenProgram.addAttributeLayout("textureCoords", 2);
 		}
 		screenProgram.addTextureLayout("diffuse", 0);
 		screenProgram.create();
@@ -282,78 +373,114 @@ public class SandboxRenderer {
 		woodDiffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		woodDiffuseTexture.setAnisotropicFiltering(16);
 		woodDiffuseTexture.create();
-		// WOOD SPECULAR
-		woodSpecularTexture = glVersion.createTexture();
-		woodDiffuseTexture.setFormat(ImageFormat.RED);
-		woodSpecularTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/wood_specular.png"));
-		woodSpecularTexture.setMagFilter(FilterMode.LINEAR);
-		woodSpecularTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
-		woodSpecularTexture.setAnisotropicFiltering(16);
-		woodSpecularTexture.create();
 		// SPOUT LOGO
 		spoutLogoTexture = glVersion.createTexture();
-		spoutLogoTexture.setFormat(ImageFormat.RGBA);
+		spoutLogoTexture.setFormat(Format.RGBA);
 		spoutLogoTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/spout.png"));
 		spoutLogoTexture.create();
-		// SCREEN
-		screenTexture = glVersion.createTexture();
-		screenTexture.setFormat(ImageFormat.RGB);
-		screenTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
-		screenTexture.create();
+		// COLORS
+		colorsTexture = glVersion.createTexture();
+		colorsTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		colorsTexture.create();
+		// NORMALS
+		normalsTexture = glVersion.createTexture();
+		normalsTexture.setInternalFormat(InternalFormat.RGB16F);
+		normalsTexture.setComponentType(DataType.FLOAT);
+		normalsTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		normalsTexture.create();
+		// DEPTHS
+		depthsTexture = glVersion.createTexture();
+		depthsTexture.setFormat(Format.DEPTH);
+		depthsTexture.setInternalFormat(InternalFormat.DEPTH_COMPONENT16);
+		depthsTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		depthsTexture.setWrapS(WrapMode.CLAMP_TO_EDGE);
+		depthsTexture.setWrapT(WrapMode.CLAMP_TO_EDGE);
+		depthsTexture.create();
+		// SSAO
+		ssaoTexture = glVersion.createTexture();
+		// TODO: use RED
+		ssaoTexture.setFormat(Format.RGB);
+		ssaoTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		ssaoTexture.create();
+		// AUX
+		auxTexture = glVersion.createTexture();
+		auxTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		auxTexture.setMagFilter(FilterMode.LINEAR);
+		auxTexture.setMinFilter(FilterMode.LINEAR);
+		auxTexture.create();
 	}
 
 	private static void initMaterials() {
 		UniformHolder uniforms;
 		// SOLID
 		solidMaterial = new Material(solidProgram);
-		uniforms = solidMaterial.getUniforms();
-		uniforms.add(lightPositionUniform);
-		uniforms.add(diffuseIntensityUniform);
-		uniforms.add(specularIntensityUniform);
-		uniforms.add(ambientIntensityUniform);
-		uniforms.add(lightAttenuationUniform);
 		// WIREFRAME
 		wireframeMaterial = new Material(wireframeProgram);
 		// CREEPER
 		creeperMaterial = new Material(texturedProgram);
 		creeperMaterial.addTexture(0, creeperSkinTexture);
-		uniforms = creeperMaterial.getUniforms();
-		uniforms.add(lightPositionUniform);
-		uniforms.add(diffuseIntensityUniform);
-		uniforms.add(specularIntensityUniform);
-		uniforms.add(ambientIntensityUniform);
-		uniforms.add(lightAttenuationUniform);
 		// WOOD
 		woodMaterial = new Material(texturedProgram);
 		woodMaterial.addTexture(0, woodDiffuseTexture);
-		woodMaterial.addTexture(1, woodSpecularTexture);
-		uniforms = woodMaterial.getUniforms();
+		// SSAO
+		ssaoMaterial = new Material(ssaoProgram);
+		ssaoMaterial.addTexture(0, normalsTexture);
+		ssaoMaterial.addTexture(1, depthsTexture);
+		ssaoMaterial.addTexture(2, ssaoEffect.getNoiseTexture());
+		uniforms = ssaoMaterial.getUniforms();
+		ssaoEffect.addUniforms(uniforms);
+		// LIGHTING
+		lightingMaterial = new Material(lightingProgram);
+		lightingMaterial.addTexture(0, colorsTexture);
+		lightingMaterial.addTexture(1, normalsTexture);
+		lightingMaterial.addTexture(2, depthsTexture);
+		lightingMaterial.addTexture(3, ssaoTexture);
+		uniforms = lightingMaterial.getUniforms();
 		uniforms.add(lightPositionUniform);
 		uniforms.add(diffuseIntensityUniform);
 		uniforms.add(specularIntensityUniform);
 		uniforms.add(ambientIntensityUniform);
 		uniforms.add(lightAttenuationUniform);
+		// ANTI ALIASING
+		antiAliasingMaterial = new Material(antiAliasingProgram);
+		antiAliasingMaterial.addTexture(0, auxTexture);
+		antiAliasingMaterial.addTexture(1, normalsTexture);
+		antiAliasingMaterial.addTexture(2, depthsTexture);
+		uniforms = antiAliasingMaterial.getUniforms();
+		uniforms.add(new Vector2Uniform("resolution", WINDOW_SIZE));
+		uniforms.add(new FloatUniform("maxSpan", 8));
+		// TODO: give wireframe models normals so we can enable normal edge detect
+		uniforms.add(new Vector2Uniform("barriers", new Vector2(0, 0.5f)));
+		uniforms.add(new Vector2Uniform("weights", new Vector2(1, 0.6f)));
+		uniforms.add(new FloatUniform("kernel", 1));
 		// SCREEN
 		screenMaterial = new Material(screenProgram);
-		screenMaterial.addTexture(0, screenTexture);
-	}
-
-	private static void initRenderBuffers() {
-		// DEPTH
-		depthRenderBuffer = glVersion.createRenderBuffer();
-		depthRenderBuffer.setFormat(ImageFormat.DEPTH);
-		depthRenderBuffer.setSize(WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
-		depthRenderBuffer.create();
+		screenMaterial.addTexture(0, colorsTexture);
 	}
 
 	private static void initFrameBuffers() {
 		// MODEL
 		modelFrameBuffer = glVersion.createFrameBuffer();
-		modelFrameBuffer.attach(AttachmentPoint.COLOR0, screenTexture);
-		modelFrameBuffer.attach(AttachmentPoint.DEPTH, depthRenderBuffer);
+		modelFrameBuffer.attach(AttachmentPoint.COLOR0, colorsTexture);
+		modelFrameBuffer.attach(AttachmentPoint.COLOR1, normalsTexture);
+		modelFrameBuffer.attach(AttachmentPoint.DEPTH, depthsTexture);
 		modelFrameBuffer.create();
 		modelRenderList.setFrameBuffer(modelFrameBuffer);
-		transparencyRenderList.setFrameBuffer(modelFrameBuffer);
+		// SSAO
+		ssaoFrameBuffer = glVersion.createFrameBuffer();
+		ssaoFrameBuffer.attach(AttachmentPoint.COLOR0, ssaoTexture);
+		ssaoFrameBuffer.create();
+		ssaoRenderList.setFrameBuffer(ssaoFrameBuffer);
+		// LIGHTING
+		lightingFrameBuffer = glVersion.createFrameBuffer();
+		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxTexture);
+		lightingFrameBuffer.create();
+		lightingRenderList.setFrameBuffer(lightingFrameBuffer);
+		// ANTI ALIASING
+		antiAliasingFrameBuffer = glVersion.createFrameBuffer();
+		antiAliasingFrameBuffer.attach(AttachmentPoint.COLOR0, colorsTexture);
+		antiAliasingFrameBuffer.create();
+		antiAliasingRenderList.setFrameBuffer(antiAliasingFrameBuffer);
 	}
 
 	private static void initVertexArrays() {
@@ -373,14 +500,15 @@ public class SandboxRenderer {
 		disposeShaders();
 		disposePrograms();
 		disposeTextures();
-		disposeMaterials();
-		disposeRenderBuffers();
 		disposeFrameBuffers();
 		disposeVertexArrays();
 		disposeRenderer();
 	}
 
 	private static void disposeRenderer() {
+		// SSAO
+		ssaoEffect.dispose();
+		// RENDERER
 		renderer.destroy();
 	}
 
@@ -388,9 +516,15 @@ public class SandboxRenderer {
 		// MODEL
 		modelRenderList.clear();
 		modelRenderList.clearCapabilities();
-		// TRANSPARENCY
-		transparencyRenderList.clear();
-		transparencyRenderList.clearCapabilities();
+		// SSAO
+		ssaoRenderList.clear();
+		ssaoRenderList.clearCapabilities();
+		// LIGHTING
+		lightingRenderList.clear();
+		lightingRenderList.clearCapabilities();
+		// ANTI ALIASING
+		antiAliasingRenderList.clear();
+		antiAliasingRenderList.clearCapabilities();
 		// GUI
 		guiRenderList.clear();
 		guiRenderList.clearCapabilities();
@@ -406,6 +540,15 @@ public class SandboxRenderer {
 		// TEXTURED
 		texturedVert.destroy();
 		texturedFrag.destroy();
+		// SSAO
+		ssaoVert.destroy();
+		ssaoFrag.destroy();
+		// LIGHTING
+		lightingVert.destroy();
+		lightingFrag.destroy();
+		// ANTI ALIASING
+		antiAliasingVert.destroy();
+		antiAliasingFrag.destroy();
 		// SCREEN
 		screenVert.destroy();
 		screenFrag.destroy();
@@ -418,6 +561,12 @@ public class SandboxRenderer {
 		wireframeProgram.destroy();
 		// TEXTURED
 		texturedProgram.destroy();
+		// SSAO
+		ssaoProgram.destroy();
+		// LIGHTING
+		lightingProgram.destroy();
+		// ANTI ALIASING
+		antiAliasingProgram.destroy();
 		// SCREEN
 		screenProgram.destroy();
 	}
@@ -427,35 +576,29 @@ public class SandboxRenderer {
 		creeperSkinTexture.destroy();
 		// WOOD DIFFUSE
 		woodDiffuseTexture.destroy();
-		// WOOD SPECULAR
-		woodSpecularTexture.destroy();
 		// SPOUT LOGO
 		spoutLogoTexture.destroy();
-		// SCREEN
-		screenTexture.destroy();
-	}
-
-	private static void disposeMaterials() {
-		// SOLID
-		solidMaterial = null;
-		// WIRE
-		wireframeMaterial = null;
-		// CREEPER
-		creeperMaterial = null;
-		// WOOD
-		woodMaterial = null;
-		// SCREEN
-		screenMaterial = null;
-	}
-
-	private static void disposeRenderBuffers() {
+		// COLOR
+		colorsTexture.destroy();
+		// NORMALS
+		normalsTexture.destroy();
 		// DEPTH
-		depthRenderBuffer.destroy();
+		depthsTexture.destroy();
+		// SSAO
+		ssaoTexture.destroy();
+		// AUX
+		auxTexture.destroy();
 	}
 
 	private static void disposeFrameBuffers() {
 		// MODEL
 		modelFrameBuffer.destroy();
+		// SSAO
+		ssaoFrameBuffer.destroy();
+		// LIGHTING
+		lightingFrameBuffer.destroy();
+		// ANTI ALIASING
+		antiAliasingFrameBuffer.destroy();
 	}
 
 	private static void disposeVertexArrays() {
@@ -467,10 +610,6 @@ public class SandboxRenderer {
 
 	public static void setGLVersion(GLVersion version) {
 		glVersion = version;
-	}
-
-	public static void setMSAA(int value) {
-		MSAA = value;
 	}
 
 	public static void setCullBackFaces(boolean cull) {
@@ -599,21 +738,28 @@ public class SandboxRenderer {
 	}
 
 	public static void addDefaultObjects() {
-		addScreenPlane();
+		addDeferredStageScreens();
 		addCrosshairs();
 		addFPSMonitor();
 		addCreeper();
-		addTransparentPlane();
 	}
 
-	private static void addScreenPlane() {
+	private static void addDeferredStageScreens() {
 		final VertexArray vertexArray = glVersion.createVertexArray();
-		final float aspect = WINDOW_SIZE.getY() / WINDOW_SIZE.getX();
-		vertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2(1, aspect)));
+		vertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2(2, 2)));
 		vertexArray.create();
-		final Model model = new Model(vertexArray, screenMaterial);
-		model.setPosition(new Vector3(0.5, aspect / 2, -0.002));
-		guiRenderList.add(model);
+		// SSAO
+		final Model ssao = new Model(vertexArray, ssaoMaterial);
+		ssaoRenderList.add(ssao);
+		// LIGHTING
+		final Model lighting = new Model(vertexArray, lightingMaterial);
+		lightingRenderList.add(lighting);
+		// ANTI ALIASING
+		final Model antiAliasing = new Model(vertexArray, antiAliasingMaterial);
+		antiAliasingRenderList.add(antiAliasing);
+		// SCREEN
+		final Model screen = new Model(vertexArray, screenMaterial);
+		guiRenderList.add(screen);
 	}
 
 	private static void addCrosshairs() {
@@ -623,7 +769,7 @@ public class SandboxRenderer {
 		final Model model = new Model(vertexArray, wireframeMaterial);
 		vertexArray.setDrawingMode(DrawingMode.LINES);
 		model.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
-		model.setPosition(new Vector3(0.5, (WINDOW_SIZE.getY() / WINDOW_SIZE.getX()) / 2, -0.001));
+		model.setPosition(new Vector3(0.5, (WINDOW_SIZE.getY() / WINDOW_SIZE.getX()) / 2, -0.1));
 		guiRenderList.add(model);
 	}
 
@@ -637,12 +783,12 @@ public class SandboxRenderer {
 		}
 		final StringModel sandboxModel = new StringModel(glVersion, "SandboxPweryCusticRF0123456789,&: ", ubuntu.deriveFont(Font.PLAIN, 15), WINDOW_SIZE.getFloorX());
 		final float aspect = WINDOW_SIZE.getY() / WINDOW_SIZE.getX();
-		sandboxModel.setPosition(new Vector3(0.005, aspect / 2 + 0.315, -0.001));
+		sandboxModel.setPosition(new Vector3(0.005, aspect / 2 + 0.315, -0.1));
 		final String white = "#ffffffff", brown = "#ffC19953", green = "#ff00ff00", cyan = "#ff4fB5ff";
 		sandboxModel.setString(brown + "Sandbox\n" + white + "Powered by " + green + "Caustic" + white + " & " + cyan + "React");
 		guiRenderList.add(sandboxModel);
 		final InstancedStringModel fpsModel = new InstancedStringModel(sandboxModel);
-		fpsModel.setPosition(new Vector3(0.005, aspect / 2 + 0.285, -0.001));
+		fpsModel.setPosition(new Vector3(0.005, aspect / 2 + 0.285, -0.1));
 		fpsModel.setString("FPS: " + fpsMonitor.getFPS());
 		guiRenderList.add(fpsModel);
 		fpsMonitorModel = fpsModel;
@@ -661,16 +807,6 @@ public class SandboxRenderer {
 		instancedMobModel.setPosition(new Vector3(-10, 10, 0));
 		instancedMobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(90, 0, 1, 0));
 		modelRenderList.add(instancedMobModel);
-	}
-
-	private static void addTransparentPlane() {
-		final VertexArray vertexArray = glVersion.createVertexArray();
-		vertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2(4, 4)));
-		vertexArray.create();
-		final Model model = new Model(vertexArray, solidMaterial);
-		model.getUniforms().add(new ColorUniform("modelColor", new Color(1f, 1f, 1f, 0.5f)));
-		model.setPosition(new Vector3(0, 10, -10));
-		transparencyRenderList.add(model);
 	}
 
 	public static void startFPSMonitor() {
