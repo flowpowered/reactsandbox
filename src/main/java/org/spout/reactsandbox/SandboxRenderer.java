@@ -26,9 +26,9 @@
  */
 package org.spout.reactsandbox;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontFormatException;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -46,6 +46,7 @@ import org.spout.renderer.data.Uniform.Vector2Uniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
 import org.spout.renderer.data.UniformHolder;
 import org.spout.renderer.data.VertexAttribute.DataType;
+import org.spout.renderer.gl.Color;
 import org.spout.renderer.gl.FrameBuffer;
 import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
 import org.spout.renderer.gl.Program;
@@ -63,7 +64,10 @@ import org.spout.renderer.gl.VertexArray.DrawingMode;
 import org.spout.renderer.loader.ObjFileLoader;
 import org.spout.renderer.util.InstancedModel;
 import org.spout.renderer.util.InstancedStringModel;
+import org.spout.renderer.util.RenderUtil;
 import org.spout.renderer.util.StringModel;
+
+import javax.imageio.ImageIO;
 
 /**
  *
@@ -395,13 +399,26 @@ public class SandboxRenderer {
 	}
 
 	private static void initTextures() {
+		BufferedImage image = null;
 		// CREEPER SKIN
 		creeperSkinTexture = glVersion.createTexture();
-		creeperSkinTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/creeper.png"));
+		// TODO: texture Format is not properly set before loading image data.
+		try {
+			image = ImageIO.read(Sandbox.class.getResourceAsStream("/textures/creeper.png"));
+			creeperSkinTexture.setImageData(RenderUtil.getImageData(image, Format.RGBA), image.getWidth(), image.getHeight());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		creeperSkinTexture.create();
 		// WOOD DIFFUSE
 		woodDiffuseTexture = glVersion.createTexture();
-		woodDiffuseTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"));
+		// TODO: texture Format is not properly set before loading image data.
+		try {
+			image = ImageIO.read(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"));
+			woodDiffuseTexture.setImageData(RenderUtil.getImageData(image, Format.RGBA), image.getWidth(), image.getHeight());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		woodDiffuseTexture.setMagFilter(FilterMode.LINEAR);
 		woodDiffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		woodDiffuseTexture.setAnisotropicFiltering(16);
@@ -409,7 +426,12 @@ public class SandboxRenderer {
 		// SPOUT LOGO
 		spoutLogoTexture = glVersion.createTexture();
 		spoutLogoTexture.setFormat(Format.RGBA);
-		spoutLogoTexture.setImageData(Sandbox.class.getResourceAsStream("/textures/spout.png"));
+		try {
+			image = ImageIO.read(Sandbox.class.getResourceAsStream("/textures/spout.png"));
+			spoutLogoTexture.setImageData(RenderUtil.getImageData(image, Format.RGBA), image.getWidth(), image.getHeight());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		spoutLogoTexture.create();
 		// COLORS
 		colorsTexture = glVersion.createTexture();

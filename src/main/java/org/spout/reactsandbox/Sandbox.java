@@ -26,7 +26,6 @@
  */
 package org.spout.reactsandbox;
 
-import java.awt.Color;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.HashMap;
@@ -40,6 +39,7 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
+import org.spout.renderer.gl.Color;
 import org.yaml.snakeyaml.Yaml;
 
 import org.spout.physics.body.CollisionBody;
