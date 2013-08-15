@@ -39,7 +39,7 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
-import org.spout.renderer.gl.Color;
+import org.spout.renderer.data.Color;
 import org.yaml.snakeyaml.Yaml;
 
 import org.spout.physics.body.CollisionBody;
