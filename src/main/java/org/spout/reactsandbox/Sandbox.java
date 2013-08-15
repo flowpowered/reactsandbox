@@ -39,7 +39,6 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
-import org.spout.renderer.data.Color;
 import org.yaml.snakeyaml.Yaml;
 
 import org.spout.physics.body.CollisionBody;
@@ -62,6 +61,7 @@ import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
 import org.spout.renderer.GLVersion;
 import org.spout.renderer.Model;
+import org.spout.renderer.data.Color;
 
 /**
  * The main class of the ReactSandbox.
@@ -144,22 +144,22 @@ public class Sandbox {
 		final Model aabbModel = SandboxRenderer.addAABB(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathVector3(Vector3.subtract(aabb.getMax(), aabb.getMin())));
 		aabbs.put(body, aabbModel);
 		final CollisionShape shape = body.getCollisionShape();
-		final float margin = shape.getMargin() / 2;
 		final Model shapeModel;
 		switch (shape.getType()) {
 			case BOX:
 				final BoxShape box = (BoxShape) shape;
-				shapeModel = SandboxRenderer.addBox(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), SandboxUtil.toMathVector3(box.getExtent()).add(margin, margin, margin));
+				shapeModel = SandboxRenderer.addBox(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), SandboxUtil.toMathVector3(box.getExtent()));
 				break;
 			case CONE:
 				shapeModel = SandboxRenderer.addDiamond(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation));
 				break;
 			case CYLINDER:
 				final CylinderShape cylinder = (CylinderShape) shape;
-				shapeModel = SandboxRenderer.addCylinder(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), cylinder.getRadius() + margin, cylinder.getHeight() + margin);
+				shapeModel = SandboxRenderer.addCylinder(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), cylinder.getRadius(), cylinder.getHeight());
 				break;
 			case SPHERE:
-				shapeModel = SandboxRenderer.addSphere(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), margin * 2);
+				final SphereShape sphere = (SphereShape) shape;
+				shapeModel = SandboxRenderer.addSphere(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), sphere.getRadius());
 				break;
 			default:
 				throw new IllegalArgumentException("Unsupported collision shape: " + shape.getType());

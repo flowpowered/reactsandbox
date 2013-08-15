@@ -94,6 +94,7 @@ public class SSAOEffect {
 		noiseTexture.setFormat(Format.RGB);
 		noiseTexture.setInternalFormat(InternalFormat.RGB32F);
 		noiseTexture.setComponentType(DataType.FLOAT);
+		noiseTextureBuffer.flip();
 		noiseTexture.setImageData(noiseTextureBuffer, noiseSize, noiseSize);
 		noiseTexture.create();
 	}

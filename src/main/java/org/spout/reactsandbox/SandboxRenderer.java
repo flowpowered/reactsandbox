@@ -28,7 +28,7 @@ package org.spout.reactsandbox;
 
 import java.awt.Font;
 import java.awt.FontFormatException;
-import java.awt.image.BufferedImage;
+import java.awt.Rectangle;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -66,8 +66,6 @@ import org.spout.renderer.util.InstancedModel;
 import org.spout.renderer.util.InstancedStringModel;
 import org.spout.renderer.util.RenderUtil;
 import org.spout.renderer.util.StringModel;
-
-import javax.imageio.ImageIO;
 
 /**
  *
@@ -189,7 +187,7 @@ public class SandboxRenderer {
 		renderer.create();
 		renderer.setClearColor(backgroundColor);
 		// SSAO
-		ssaoEffect = new SSAOEffect(glVersion, WINDOW_SIZE, 16, 4, 1.5f, 2);
+		ssaoEffect = new SSAOEffect(glVersion, WINDOW_SIZE, 8, 4, 1, 2);
 		ssaoEffect.init();
 	}
 
@@ -399,26 +397,19 @@ public class SandboxRenderer {
 	}
 
 	private static void initTextures() {
-		BufferedImage image = null;
+		ByteBuffer data;
+		final Rectangle size = new Rectangle();
 		// CREEPER SKIN
 		creeperSkinTexture = glVersion.createTexture();
-		// TODO: texture Format is not properly set before loading image data.
-		try {
-			image = ImageIO.read(Sandbox.class.getResourceAsStream("/textures/creeper.png"));
-			creeperSkinTexture.setImageData(RenderUtil.getImageData(image, Format.RGBA), image.getWidth(), image.getHeight());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		data = RenderUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper.png"), Format.RGB, size);
+		data.flip();
+		creeperSkinTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
 		creeperSkinTexture.create();
 		// WOOD DIFFUSE
 		woodDiffuseTexture = glVersion.createTexture();
-		// TODO: texture Format is not properly set before loading image data.
-		try {
-			image = ImageIO.read(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"));
-			woodDiffuseTexture.setImageData(RenderUtil.getImageData(image, Format.RGBA), image.getWidth(), image.getHeight());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		data = RenderUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"), Format.RGB, size);
+		data.flip();
+		woodDiffuseTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
 		woodDiffuseTexture.setMagFilter(FilterMode.LINEAR);
 		woodDiffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		woodDiffuseTexture.setAnisotropicFiltering(16);
@@ -426,43 +417,40 @@ public class SandboxRenderer {
 		// SPOUT LOGO
 		spoutLogoTexture = glVersion.createTexture();
 		spoutLogoTexture.setFormat(Format.RGBA);
-		try {
-			image = ImageIO.read(Sandbox.class.getResourceAsStream("/textures/spout.png"));
-			spoutLogoTexture.setImageData(RenderUtil.getImageData(image, Format.RGBA), image.getWidth(), image.getHeight());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		data = RenderUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/spout.png"), Format.RGBA, size);
+		data.flip();
+		spoutLogoTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
 		spoutLogoTexture.create();
 		// COLORS
 		colorsTexture = glVersion.createTexture();
-		colorsTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		colorsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		colorsTexture.create();
 		// NORMALS
 		normalsTexture = glVersion.createTexture();
 		normalsTexture.setInternalFormat(InternalFormat.RGB16F);
 		normalsTexture.setComponentType(DataType.FLOAT);
-		normalsTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		normalsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		normalsTexture.create();
 		// DEPTHS
 		depthsTexture = glVersion.createTexture();
 		depthsTexture.setFormat(Format.DEPTH);
-		depthsTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		depthsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		depthsTexture.setWrapS(WrapMode.CLAMP_TO_EDGE);
 		depthsTexture.setWrapT(WrapMode.CLAMP_TO_EDGE);
 		depthsTexture.create();
 		// SSAO
 		ssaoTexture = glVersion.createTexture();
 		ssaoTexture.setFormat(Format.RED);
-		ssaoTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		ssaoTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		ssaoTexture.create();
 		// SSAO BLUR
 		ssaoBlurTexture = glVersion.createTexture();
 		ssaoBlurTexture.setFormat(Format.RED);
-		ssaoBlurTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		ssaoBlurTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		ssaoBlurTexture.create();
 		// AUX
 		auxTexture = glVersion.createTexture();
-		auxTexture.setImageData((ByteBuffer) null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		auxTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		auxTexture.setMagFilter(FilterMode.LINEAR);
 		auxTexture.setMinFilter(FilterMode.LINEAR);
 		auxTexture.create();

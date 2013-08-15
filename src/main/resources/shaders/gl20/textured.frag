@@ -1,39 +1,13 @@
 #version 120
 
-varying vec3 worldPosition;
-varying vec3 worldNormal;
-varying vec3 viewDirection;
+varying vec3 positionView;
+varying vec3 normalView;
 varying vec2 textureUV;
 
 uniform sampler2D diffuse;
-uniform sampler2D specular;
-uniform vec3 lightPosition;
-uniform float lightAttenuation;
-uniform float diffuseIntensity;
-uniform float specularIntensity;
-uniform float ambientIntensity;
 
 void main() {
-    vec3 lightDifference = lightPosition - worldPosition;
-    float lightDistance = length(lightDifference);
-    vec3 lightDirection = lightDifference / lightDistance;
-    float distanceIntensity = 1 / (1 + lightAttenuation * lightDistance);
+    gl_FragData[0] = texture2D(diffuse, textureUV);
 
-    float diffuseTerm =
-        diffuseIntensity *
-        distanceIntensity *
-        clamp(dot(worldNormal, lightDirection), 0, 1);
-
-    float specularTerm =
-        texture2D(specular, textureUV).r *
-        specularIntensity *
-        distanceIntensity *
-        pow(clamp(dot(reflect(-lightDirection, worldNormal), viewDirection), 0, 1), 20);
-
-    float ambientTerm =
-        ambientIntensity;
-
-    vec4 color = texture2D(diffuse, textureUV);
-
-    gl_FragColor = color * (diffuseTerm + specularTerm + ambientTerm);
+    gl_FragData[1] = vec4(normalView, 1);
 }

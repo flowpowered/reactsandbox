@@ -4,26 +4,21 @@ attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 textureCoords;
 
-varying vec3 worldPosition;
-varying vec3 worldNormal;
-varying vec3 viewDirection;
+varying vec3 positionView;
+varying vec3 normalView;
 varying vec2 textureUV;
 
 uniform mat4 modelMatrix;
-uniform mat4 cameraMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 normalMatrix;
 uniform mat4 projectionMatrix;
 
 void main() {
-    worldPosition = vec3(modelMatrix * vec4(position, 1));
-    worldNormal = mat3(modelMatrix) * normal;
-    vec3 cameraPosition = -cameraMatrix[3].xyz * mat3(cameraMatrix);
-    viewDirection = normalize(cameraPosition - worldPosition);
+    positionView = (viewMatrix * modelMatrix * vec4(position, 1)).xyz;
 
-    if (dot(worldNormal, viewDirection) < 0) {
-        worldNormal = -worldNormal;
-    }
+    normalView = (normalMatrix * vec4(normal, 0)).xyz;
 
     textureUV = textureCoords;
 
-    gl_Position = projectionMatrix * cameraMatrix * vec4(worldPosition, 1);
+    gl_Position = projectionMatrix * vec4(positionView, 1);
 }
