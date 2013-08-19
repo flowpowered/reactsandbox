@@ -12,5 +12,5 @@ uniform sampler2D diffuse;
 void main() {
     outputColor = texture(diffuse, textureUV);
 
-    outputNormal = normalView;
+    outputNormal = normalize(normalView);
 }

@@ -11,5 +11,5 @@ uniform vec4 modelColor;
 void main() {
     outputColor = modelColor;
 
-    outputNormal = normalView;
+    outputNormal = normalize(normalView);
 }

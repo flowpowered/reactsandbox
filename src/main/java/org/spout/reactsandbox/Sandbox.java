@@ -188,10 +188,10 @@ public class Sandbox {
 				shape = new BoxShape(1, 1, 1);
 				break;
 			case CONE:
-				shape = new ConeShape(1, 1);
+				shape = new ConeShape(1, 2);
 				break;
 			case CYLINDER:
-				shape = new CylinderShape(1, 1);
+				shape = new CylinderShape(1, 2);
 				break;
 			case SPHERE:
 				shape = new SphereShape(1);

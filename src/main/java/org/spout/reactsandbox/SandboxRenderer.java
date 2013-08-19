@@ -329,6 +329,7 @@ public class SandboxRenderer {
 		wireframeProgram.addShader(wireframeFrag);
 		if (glVersion == GLVersion.GL20) {
 			wireframeProgram.addAttributeLayout("position", 0);
+			wireframeProgram.addAttributeLayout("normal", 1);
 		}
 		wireframeProgram.create();
 		// TEXTURED
@@ -504,10 +505,9 @@ public class SandboxRenderer {
 		uniforms = antiAliasingMaterial.getUniforms();
 		uniforms.add(new Vector2Uniform("resolution", WINDOW_SIZE));
 		uniforms.add(new FloatUniform("maxSpan", 8));
-		// TODO: give wireframe models normals so we can enable normal edge detect
-		uniforms.add(new Vector2Uniform("barriers", new Vector2(0, 0.5f)));
-		uniforms.add(new Vector2Uniform("weights", new Vector2(1, 0.6f)));
-		uniforms.add(new FloatUniform("kernel", 1));
+		uniforms.add(new Vector2Uniform("barriers", new Vector2(0.8f, 0.5f)));
+		uniforms.add(new Vector2Uniform("weights", new Vector2(0.25f, 0.6f)));
+		uniforms.add(new FloatUniform("kernel", 0.75f));
 		// SCREEN
 		screenMaterial = new Material(screenProgram);
 		screenMaterial.addTexture(0, colorsTexture);

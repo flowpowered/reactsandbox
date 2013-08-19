@@ -60,8 +60,7 @@ public class MeshGenerator {
 	*/
 
 	/**
-	 * Generates a crosshairs shaped wireframe in 3D. The center is at the intersection point of the
-	 * three lines.
+	 * Generates a crosshairs shaped wireframe in 3D. The center is at the intersection point of the three lines.
 	 *
 	 * @param destination Where to save the mesh (can be null)
 	 * @param length The length for the three lines
@@ -99,8 +98,7 @@ public class MeshGenerator {
 	}
 
 	/**
-	 * Generates a cuboid shaped wireframe (the outline of the cuboid). The center is at the middle of
-	 * the cuboid.
+	 * Generates a cuboid shaped wireframe (the outline of the cuboid). The center is at the middle of the cuboid.
 	 *
 	 * @param destination Where to save the mesh (can be null)
 	 * @param size The size of the cuboid to generate, on x, y and z
@@ -133,16 +131,27 @@ public class MeshGenerator {
 		final VertexAttribute positionsAttribute = new VertexAttribute("positions", DataType.FLOAT, 3);
 		destination.addAttribute(0, positionsAttribute);
 		final TFloatList positions = new TFloatArrayList();
+		final VertexAttribute normalsAttribute = new VertexAttribute("normals", DataType.FLOAT, 3);
+		destination.addAttribute(1, normalsAttribute);
+		final TFloatList normals = new TFloatArrayList();
 		final TIntList indices = destination.getIndices();
 		// Add all of the corners
 		addVector(positions, p0);
+		addVector(normals, p0.normalize());
 		addVector(positions, p1);
+		addVector(normals, p1.normalize());
 		addVector(positions, p2);
+		addVector(normals, p2.normalize());
 		addVector(positions, p3);
+		addVector(normals, p3.normalize());
 		addVector(positions, p4);
+		addVector(normals, p4.normalize());
 		addVector(positions, p5);
+		addVector(normals, p5.normalize());
 		addVector(positions, p6);
+		addVector(normals, p6.normalize());
 		addVector(positions, p7);
+		addVector(normals, p7.normalize());
 		// Face x
 		addAll(indices, 1, 2, 2, 6, 6, 5, 5, 1);
 		// Face y
@@ -157,6 +166,7 @@ public class MeshGenerator {
 		addAll(indices, 0, 1, 1, 5, 5, 4, 4, 0);
 		// Put the mesh in the vertex data
 		positionsAttribute.setData(positions);
+		normalsAttribute.setData(normals);
 		return destination;
 	}
 
