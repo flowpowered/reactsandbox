@@ -34,7 +34,7 @@ import org.lwjgl.BufferUtils;
 import org.spout.math.GenericMath;
 import org.spout.math.vector.Vector2;
 import org.spout.math.vector.Vector3;
-import org.spout.renderer.GLVersion;
+import org.spout.renderer.GLVersioned.GLVersion;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.IntUniform;
 import org.spout.renderer.data.Uniform.Vector2Uniform;
@@ -44,6 +44,7 @@ import org.spout.renderer.data.VertexAttribute.DataType;
 import org.spout.renderer.gl.Texture;
 import org.spout.renderer.gl.Texture.Format;
 import org.spout.renderer.gl.Texture.InternalFormat;
+import org.spout.renderer.util.RenderUtil;
 
 /**
  *
@@ -90,7 +91,7 @@ public class SSAOEffect {
 			noiseTextureBuffer.putFloat(noise.getZ());
 		}
 		// Create the texture
-		noiseTexture = version.createTexture();
+		noiseTexture = RenderUtil.createTexture(version);
 		noiseTexture.setFormat(Format.RGB);
 		noiseTexture.setInternalFormat(InternalFormat.RGB32F);
 		noiseTexture.setComponentType(DataType.FLOAT);
