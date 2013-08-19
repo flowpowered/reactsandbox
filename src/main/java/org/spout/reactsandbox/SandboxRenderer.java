@@ -61,7 +61,7 @@ import org.spout.renderer.gl.Texture.InternalFormat;
 import org.spout.renderer.gl.Texture.WrapMode;
 import org.spout.renderer.gl.VertexArray;
 import org.spout.renderer.gl.VertexArray.DrawingMode;
-import org.spout.renderer.loader.ObjFileLoader;
+import org.spout.renderer.util.ObjFileLoader;
 import org.spout.renderer.util.InstancedModel;
 import org.spout.renderer.util.InstancedStringModel;
 import org.spout.renderer.util.RenderUtil;
