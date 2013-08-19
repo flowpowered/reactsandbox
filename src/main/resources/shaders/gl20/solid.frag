@@ -8,5 +8,5 @@ uniform vec4 modelColor;
 void main() {
     gl_FragData[0] = modelColor;
 
-    gl_FragData[1] = vec4(normalView, 1);
+    gl_FragData[1] = vec4(normalize(normalView), 1);
 }
