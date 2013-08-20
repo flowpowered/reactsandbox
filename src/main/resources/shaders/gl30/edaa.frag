@@ -42,12 +42,12 @@ void main() {
     vec2 tc8 = textureUV + B / resolution;
 
     // normal discontinuity filter
-    vec3 nc = texture(normals, tc0).xyz;
+    vec3 nc = texture(normals, tc0).xyz * 2 - 1;
     vec4 nd;
-    nd.x = dot(nc, texture(normals, tc1).xyz);
-    nd.y = dot(nc, texture(normals, tc2).xyz);
-    nd.z = dot(nc, texture(normals, tc3).xyz);
-    nd.w = dot(nc, texture(normals, tc4).xyz);
+    nd.x = dot(nc, texture(normals, tc1).xyz * 2 - 1);
+    nd.y = dot(nc, texture(normals, tc2).xyz * 2 - 1);
+    nd.z = dot(nc, texture(normals, tc3).xyz * 2 - 1);
+    nd.w = dot(nc, texture(normals, tc4).xyz * 2 - 1);
     nd -= barriers.x;
     nd = step(vec4(0, 0, 0, 0), nd);
     float ne = clamp(dot(nd, vec4(weights.x, weights.x, weights.x, weights.x)), 0, 1);
@@ -72,7 +72,5 @@ void main() {
     vec4 s1 = texture(diffuse, offset + tc2 * w);
     vec4 s2 = texture(diffuse, offset + tc3 * w);
     vec4 s3 = texture(diffuse, offset + tc4 * w);
-    vec4 s = (s0 + s1 + s2 + s3) / 4;
-
-    outputColor = s.rgb;
+    outputColor = ((s0 + s1 + s2 + s3) / 4).rgb;
 }

@@ -19,13 +19,13 @@ float linearizeDepth(in float depth) {
 }
 
 void main() {
-    vec4 color = texture2D(colors, textureUV);
-    vec3 normalView = texture2D(normals, textureUV).xyz;
+    gl_FragColor = texture2D(colors, textureUV);
 
-    if (dot(normalView, normalView) <= 0.9) {
-        gl_FragColor = color;
+    vec4 rawNormalView = texture2D(normals, textureUV);
+    if (rawNormalView.a <= 0) {
         return;
     }
+    vec3 normalView = normalize(rawNormalView.xyz * 2 - 1);
 
     float depth = linearizeDepth(texture2D(depths, textureUV).r);
     float occlusion = texture2D(occlusion, textureUV).r;
@@ -49,5 +49,5 @@ void main() {
 
     float ambientTerm = ambientIntensity;
 
-    gl_FragColor = color * (diffuseTerm + specularTerm + ambientTerm) * occlusion;
+    gl_FragColor.rgb *= (diffuseTerm + specularTerm + ambientTerm) * occlusion;
 }

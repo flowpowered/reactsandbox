@@ -1,6 +1,7 @@
 #version 330
 
 const int MAX_KERNEL_SIZE = 128;
+const float OCCLUSION_THRESHOLD = 0.15;
 
 in vec2 textureUV;
 noperspective in vec3 viewRay;
@@ -17,17 +18,24 @@ uniform float radius;
 uniform vec2 noiseScale;
 uniform float power;
 
+uniform mat4 normalMatrix;
+
 float linearizeDepth(in float depth) {
     return projectionMatrix[3][2] / (depth + projectionMatrix[2][2]);
 }
 
 void main() {
+    // Get the fragment's normal
+    vec4 rawNormal = texture(normals, textureUV);
+    if (rawNormal.a <= 0) {
+        outputOcclusion = 1;
+        return;
+    }
+    vec3 normal = normalize(rawNormal.xyz * 2 - 1);
+
     // Reconstruct the position of the fragment from the depth
     float depth = linearizeDepth(texture(depths, textureUV).r);
     vec3 origin = viewRay * depth;
-
-    // Get the fragment's normal
-    vec3 normal = texture(normals, textureUV).xyz;
 
     // Construct a change of basis matrix to reorient our sample kernel along the object's normal
     // Extract the random vector from the noise texture
@@ -56,7 +64,7 @@ void main() {
 
         // Range check and accumulate
         float rangeCheck = smoothstep(0, 1, radius / abs(origin.z - sampleDepth));
-        occlusion += rangeCheck * step(sample.z, sampleDepth);
+        occlusion += rangeCheck * (sampleDepth - sample.z >= OCCLUSION_THRESHOLD ? 1 : 0);
     }
 
     // Average and invert occlusion

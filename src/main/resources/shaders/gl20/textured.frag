@@ -9,5 +9,5 @@ uniform sampler2D diffuse;
 void main() {
     gl_FragData[0] = texture2D(diffuse, textureUV);
 
-    gl_FragData[1] = vec4(normalize(normalView), 1);
+    gl_FragData[1] = vec4((normalView + 1) / 2, 1);
 }

@@ -21,13 +21,13 @@ float linearizeDepth(in float depth) {
 }
 
 void main() {
-    vec3 color = texture(colors, textureUV).rgb;
-    vec3 normalView = texture(normals, textureUV).xyz;
+    outputColor = texture(colors, textureUV).rgb;
 
-    if (dot(normalView, normalView) <= 0.9) {
-        outputColor = color;
+    vec4 rawNormalView = texture(normals, textureUV);
+    if (rawNormalView.a <= 0) {
         return;
     }
+    vec3 normalView = normalize(rawNormalView.xyz * 2 - 1);
 
     float depth = linearizeDepth(texture(depths, textureUV).r);
     float occlusion = texture(occlusion, textureUV).r;
@@ -51,5 +51,5 @@ void main() {
 
     float ambientTerm = ambientIntensity;
 
-    outputColor = color * (diffuseTerm + specularTerm + ambientTerm) * occlusion;
+    outputColor *= (diffuseTerm + specularTerm + ambientTerm) * occlusion;
 }

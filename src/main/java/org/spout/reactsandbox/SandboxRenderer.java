@@ -46,7 +46,6 @@ import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.Vector2Uniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
 import org.spout.renderer.data.UniformHolder;
-import org.spout.renderer.data.VertexAttribute.DataType;
 import org.spout.renderer.gl.Capability;
 import org.spout.renderer.gl.FrameBuffer;
 import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
@@ -61,9 +60,9 @@ import org.spout.renderer.gl.Texture.InternalFormat;
 import org.spout.renderer.gl.Texture.WrapMode;
 import org.spout.renderer.gl.VertexArray;
 import org.spout.renderer.gl.VertexArray.DrawingMode;
-import org.spout.renderer.util.ObjFileLoader;
 import org.spout.renderer.util.InstancedModel;
 import org.spout.renderer.util.InstancedStringModel;
+import org.spout.renderer.util.ObjFileLoader;
 import org.spout.renderer.util.RenderUtil;
 import org.spout.renderer.util.StringModel;
 
@@ -105,8 +104,6 @@ public class SandboxRenderer {
 	// SHADERS
 	private static Shader solidVert;
 	private static Shader solidFrag;
-	private static Shader wireframeVert;
-	private static Shader wireframeFrag;
 	private static Shader texturedVert;
 	private static Shader texturedFrag;
 	private static Shader ssaoVert;
@@ -121,7 +118,6 @@ public class SandboxRenderer {
 	private static Shader screenFrag;
 	// PROGRAMS
 	private static Program solidProgram;
-	private static Program wireframeProgram;
 	private static Program texturedProgram;
 	private static Program ssaoProgram;
 	private static Program ssaoBlurProgram;
@@ -131,16 +127,14 @@ public class SandboxRenderer {
 	// TEXTURES
 	private static Texture creeperSkinTexture;
 	private static Texture woodDiffuseTexture;
-	private static Texture spoutLogoTexture;
 	private static Texture colorsTexture;
 	private static Texture normalsTexture;
 	private static Texture depthsTexture;
 	private static Texture ssaoTexture;
 	private static Texture ssaoBlurTexture;
-	private static Texture auxTexture;
+	private static Texture auxColorsTexture;
 	// MATERIALS
 	private static Material solidMaterial;
-	private static Material wireframeMaterial;
 	private static Material creeperMaterial;
 	private static Material woodMaterial;
 	private static Material ssaoMaterial;
@@ -185,9 +179,9 @@ public class SandboxRenderer {
 		renderer.setWindowTitle(WINDOW_TITLE);
 		renderer.setWindowSize(WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		renderer.create();
-		renderer.setClearColor(backgroundColor);
+		renderer.setClearColor(new Color(backgroundColor.getRed(), backgroundColor.getGreen(), backgroundColor.getBlue(), 0));
 		// SSAO
-		ssaoEffect = new SSAOEffect(glVersion, WINDOW_SIZE, 8, 4, 1, 2);
+		ssaoEffect = new SSAOEffect(glVersion, WINDOW_SIZE, 8, 4, 0.5f, 2);
 		ssaoEffect.init();
 	}
 
@@ -241,16 +235,6 @@ public class SandboxRenderer {
 		solidFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "solid.frag"));
 		solidFrag.setType(ShaderType.FRAGMENT);
 		solidFrag.create();
-		// WIREFRAME VERT
-		wireframeVert = RenderUtil.createShader(glVersion);
-		wireframeVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "wireframe.vert"));
-		wireframeVert.setType(ShaderType.VERTEX);
-		wireframeVert.create();
-		// WIREFRAME FRAG
-		wireframeFrag = RenderUtil.createShader(glVersion);
-		wireframeFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "wireframe.frag"));
-		wireframeFrag.setType(ShaderType.FRAGMENT);
-		wireframeFrag.create();
 		// TEXTURED VERT
 		texturedVert = RenderUtil.createShader(glVersion);
 		texturedVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "textured.vert"));
@@ -323,15 +307,6 @@ public class SandboxRenderer {
 			solidProgram.addAttributeLayout("normal", 1);
 		}
 		solidProgram.create();
-		// WIREFRAME
-		wireframeProgram = RenderUtil.createProgram(glVersion);
-		wireframeProgram.addShader(wireframeVert);
-		wireframeProgram.addShader(wireframeFrag);
-		if (glVersion == GLVersion.GL20) {
-			wireframeProgram.addAttributeLayout("position", 0);
-			wireframeProgram.addAttributeLayout("normal", 1);
-		}
-		wireframeProgram.create();
 		// TEXTURED
 		texturedProgram = RenderUtil.createProgram(glVersion);
 		texturedProgram.addShader(texturedVert);
@@ -415,21 +390,14 @@ public class SandboxRenderer {
 		woodDiffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		woodDiffuseTexture.setAnisotropicFiltering(16);
 		woodDiffuseTexture.create();
-		// SPOUT LOGO
-		spoutLogoTexture = RenderUtil.createTexture(glVersion);
-		spoutLogoTexture.setFormat(Format.RGBA);
-		data = RenderUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/spout.png"), Format.RGBA, size);
-		data.flip();
-		spoutLogoTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
-		spoutLogoTexture.create();
 		// COLORS
 		colorsTexture = RenderUtil.createTexture(glVersion);
 		colorsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		colorsTexture.create();
 		// NORMALS
 		normalsTexture = RenderUtil.createTexture(glVersion);
-		normalsTexture.setInternalFormat(InternalFormat.RGB16F);
-		normalsTexture.setComponentType(DataType.FLOAT);
+		normalsTexture.setFormat(Format.RGBA);
+		normalsTexture.setInternalFormat(InternalFormat.RGBA8);
 		normalsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		normalsTexture.create();
 		// DEPTHS
@@ -449,20 +417,18 @@ public class SandboxRenderer {
 		ssaoBlurTexture.setFormat(Format.RED);
 		ssaoBlurTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		ssaoBlurTexture.create();
-		// AUX
-		auxTexture = RenderUtil.createTexture(glVersion);
-		auxTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
-		auxTexture.setMagFilter(FilterMode.LINEAR);
-		auxTexture.setMinFilter(FilterMode.LINEAR);
-		auxTexture.create();
+		// AUX COLOR
+		auxColorsTexture = RenderUtil.createTexture(glVersion);
+		auxColorsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		auxColorsTexture.setMagFilter(FilterMode.LINEAR);
+		auxColorsTexture.setMinFilter(FilterMode.LINEAR);
+		auxColorsTexture.create();
 	}
 
 	private static void initMaterials() {
 		UniformHolder uniforms;
 		// SOLID
 		solidMaterial = new Material(solidProgram);
-		// WIREFRAME
-		wireframeMaterial = new Material(wireframeProgram);
 		// CREEPER
 		creeperMaterial = new Material(texturedProgram);
 		creeperMaterial.addTexture(0, creeperSkinTexture);
@@ -499,7 +465,7 @@ public class SandboxRenderer {
 		uniforms.add(lightAttenuationUniform);
 		// ANTI ALIASING
 		antiAliasingMaterial = new Material(antiAliasingProgram);
-		antiAliasingMaterial.addTexture(0, auxTexture);
+		antiAliasingMaterial.addTexture(0, auxColorsTexture);
 		antiAliasingMaterial.addTexture(1, normalsTexture);
 		antiAliasingMaterial.addTexture(2, depthsTexture);
 		uniforms = antiAliasingMaterial.getUniforms();
@@ -533,7 +499,7 @@ public class SandboxRenderer {
 		ssaoBlurRenderList.setFrameBuffer(ssaoBlurFrameBuffer);
 		// LIGHTING
 		lightingFrameBuffer = RenderUtil.createFrameBuffer(glVersion);
-		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxTexture);
+		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxColorsTexture);
 		lightingFrameBuffer.create();
 		lightingRenderList.setFrameBuffer(lightingFrameBuffer);
 		// ANTI ALIASING
@@ -597,9 +563,6 @@ public class SandboxRenderer {
 		// SOLID
 		solidVert.destroy();
 		solidFrag.destroy();
-		// WIREFRAME
-		wireframeVert.destroy();
-		wireframeFrag.destroy();
 		// TEXTURED
 		texturedVert.destroy();
 		texturedFrag.destroy();
@@ -623,8 +586,6 @@ public class SandboxRenderer {
 	private static void disposePrograms() {
 		// SOLID
 		solidProgram.destroy();
-		// WIREFRAME
-		wireframeProgram.destroy();
 		// TEXTURED
 		texturedProgram.destroy();
 		// SSAO
@@ -644,8 +605,6 @@ public class SandboxRenderer {
 		creeperSkinTexture.destroy();
 		// WOOD DIFFUSE
 		woodDiffuseTexture.destroy();
-		// SPOUT LOGO
-		spoutLogoTexture.destroy();
 		// COLOR
 		colorsTexture.destroy();
 		// NORMALS
@@ -656,8 +615,8 @@ public class SandboxRenderer {
 		ssaoTexture.destroy();
 		// SSAO BLUR
 		ssaoBlurTexture.destroy();
-		// AUX
-		auxTexture.destroy();
+		// AUX COLOR
+		auxColorsTexture.destroy();
 	}
 
 	private static void disposeFrameBuffers() {
@@ -749,7 +708,7 @@ public class SandboxRenderer {
 	}
 
 	public static Model addAABB(Vector3 position, Vector3 size) {
-		final Model model = new Model(unitCubeWireVertexArray, wireframeMaterial);
+		final Model model = new Model(unitCubeWireVertexArray, solidMaterial);
 		model.setPosition(position);
 		model.setScale(size);
 		model.getUniforms().add(new ColorUniform("modelColor", aabbModelColor));
@@ -841,7 +800,7 @@ public class SandboxRenderer {
 		final VertexArray vertexArray = RenderUtil.createVertexArray(glVersion);
 		vertexArray.setData(MeshGenerator.generateCrosshairs(null, 0.02f));
 		vertexArray.create();
-		final Model model = new Model(vertexArray, wireframeMaterial);
+		final Model model = new Model(vertexArray, solidMaterial);
 		vertexArray.setDrawingMode(DrawingMode.LINES);
 		model.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
 		model.setPosition(new Vector3(0.5, (1 / ASPECT_RATIO) / 2, -0.1));
