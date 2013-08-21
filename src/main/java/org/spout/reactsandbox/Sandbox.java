@@ -60,7 +60,7 @@ import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
 import org.spout.renderer.GLVersioned.GLVersion;
-import org.spout.renderer.Model;
+import org.spout.renderer.model.Model;
 import org.spout.renderer.data.Color;
 
 /**

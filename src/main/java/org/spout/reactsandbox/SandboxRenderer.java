@@ -38,7 +38,7 @@ import org.spout.math.vector.Vector3;
 import org.spout.renderer.Camera;
 import org.spout.renderer.GLVersioned.GLVersion;
 import org.spout.renderer.Material;
-import org.spout.renderer.Model;
+import org.spout.renderer.model.Model;
 import org.spout.renderer.data.Color;
 import org.spout.renderer.data.RenderList;
 import org.spout.renderer.data.Uniform.ColorUniform;
@@ -64,10 +64,10 @@ import org.spout.renderer.gl.VertexArray.DrawingMode;
 import org.spout.renderer.lwjgl.gl20.GL20GLFactory;
 import org.spout.renderer.lwjgl.gl30.GL30GLFactory;
 import org.spout.renderer.util.CausticUtil;
-import org.spout.renderer.util.InstancedModel;
-import org.spout.renderer.util.InstancedStringModel;
+import org.spout.renderer.model.InstancedModel;
+import org.spout.renderer.model.InstancedStringModel;
 import org.spout.renderer.util.ObjFileLoader;
-import org.spout.renderer.util.StringModel;
+import org.spout.renderer.model.StringModel;
 
 /**
  *
