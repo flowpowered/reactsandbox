@@ -32,13 +32,13 @@ import java.util.Random;
 import org.spout.math.GenericMath;
 import org.spout.math.vector.Vector2;
 import org.spout.math.vector.Vector3;
-import org.spout.renderer.GLVersioned.GLVersion;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.IntUniform;
 import org.spout.renderer.data.Uniform.Vector2Uniform;
 import org.spout.renderer.data.Uniform.Vector3ArrayUniform;
 import org.spout.renderer.data.UniformHolder;
 import org.spout.renderer.data.VertexAttribute.DataType;
+import org.spout.renderer.gl.GLFactory;
 import org.spout.renderer.gl.Texture;
 import org.spout.renderer.gl.Texture.Format;
 import org.spout.renderer.gl.Texture.InternalFormat;
@@ -48,27 +48,25 @@ import org.spout.renderer.util.CausticUtil;
  *
  */
 public class SSAOEffect {
-	private final GLVersion version;
-	private final Vector2 resolution;
 	private final int kernelSize;
-	private final int noiseSize;
+	private final Vector3[] kernel;
 	private final float radius;
+	private final Vector2 noiseScale;
+	private final Texture noiseTexture;
 	private final float power;
-	private Texture noiseTexture;
-	private Vector3[] kernel;
-	private Vector2 noiseScale;
+	private final int noiseSize;
+	private final Vector2 texelSize;
 
-	public SSAOEffect(GLVersion version, Vector2 resolution, int kernelSize, int noiseSize, float radius, float power) {
-		this.version = version;
-		this.resolution = resolution;
+	public SSAOEffect(GLFactory glFactory, Vector2 resolution, int kernelSize, int noiseSize, float radius, float power) {
 		this.kernelSize = kernelSize;
-		this.noiseSize = noiseSize;
+		this.kernel = new Vector3[kernelSize];
 		this.radius = radius;
+		this.noiseScale = resolution.div(noiseSize);
+		this.noiseTexture = glFactory.createTexture();
 		this.power = power;
-	}
-
-	public void init() {
-		kernel = new Vector3[kernelSize];
+		this.noiseSize = noiseSize;
+		this.texelSize = new Vector2(1, 1).div(resolution);
+		// Generate the kernel
 		final Random random = new Random();
 		for (int i = 0; i < kernelSize; i++) {
 			float scale = (float) i / kernelSize;
@@ -77,7 +75,7 @@ public class SSAOEffect {
 			// The vectors are scaled so that the amount falls of as we get further away from the center
 			kernel[i] = new Vector3(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, random.nextFloat()).normalize().mul(scale);
 		}
-		noiseScale = resolution.div(noiseSize);
+		// Generate the noise texture
 		final int noiseTextureSize = noiseSize * noiseSize;
 		// 3 floats components = 12 bytes per pixel
 		final ByteBuffer noiseTextureBuffer = CausticUtil.createByteBuffer(noiseTextureSize * 12);
@@ -88,8 +86,6 @@ public class SSAOEffect {
 			noiseTextureBuffer.putFloat(noise.getY());
 			noiseTextureBuffer.putFloat(noise.getZ());
 		}
-		// Create the texture
-		noiseTexture = CausticUtil.createTexture(version);
 		noiseTexture.setFormat(Format.RGB);
 		noiseTexture.setInternalFormat(InternalFormat.RGB32F);
 		noiseTexture.setComponentType(DataType.FLOAT);
@@ -113,6 +109,6 @@ public class SSAOEffect {
 		destination.add(new Vector2Uniform("noiseScale", noiseScale));
 		destination.add(new FloatUniform("power", power));
 		destination.add(new IntUniform("noiseSize", noiseSize));
-		destination.add(new Vector2Uniform("texelSize", new Vector2(1, 1).div(resolution)));
+		destination.add(new Vector2Uniform("texelSize", texelSize));
 	}
 }
