@@ -30,7 +30,13 @@ import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.Rectangle;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+
+import gnu.trove.list.TFloatList;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TFloatArrayList;
+import gnu.trove.list.array.TIntArrayList;
 
 import org.spout.math.imaginary.Quaternion;
 import org.spout.math.vector.Vector2;
@@ -38,6 +44,9 @@ import org.spout.math.vector.Vector3;
 import org.spout.renderer.Camera;
 import org.spout.renderer.GLVersioned.GLVersion;
 import org.spout.renderer.Material;
+import org.spout.renderer.data.VertexAttribute;
+import org.spout.renderer.data.VertexAttribute.DataType;
+import org.spout.renderer.data.VertexData;
 import org.spout.renderer.model.Model;
 import org.spout.renderer.data.Color;
 import org.spout.renderer.data.RenderList;
@@ -129,8 +138,10 @@ public class SandboxRenderer {
 	private static Program antiAliasingProgram;
 	private static Program screenProgram;
 	// TEXTURES
-	private static Texture creeperSkinTexture;
+	private static Texture creeperDiffuseTexture;
+	private static Texture creeperNormalsTexture;
 	private static Texture woodDiffuseTexture;
+	private static Texture woodNormalsTexture;
 	private static Texture colorsTexture;
 	private static Texture normalsTexture;
 	private static Texture depthsTexture;
@@ -318,8 +329,10 @@ public class SandboxRenderer {
 			texturedProgram.addAttributeLayout("position", 0);
 			texturedProgram.addAttributeLayout("normal", 1);
 			texturedProgram.addAttributeLayout("textureCoords", 2);
+			texturedProgram.addAttributeLayout("tangent", 3);
 		}
 		texturedProgram.addTextureLayout("diffuse", 0);
+		texturedProgram.addTextureLayout("normals", 1);
 		texturedProgram.create();
 		// SSAO
 		ssaoProgram = glFactory.createProgram();
@@ -378,12 +391,18 @@ public class SandboxRenderer {
 	private static void initTextures() {
 		ByteBuffer data;
 		final Rectangle size = new Rectangle();
-		// CREEPER SKIN
-		creeperSkinTexture = glFactory.createTexture();
-		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper.png"), Format.RGB, size);
+		// CREEPER DIFFUSE
+		creeperDiffuseTexture = glFactory.createTexture();
+		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper_diffuse.png"), Format.RGB, size);
 		data.flip();
-		creeperSkinTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
-		creeperSkinTexture.create();
+		creeperDiffuseTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		creeperDiffuseTexture.create();
+		// CREEPER NORMALS
+		creeperNormalsTexture = glFactory.createTexture();
+		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper_normals.png"), Format.RGB, size);
+		data.flip();
+		creeperNormalsTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		creeperNormalsTexture.create();
 		// WOOD DIFFUSE
 		woodDiffuseTexture = glFactory.createTexture();
 		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"), Format.RGB, size);
@@ -393,6 +412,15 @@ public class SandboxRenderer {
 		woodDiffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		woodDiffuseTexture.setAnisotropicFiltering(16);
 		woodDiffuseTexture.create();
+		// WOOD NORMALS
+		woodNormalsTexture = glFactory.createTexture();
+		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/wood_normals.png"), Format.RGB, size);
+		data.flip();
+		woodNormalsTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		woodNormalsTexture.setMagFilter(FilterMode.LINEAR);
+		woodNormalsTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
+		woodNormalsTexture.setAnisotropicFiltering(16);
+		woodNormalsTexture.create();
 		// COLORS
 		colorsTexture = glFactory.createTexture();
 		colorsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
@@ -434,10 +462,12 @@ public class SandboxRenderer {
 		solidMaterial = new Material(solidProgram);
 		// CREEPER
 		creeperMaterial = new Material(texturedProgram);
-		creeperMaterial.addTexture(0, creeperSkinTexture);
+		creeperMaterial.addTexture(0, creeperDiffuseTexture);
+		creeperMaterial.addTexture(1, creeperNormalsTexture);
 		// WOOD
 		woodMaterial = new Material(texturedProgram);
 		woodMaterial.addTexture(0, woodDiffuseTexture);
+		woodMaterial.addTexture(1, woodNormalsTexture);
 		// SSAO
 		ssaoMaterial = new Material(ssaoProgram);
 		ssaoMaterial.addTexture(0, normalsTexture);
@@ -520,7 +550,7 @@ public class SandboxRenderer {
 		unitCubeWireVertexArray.create();
 		// DIAMOND MODEL
 		diamondModelVertexArray = glFactory.createVertexArray();
-		diamondModelVertexArray.setData(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/diamond.obj")));
+		diamondModelVertexArray.setData(loadOBJ(Sandbox.class.getResourceAsStream("/models/diamond.obj")));
 		diamondModelVertexArray.create();
 	}
 
@@ -604,10 +634,14 @@ public class SandboxRenderer {
 	}
 
 	private static void disposeTextures() {
-		// CREEPER SKIN
-		creeperSkinTexture.destroy();
+		// CREEPER DIFFUSE
+		creeperDiffuseTexture.destroy();
+		// CREEPER NORMALS
+		creeperNormalsTexture.destroy();
 		// WOOD DIFFUSE
 		woodDiffuseTexture.destroy();
+		// WOOD NORMALS
+		woodNormalsTexture.destroy();
 		// COLOR
 		colorsTexture.destroy();
 		// NORMALS
@@ -728,7 +762,7 @@ public class SandboxRenderer {
 
 	public static Model addBox(Vector3 position, Quaternion orientation, Vector3 size) {
 		final VertexArray vertexArray = glFactory.createVertexArray();
-		vertexArray.setData(MeshGenerator.generateTexturedCuboid(null, SandboxUtil.toReactVector3(size.mul(2))));
+		vertexArray.setData(MeshGenerator.generateCuboid(null, SandboxUtil.toReactVector3(size.mul(2))));
 		vertexArray.create();
 		final Model model = new Model(vertexArray, woodMaterial);
 		model.setPosition(position);
@@ -840,7 +874,7 @@ public class SandboxRenderer {
 
 	private static void addCreeper() {
 		final VertexArray vertexArray = glFactory.createVertexArray();
-		vertexArray.setData(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
+		vertexArray.setData(loadOBJ(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
 		vertexArray.create();
 		final Model model = new Model(vertexArray, creeperMaterial);
 		model.setPosition(new Vector3(10, 10, 0));
@@ -865,5 +899,42 @@ public class SandboxRenderer {
 	private static void updateFPSMonitor() {
 		fpsMonitor.update();
 		fpsMonitorModel.setString("FPS: " + fpsMonitor.getFPS());
+	}
+
+	private static VertexData loadOBJ(InputStream file) {
+		// LOAD
+		final TFloatList positions = new TFloatArrayList();
+		final TFloatList textureCoords = new TFloatArrayList();
+		final TFloatList normals = new TFloatArrayList();
+		final TIntList indices = new TIntArrayList();
+		final Vector3 sizes = ObjFileLoader.load(file, positions, textureCoords, normals, indices);
+		final VertexData vertexData = new VertexData();
+		// POSITIONS
+		final VertexAttribute positionAttribute = new VertexAttribute("positions", DataType.FLOAT, sizes.getFloorX());
+		positionAttribute.setData(positions);
+		vertexData.addAttribute(0, positionAttribute);
+		// NORMALS
+		final VertexAttribute normalAttribute;
+		if (sizes.getZ() <= 0) {
+			normalAttribute = new VertexAttribute("normals", DataType.FLOAT, 3);
+			CausticUtil.generateNormals(positions, indices, normals);
+		} else {
+			normalAttribute = new VertexAttribute("normals", DataType.FLOAT, sizes.getFloorZ());
+		}
+		normalAttribute.setData(normals);
+		vertexData.addAttribute(1, normalAttribute);
+		// TEXTURE COORDS
+		if (sizes.getY() > 0) {
+			final VertexAttribute textureCoordAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, sizes.getFloorY());
+			textureCoordAttribute.setData(textureCoords);
+			vertexData.addAttribute(2, textureCoordAttribute);
+			// TANGENTS
+			final VertexAttribute tangentAttribute = new VertexAttribute("tangents", DataType.FLOAT, 4);
+			tangentAttribute.setData(CausticUtil.generateTangents(positions, normals, textureCoords, indices));
+			vertexData.addAttribute(3, tangentAttribute);
+		}
+		// INDICES
+		vertexData.getIndices().addAll(indices);
+		return vertexData;
 	}
 }

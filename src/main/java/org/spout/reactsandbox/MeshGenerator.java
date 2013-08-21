@@ -41,6 +41,7 @@ import org.spout.physics.math.Vector3;
 import org.spout.renderer.data.VertexAttribute;
 import org.spout.renderer.data.VertexAttribute.DataType;
 import org.spout.renderer.data.VertexData;
+import org.spout.renderer.util.CausticUtil;
 
 /**
  * Generates various shape meshes of the desired size and stores them to the models.
@@ -242,7 +243,7 @@ public class MeshGenerator {
 	}
 
 	/**
-	 * Generates a solid cuboid mesh. The center is at the middle of the cuboid.
+	 * Generates a solid cuboid mesh. This mesh includes the positions, normals, texture coords and tangents. The center is at the middle of the cuboid.
 	 *
 	 * @param destination Where to save the mesh (can be null)
 	 * @param size The size of the cuboid to generate, on x, y and z
@@ -275,116 +276,118 @@ public class MeshGenerator {
 		final Vector3 nxN = new Vector3(-1, 0, 0);
 		final Vector3 nyN = new Vector3(0, -1, 0);
 		final Vector3 nzN = new Vector3(0, 0, -1);
-		// Model data buffers
+		// Create a destination if missing
 		if (destination == null) {
 			destination = new VertexData();
 		}
+		// Positions
 		final VertexAttribute positionsAttribute = new VertexAttribute("positions", DataType.FLOAT, 3);
 		destination.addAttribute(0, positionsAttribute);
 		final TFloatList positions = new TFloatArrayList();
+		// Normals
 		final VertexAttribute normalsAttribute = new VertexAttribute("normals", DataType.FLOAT, 3);
 		destination.addAttribute(1, normalsAttribute);
 		final TFloatList normals = new TFloatArrayList();
 		final TIntList indices = destination.getIndices();
+		// Texture coords
+		final VertexAttribute textureAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, 2);
+		destination.addAttribute(2, textureAttribute);
+		final TFloatList textures = new TFloatArrayList();
+		// Tangents
+		final VertexAttribute tangentAttribute = new VertexAttribute("tangents", DataType.FLOAT, 4);
+		destination.addAttribute(3, tangentAttribute);
+		final TFloatList tangents = new TFloatArrayList();
 		// Face x
 		addVector(positions, p2);
 		addVector(normals, nx);
+		addAll(textures, 0, 0);
 		addVector(positions, p6);
 		addVector(normals, nx);
+		addAll(textures, 0, 1);
 		addVector(positions, p5);
 		addVector(normals, nx);
+		addAll(textures, 1, 1);
 		addVector(positions, p1);
 		addVector(normals, nx);
+		addAll(textures, 1, 0);
 		addAll(indices, 0, 2, 1, 0, 3, 2);
 		// Face y
 		addVector(positions, p4);
 		addVector(normals, ny);
+		addAll(textures, 0, 0);
 		addVector(positions, p5);
 		addVector(normals, ny);
+		addAll(textures, 0, 1);
 		addVector(positions, p6);
 		addVector(normals, ny);
+		addAll(textures, 1, 1);
 		addVector(positions, p7);
 		addVector(normals, ny);
+		addAll(textures, 1, 0);
 		addAll(indices, 4, 6, 5, 4, 7, 6);
 		// Face z
 		addVector(positions, p3);
 		addVector(normals, nz);
+		addAll(textures, 0, 0);
 		addVector(positions, p7);
 		addVector(normals, nz);
+		addAll(textures, 0, 1);
 		addVector(positions, p6);
 		addVector(normals, nz);
+		addAll(textures, 1, 1);
 		addVector(positions, p2);
 		addVector(normals, nz);
+		addAll(textures, 1, 0);
 		addAll(indices, 8, 10, 9, 8, 11, 10);
 		// Face -x
 		addVector(positions, p0);
 		addVector(normals, nxN);
+		addAll(textures, 0, 0);
 		addVector(positions, p4);
 		addVector(normals, nxN);
+		addAll(textures, 0, 1);
 		addVector(positions, p7);
 		addVector(normals, nxN);
+		addAll(textures, 1, 1);
 		addVector(positions, p3);
 		addVector(normals, nxN);
+		addAll(textures, 1, 0);
 		addAll(indices, 12, 14, 13, 12, 15, 14);
 		// Face -y
 		addVector(positions, p0);
 		addVector(normals, nyN);
+		addAll(textures, 0, 0);
 		addVector(positions, p3);
 		addVector(normals, nyN);
+		addAll(textures, 0, 1);
 		addVector(positions, p2);
 		addVector(normals, nyN);
+		addAll(textures, 1, 1);
 		addVector(positions, p1);
 		addVector(normals, nyN);
+		addAll(textures, 1, 0);
 		addAll(indices, 16, 18, 17, 16, 19, 18);
 		// Face -z
 		addVector(positions, p1);
 		addVector(normals, nzN);
+		addAll(textures, 0, 0);
 		addVector(positions, p5);
 		addVector(normals, nzN);
+		addAll(textures, 0, 1);
 		addVector(positions, p4);
 		addVector(normals, nzN);
+		addAll(textures, 1, 1);
 		addVector(positions, p0);
 		addVector(normals, nzN);
+		addAll(textures, 1, 0);
 		addAll(indices, 20, 22, 21, 20, 23, 22);
+		// Automatically generate the tangents
+		CausticUtil.generateTangents(positions, normals, textures, indices, tangents);
 		// Put the mesh in the vertex data
 		positionsAttribute.setData(positions);
 		normalsAttribute.setData(normals);
-		return destination;
-	}
-
-	/**
-	 * Generates a solid cuboid mesh with texture UV. The center is at the middle of the cuboid.
-	 *
-	 * @param destination Where to save the mesh (can be null)
-	 * @param size The size of the cuboid to generate, on x, y and z
-	 * @return The vertex data
-	 */
-	public static VertexData generateTexturedCuboid(VertexData destination, Vector3 size) {
-		// Generate the basic mesh
-		destination = generateCuboid(destination, size);
-		// Model data buffers
-		final VertexAttribute textureAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, 2);
-		destination.addAttribute(2, textureAttribute);
-		final TFloatList texture = new TFloatArrayList();
-		// Add the texture coords
-		final float max = size.get(size.getMaxAxis());
-		final float xRatio = size.getX() / max;
-		final float yRatio = size.getY() / max;
-		final float zRatio = size.getZ() / max;
-		// Face x
-		addAll(texture, 0, 0, yRatio, 0, 0, zRatio, yRatio, zRatio);
-		// Face y
-		addAll(texture, 0, 0, xRatio, 0, 0, zRatio, xRatio, zRatio);
-		// Face z
-		addAll(texture, 0, 0, yRatio, 0, 0, xRatio, yRatio, xRatio);
-		// Face -x
-		addAll(texture, 0, 0, yRatio, 0, 0, zRatio, yRatio, zRatio);
-		// Face -y
-		addAll(texture, 0, 0, zRatio, 0, 0, xRatio, zRatio, xRatio);
-		// Face -z
-		addAll(texture, 0, 0, yRatio, 0, 0, xRatio, yRatio, xRatio);
-		// Put the mesh in the vertex data
-		textureAttribute.setData(texture);
+		textureAttribute.setData(textures);
+		tangentAttribute.setData(tangents);
 		return destination;
 	}
 
