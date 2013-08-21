@@ -60,10 +60,10 @@ import org.spout.renderer.gl.Texture.InternalFormat;
 import org.spout.renderer.gl.Texture.WrapMode;
 import org.spout.renderer.gl.VertexArray;
 import org.spout.renderer.gl.VertexArray.DrawingMode;
+import org.spout.renderer.util.CausticUtil;
 import org.spout.renderer.util.InstancedModel;
 import org.spout.renderer.util.InstancedStringModel;
 import org.spout.renderer.util.ObjFileLoader;
-import org.spout.renderer.util.RenderUtil;
 import org.spout.renderer.util.StringModel;
 
 /**
@@ -175,7 +175,7 @@ public class SandboxRenderer {
 
 	private static void initRenderer() {
 		// RENDERER
-		renderer = RenderUtil.createRenderer(glVersion);
+		renderer = CausticUtil.createRenderer(glVersion);
 		renderer.setWindowTitle(WINDOW_TITLE);
 		renderer.setWindowSize(WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		renderer.create();
@@ -226,72 +226,72 @@ public class SandboxRenderer {
 	private static void initShaders() {
 		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/";
 		// SOLID VERT
-		solidVert = RenderUtil.createShader(glVersion);
+		solidVert = CausticUtil.createShader(glVersion);
 		solidVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "solid.vert"));
 		solidVert.setType(ShaderType.VERTEX);
 		solidVert.create();
 		// SOLID FRAG
-		solidFrag = RenderUtil.createShader(glVersion);
+		solidFrag = CausticUtil.createShader(glVersion);
 		solidFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "solid.frag"));
 		solidFrag.setType(ShaderType.FRAGMENT);
 		solidFrag.create();
 		// TEXTURED VERT
-		texturedVert = RenderUtil.createShader(glVersion);
+		texturedVert = CausticUtil.createShader(glVersion);
 		texturedVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "textured.vert"));
 		texturedVert.setType(ShaderType.VERTEX);
 		texturedVert.create();
 		// TEXTURED
-		texturedFrag = RenderUtil.createShader(glVersion);
+		texturedFrag = CausticUtil.createShader(glVersion);
 		texturedFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "textured.frag"));
 		texturedFrag.setType(ShaderType.FRAGMENT);
 		texturedFrag.create();
 		// SSAO VERT
-		ssaoVert = RenderUtil.createShader(glVersion);
+		ssaoVert = CausticUtil.createShader(glVersion);
 		ssaoVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssao.vert"));
 		ssaoVert.setType(ShaderType.VERTEX);
 		ssaoVert.create();
 		// SSAO FRAG
-		ssaoFrag = RenderUtil.createShader(glVersion);
+		ssaoFrag = CausticUtil.createShader(glVersion);
 		ssaoFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssao.frag"));
 		ssaoFrag.setType(ShaderType.FRAGMENT);
 		ssaoFrag.create();
 		// SSAO BLUR VERT
-		ssaoBlurVert = RenderUtil.createShader(glVersion);
+		ssaoBlurVert = CausticUtil.createShader(glVersion);
 		ssaoBlurVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssaoBlur.vert"));
 		ssaoBlurVert.setType(ShaderType.VERTEX);
 		ssaoBlurVert.create();
 		// SSAO BLUR FRAG
-		ssaoBlurFrag = RenderUtil.createShader(glVersion);
+		ssaoBlurFrag = CausticUtil.createShader(glVersion);
 		ssaoBlurFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssaoBlur.frag"));
 		ssaoBlurFrag.setType(ShaderType.FRAGMENT);
 		ssaoBlurFrag.create();
 		// LIGHTING VERT
-		lightingVert = RenderUtil.createShader(glVersion);
+		lightingVert = CausticUtil.createShader(glVersion);
 		lightingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.vert"));
 		lightingVert.setType(ShaderType.VERTEX);
 		lightingVert.create();
 		// LIGHTING FRAG
-		lightingFrag = RenderUtil.createShader(glVersion);
+		lightingFrag = CausticUtil.createShader(glVersion);
 		lightingFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.frag"));
 		lightingFrag.setType(ShaderType.FRAGMENT);
 		lightingFrag.create();
 		// ANTI ALIASING VERT
-		antiAliasingVert = RenderUtil.createShader(glVersion);
+		antiAliasingVert = CausticUtil.createShader(glVersion);
 		antiAliasingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "edaa.vert"));
 		antiAliasingVert.setType(ShaderType.VERTEX);
 		antiAliasingVert.create();
 		// ANTI ALIASING FRAG
-		antiAliasingFrag = RenderUtil.createShader(glVersion);
+		antiAliasingFrag = CausticUtil.createShader(glVersion);
 		antiAliasingFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "edaa.frag"));
 		antiAliasingFrag.setType(ShaderType.FRAGMENT);
 		antiAliasingFrag.create();
 		// SCREEN VERT
-		screenVert = RenderUtil.createShader(glVersion);
+		screenVert = CausticUtil.createShader(glVersion);
 		screenVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "screen.vert"));
 		screenVert.setType(ShaderType.VERTEX);
 		screenVert.create();
 		// SCREEN FRAG
-		screenFrag = RenderUtil.createShader(glVersion);
+		screenFrag = CausticUtil.createShader(glVersion);
 		screenFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "screen.frag"));
 		screenFrag.setType(ShaderType.FRAGMENT);
 		screenFrag.create();
@@ -299,7 +299,7 @@ public class SandboxRenderer {
 
 	private static void initPrograms() {
 		// SOLID
-		solidProgram = RenderUtil.createProgram(glVersion);
+		solidProgram = CausticUtil.createProgram(glVersion);
 		solidProgram.addShader(solidVert);
 		solidProgram.addShader(solidFrag);
 		if (glVersion == GLVersion.GL20) {
@@ -308,7 +308,7 @@ public class SandboxRenderer {
 		}
 		solidProgram.create();
 		// TEXTURED
-		texturedProgram = RenderUtil.createProgram(glVersion);
+		texturedProgram = CausticUtil.createProgram(glVersion);
 		texturedProgram.addShader(texturedVert);
 		texturedProgram.addShader(texturedFrag);
 		if (glVersion == GLVersion.GL20) {
@@ -319,7 +319,7 @@ public class SandboxRenderer {
 		texturedProgram.addTextureLayout("diffuse", 0);
 		texturedProgram.create();
 		// SSAO
-		ssaoProgram = RenderUtil.createProgram(glVersion);
+		ssaoProgram = CausticUtil.createProgram(glVersion);
 		ssaoProgram.addShader(ssaoVert);
 		ssaoProgram.addShader(ssaoFrag);
 		if (glVersion == GLVersion.GL20) {
@@ -330,7 +330,7 @@ public class SandboxRenderer {
 		ssaoProgram.addTextureLayout("noise", 2);
 		ssaoProgram.create();
 		// SSAO BLUR
-		ssaoBlurProgram = RenderUtil.createProgram(glVersion);
+		ssaoBlurProgram = CausticUtil.createProgram(glVersion);
 		ssaoBlurProgram.addShader(ssaoBlurVert);
 		ssaoBlurProgram.addShader(ssaoBlurFrag);
 		if (glVersion == GLVersion.GL20) {
@@ -339,7 +339,7 @@ public class SandboxRenderer {
 		ssaoBlurProgram.addTextureLayout("occlusion", 0);
 		ssaoBlurProgram.create();
 		// LIGHTING
-		lightingProgram = RenderUtil.createProgram(glVersion);
+		lightingProgram = CausticUtil.createProgram(glVersion);
 		lightingProgram.addShader(lightingVert);
 		lightingProgram.addShader(lightingFrag);
 		if (glVersion == GLVersion.GL20) {
@@ -351,7 +351,7 @@ public class SandboxRenderer {
 		lightingProgram.addTextureLayout("occlusion", 3);
 		lightingProgram.create();
 		// ANTI ALIASING
-		antiAliasingProgram = RenderUtil.createProgram(glVersion);
+		antiAliasingProgram = CausticUtil.createProgram(glVersion);
 		antiAliasingProgram.addShader(antiAliasingVert);
 		antiAliasingProgram.addShader(antiAliasingFrag);
 		if (glVersion == GLVersion.GL20) {
@@ -362,7 +362,7 @@ public class SandboxRenderer {
 		antiAliasingProgram.addTextureLayout("depths", 2);
 		antiAliasingProgram.create();
 		// SCREEN
-		screenProgram = RenderUtil.createProgram(glVersion);
+		screenProgram = CausticUtil.createProgram(glVersion);
 		screenProgram.addShader(screenVert);
 		screenProgram.addShader(screenFrag);
 		if (glVersion == GLVersion.GL20) {
@@ -376,14 +376,14 @@ public class SandboxRenderer {
 		ByteBuffer data;
 		final Rectangle size = new Rectangle();
 		// CREEPER SKIN
-		creeperSkinTexture = RenderUtil.createTexture(glVersion);
-		data = RenderUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper.png"), Format.RGB, size);
+		creeperSkinTexture = CausticUtil.createTexture(glVersion);
+		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper.png"), Format.RGB, size);
 		data.flip();
 		creeperSkinTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
 		creeperSkinTexture.create();
 		// WOOD DIFFUSE
-		woodDiffuseTexture = RenderUtil.createTexture(glVersion);
-		data = RenderUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"), Format.RGB, size);
+		woodDiffuseTexture = CausticUtil.createTexture(glVersion);
+		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"), Format.RGB, size);
 		data.flip();
 		woodDiffuseTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
 		woodDiffuseTexture.setMagFilter(FilterMode.LINEAR);
@@ -391,34 +391,34 @@ public class SandboxRenderer {
 		woodDiffuseTexture.setAnisotropicFiltering(16);
 		woodDiffuseTexture.create();
 		// COLORS
-		colorsTexture = RenderUtil.createTexture(glVersion);
+		colorsTexture = CausticUtil.createTexture(glVersion);
 		colorsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		colorsTexture.create();
 		// NORMALS
-		normalsTexture = RenderUtil.createTexture(glVersion);
+		normalsTexture = CausticUtil.createTexture(glVersion);
 		normalsTexture.setFormat(Format.RGBA);
 		normalsTexture.setInternalFormat(InternalFormat.RGBA8);
 		normalsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		normalsTexture.create();
 		// DEPTHS
-		depthsTexture = RenderUtil.createTexture(glVersion);
+		depthsTexture = CausticUtil.createTexture(glVersion);
 		depthsTexture.setFormat(Format.DEPTH);
 		depthsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		depthsTexture.setWrapS(WrapMode.CLAMP_TO_EDGE);
 		depthsTexture.setWrapT(WrapMode.CLAMP_TO_EDGE);
 		depthsTexture.create();
 		// SSAO
-		ssaoTexture = RenderUtil.createTexture(glVersion);
+		ssaoTexture = CausticUtil.createTexture(glVersion);
 		ssaoTexture.setFormat(Format.RED);
 		ssaoTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		ssaoTexture.create();
 		// SSAO BLUR
-		ssaoBlurTexture = RenderUtil.createTexture(glVersion);
+		ssaoBlurTexture = CausticUtil.createTexture(glVersion);
 		ssaoBlurTexture.setFormat(Format.RED);
 		ssaoBlurTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		ssaoBlurTexture.create();
 		// AUX COLOR
-		auxColorsTexture = RenderUtil.createTexture(glVersion);
+		auxColorsTexture = CausticUtil.createTexture(glVersion);
 		auxColorsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		auxColorsTexture.setMagFilter(FilterMode.LINEAR);
 		auxColorsTexture.setMinFilter(FilterMode.LINEAR);
@@ -481,29 +481,29 @@ public class SandboxRenderer {
 
 	private static void initFrameBuffers() {
 		// MODEL
-		modelFrameBuffer = RenderUtil.createFrameBuffer(glVersion);
+		modelFrameBuffer = CausticUtil.createFrameBuffer(glVersion);
 		modelFrameBuffer.attach(AttachmentPoint.COLOR0, colorsTexture);
 		modelFrameBuffer.attach(AttachmentPoint.COLOR1, normalsTexture);
 		modelFrameBuffer.attach(AttachmentPoint.DEPTH, depthsTexture);
 		modelFrameBuffer.create();
 		modelRenderList.setFrameBuffer(modelFrameBuffer);
 		// SSAO
-		ssaoFrameBuffer = RenderUtil.createFrameBuffer(glVersion);
+		ssaoFrameBuffer = CausticUtil.createFrameBuffer(glVersion);
 		ssaoFrameBuffer.attach(AttachmentPoint.COLOR0, ssaoTexture);
 		ssaoFrameBuffer.create();
 		ssaoRenderList.setFrameBuffer(ssaoFrameBuffer);
 		// SSAO BLUR
-		ssaoBlurFrameBuffer = RenderUtil.createFrameBuffer(glVersion);
+		ssaoBlurFrameBuffer = CausticUtil.createFrameBuffer(glVersion);
 		ssaoBlurFrameBuffer.attach(AttachmentPoint.COLOR0, ssaoBlurTexture);
 		ssaoBlurFrameBuffer.create();
 		ssaoBlurRenderList.setFrameBuffer(ssaoBlurFrameBuffer);
 		// LIGHTING
-		lightingFrameBuffer = RenderUtil.createFrameBuffer(glVersion);
+		lightingFrameBuffer = CausticUtil.createFrameBuffer(glVersion);
 		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxColorsTexture);
 		lightingFrameBuffer.create();
 		lightingRenderList.setFrameBuffer(lightingFrameBuffer);
 		// ANTI ALIASING
-		antiAliasingFrameBuffer = RenderUtil.createFrameBuffer(glVersion);
+		antiAliasingFrameBuffer = CausticUtil.createFrameBuffer(glVersion);
 		antiAliasingFrameBuffer.attach(AttachmentPoint.COLOR0, colorsTexture);
 		antiAliasingFrameBuffer.create();
 		antiAliasingRenderList.setFrameBuffer(antiAliasingFrameBuffer);
@@ -511,12 +511,12 @@ public class SandboxRenderer {
 
 	private static void initVertexArrays() {
 		// UNIT WIRE CUBE
-		unitCubeWireVertexArray = RenderUtil.createVertexArray(glVersion);
+		unitCubeWireVertexArray = CausticUtil.createVertexArray(glVersion);
 		unitCubeWireVertexArray.setData(MeshGenerator.generateWireCuboid(null, new org.spout.physics.math.Vector3(1, 1, 1)));
 		unitCubeWireVertexArray.setDrawingMode(DrawingMode.LINES);
 		unitCubeWireVertexArray.create();
 		// DIAMOND MODEL
-		diamondModelVertexArray = RenderUtil.createVertexArray(glVersion);
+		diamondModelVertexArray = CausticUtil.createVertexArray(glVersion);
 		diamondModelVertexArray.setData(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/diamond.obj")));
 		diamondModelVertexArray.create();
 	}
@@ -717,7 +717,7 @@ public class SandboxRenderer {
 	}
 
 	public static Model addBox(Vector3 position, Quaternion orientation, Vector3 size) {
-		final VertexArray vertexArray = RenderUtil.createVertexArray(glVersion);
+		final VertexArray vertexArray = CausticUtil.createVertexArray(glVersion);
 		vertexArray.setData(MeshGenerator.generateTexturedCuboid(null, SandboxUtil.toReactVector3(size.mul(2))));
 		vertexArray.create();
 		final Model model = new Model(vertexArray, woodMaterial);
@@ -737,7 +737,7 @@ public class SandboxRenderer {
 	}
 
 	public static Model addCylinder(Vector3 position, Quaternion orientation, float radius, float height) {
-		final VertexArray vertexArray = RenderUtil.createVertexArray(glVersion);
+		final VertexArray vertexArray = CausticUtil.createVertexArray(glVersion);
 		vertexArray.setData(MeshGenerator.generateCylinder(null, radius, height));
 		vertexArray.create();
 		final Model model = new Model(vertexArray, solidMaterial);
@@ -749,7 +749,7 @@ public class SandboxRenderer {
 	}
 
 	public static Model addSphere(Vector3 position, Quaternion orientation, float radius) {
-		final VertexArray vertexArray = RenderUtil.createVertexArray(glVersion);
+		final VertexArray vertexArray = CausticUtil.createVertexArray(glVersion);
 		vertexArray.setData(MeshGenerator.generateSphere(null, radius));
 		vertexArray.create();
 		final Model model = new Model(vertexArray, solidMaterial);
@@ -776,7 +776,7 @@ public class SandboxRenderer {
 	}
 
 	private static void addDeferredStageScreens() {
-		final VertexArray vertexArray = RenderUtil.createVertexArray(glVersion);
+		final VertexArray vertexArray = CausticUtil.createVertexArray(glVersion);
 		vertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2(2, 2)));
 		vertexArray.create();
 		// SSAO
@@ -797,7 +797,7 @@ public class SandboxRenderer {
 	}
 
 	private static void addCrosshairs() {
-		final VertexArray vertexArray = RenderUtil.createVertexArray(glVersion);
+		final VertexArray vertexArray = CausticUtil.createVertexArray(glVersion);
 		vertexArray.setData(MeshGenerator.generateCrosshairs(null, 0.02f));
 		vertexArray.create();
 		final Model model = new Model(vertexArray, solidMaterial);
@@ -829,7 +829,7 @@ public class SandboxRenderer {
 	}
 
 	private static void addCreeper() {
-		final VertexArray vertexArray = RenderUtil.createVertexArray(glVersion);
+		final VertexArray vertexArray = CausticUtil.createVertexArray(glVersion);
 		vertexArray.setData(ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
 		vertexArray.create();
 		final Model model = new Model(vertexArray, creeperMaterial);

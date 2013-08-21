@@ -18,8 +18,6 @@ uniform float radius;
 uniform vec2 noiseScale;
 uniform float power;
 
-uniform mat4 normalMatrix;
-
 float linearizeDepth(in float depth) {
     return projectionMatrix[3][2] / (depth + projectionMatrix[2][2]);
 }

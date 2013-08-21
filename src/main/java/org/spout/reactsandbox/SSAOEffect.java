@@ -29,8 +29,6 @@ package org.spout.reactsandbox;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
-import org.lwjgl.BufferUtils;
-
 import org.spout.math.GenericMath;
 import org.spout.math.vector.Vector2;
 import org.spout.math.vector.Vector3;
@@ -44,7 +42,7 @@ import org.spout.renderer.data.VertexAttribute.DataType;
 import org.spout.renderer.gl.Texture;
 import org.spout.renderer.gl.Texture.Format;
 import org.spout.renderer.gl.Texture.InternalFormat;
-import org.spout.renderer.util.RenderUtil;
+import org.spout.renderer.util.CausticUtil;
 
 /**
  *
@@ -82,7 +80,7 @@ public class SSAOEffect {
 		noiseScale = resolution.div(noiseSize);
 		final int noiseTextureSize = noiseSize * noiseSize;
 		// 3 floats components = 12 bytes per pixel
-		final ByteBuffer noiseTextureBuffer = BufferUtils.createByteBuffer(noiseTextureSize * 12);
+		final ByteBuffer noiseTextureBuffer = CausticUtil.createByteBuffer(noiseTextureSize * 12);
 		for (int i = 0; i < noiseTextureSize; i++) {
 			// Random unit vectors around the z axis
 			final Vector3 noise = new Vector3(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, 0).normalize();
@@ -91,7 +89,7 @@ public class SSAOEffect {
 			noiseTextureBuffer.putFloat(noise.getZ());
 		}
 		// Create the texture
-		noiseTexture = RenderUtil.createTexture(version);
+		noiseTexture = CausticUtil.createTexture(version);
 		noiseTexture.setFormat(Format.RGB);
 		noiseTexture.setInternalFormat(InternalFormat.RGB32F);
 		noiseTexture.setComponentType(DataType.FLOAT);
