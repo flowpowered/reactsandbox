@@ -9,12 +9,10 @@ layout(location = 0) out vec3 outputColor;
 uniform sampler2D colors;
 uniform sampler2D normals;
 uniform sampler2D depths;
+uniform sampler2D materials;
 uniform sampler2D occlusion;
 uniform mat4 projectionMatrix;
 uniform float lightAttenuation;
-uniform float diffuseIntensity;
-uniform float specularIntensity;
-uniform float ambientIntensity;
 
 float linearizeDepth(in float depth) {
     return projectionMatrix[3][2] / (depth + projectionMatrix[2][2]);
@@ -40,16 +38,18 @@ void main() {
     float distanceIntensity = 1 / (1 + lightAttenuation * lightDistance);
     float normalDotLight = max(0, dot(normalView, lightDirection));
 
-    float diffuseTerm = diffuseIntensity * distanceIntensity * normalDotLight;
+    vec3 material = texture(materials, textureUV).rgb;
+
+    float diffuseTerm = material.x * distanceIntensity * normalDotLight;
 
     float specularTerm;
     if (normalDotLight > 0) {
-        specularTerm = specularIntensity * distanceIntensity * pow(max(0, dot(reflect(lightDirection, normalView), normalize(viewRay))), 20);
+        specularTerm = material.y * distanceIntensity * pow(max(0, dot(reflect(lightDirection, normalView), normalize(viewRay))), 20);
     } else {
         specularTerm = 0;
     }
 
-    float ambientTerm = ambientIntensity;
+    float ambientTerm = material.z;
 
     outputColor *= (diffuseTerm + specularTerm + ambientTerm) * occlusion;
 }

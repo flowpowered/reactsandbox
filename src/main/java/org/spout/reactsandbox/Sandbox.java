@@ -334,9 +334,6 @@ public class Sandbox {
 			SandboxRenderer.setDiamondColor(parseColor(((String) appearanceConfig.get("ConeShapeColor")), 1));
 			SandboxRenderer.setSphereColor(parseColor(((String) appearanceConfig.get("SphereShapeColor")), 1));
 			SandboxRenderer.setCylinderColor(parseColor(((String) appearanceConfig.get("CylinderShapeColor")), 1));
-			SandboxRenderer.setDiffuseIntensity(((Number) appearanceConfig.get("DiffuseIntensity")).floatValue());
-			SandboxRenderer.setSpecularIntensity(((Number) appearanceConfig.get("SpecularIntensity")).floatValue());
-			SandboxRenderer.setAmbientIntensity(((Number) appearanceConfig.get("AmbientIntensity")).floatValue());
 			SandboxRenderer.setLightAttenuation(((Number) appearanceConfig.get("LightAttenuation")).floatValue());
 			SandboxRenderer.setCullBackFaces((Boolean) appearanceConfig.get("CullingEnabled"));
 		} catch (Exception ex) {

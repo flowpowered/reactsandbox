@@ -95,9 +95,6 @@ public class SandboxRenderer {
 	private static boolean cullBackFaces = true;
 	// LIGHTING UNIFORMS
 	private static final Vector3Uniform lightPositionUniform = new Vector3Uniform("lightPosition", Vector3.ZERO);
-	private static final FloatUniform diffuseIntensityUniform = new FloatUniform("diffuseIntensity", 0.8f);
-	private static final FloatUniform specularIntensityUniform = new FloatUniform("specularIntensity", 0.2f);
-	private static final FloatUniform ambientIntensityUniform = new FloatUniform("ambientIntensity", 0.3f);
 	private static final FloatUniform lightAttenuationUniform = new FloatUniform("lightAttenuation", 0.03f);
 	// CAMERAS
 	private static final Camera modelCamera = Camera.createPerspective(FIELD_OF_VIEW, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY(), NEAR_PLANE, FAR_PLANE);
@@ -140,16 +137,20 @@ public class SandboxRenderer {
 	// TEXTURES
 	private static Texture creeperDiffuseTexture;
 	private static Texture creeperNormalsTexture;
+	private static Texture creeperSpecularTexture;
 	private static Texture woodDiffuseTexture;
 	private static Texture woodNormalsTexture;
+	private static Texture woodSpecularTexture;
 	private static Texture colorsTexture;
 	private static Texture normalsTexture;
+	private static Texture materialsTexture;
 	private static Texture depthsTexture;
 	private static Texture ssaoTexture;
 	private static Texture ssaoBlurTexture;
 	private static Texture auxColorsTexture;
 	// MATERIALS
 	private static Material solidMaterial;
+	private static Material wireframeMaterial;
 	private static Material creeperMaterial;
 	private static Material woodMaterial;
 	private static Material ssaoMaterial;
@@ -333,6 +334,7 @@ public class SandboxRenderer {
 		}
 		texturedProgram.addTextureLayout("diffuse", 0);
 		texturedProgram.addTextureLayout("normals", 1);
+		texturedProgram.addTextureLayout("specular", 2);
 		texturedProgram.create();
 		// SSAO
 		ssaoProgram = glFactory.createProgram();
@@ -364,7 +366,8 @@ public class SandboxRenderer {
 		lightingProgram.addTextureLayout("colors", 0);
 		lightingProgram.addTextureLayout("normals", 1);
 		lightingProgram.addTextureLayout("depths", 2);
-		lightingProgram.addTextureLayout("occlusion", 3);
+		lightingProgram.addTextureLayout("materials", 3);
+		lightingProgram.addTextureLayout("occlusion", 4);
 		lightingProgram.create();
 		// ANTI ALIASING
 		antiAliasingProgram = glFactory.createProgram();
@@ -402,7 +405,19 @@ public class SandboxRenderer {
 		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper_normals.png"), Format.RGB, size);
 		data.flip();
 		creeperNormalsTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		creeperNormalsTexture.setMagFilter(FilterMode.LINEAR);
+		creeperNormalsTexture.setMinFilter(FilterMode.LINEAR);
 		creeperNormalsTexture.create();
+		// CREEPER SPECULAR
+		creeperSpecularTexture = glFactory.createTexture();
+		creeperSpecularTexture.setFormat(Format.RED);
+		creeperSpecularTexture.setInternalFormat(InternalFormat.R8);
+		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper_specular.png"), Format.RED, size);
+		data.flip();
+		creeperSpecularTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		creeperSpecularTexture.setMagFilter(FilterMode.LINEAR);
+		creeperSpecularTexture.setMinFilter(FilterMode.LINEAR);
+		creeperSpecularTexture.create();
 		// WOOD DIFFUSE
 		woodDiffuseTexture = glFactory.createTexture();
 		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"), Format.RGB, size);
@@ -421,6 +436,17 @@ public class SandboxRenderer {
 		woodNormalsTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		woodNormalsTexture.setAnisotropicFiltering(16);
 		woodNormalsTexture.create();
+		// WOOD SPECULAR
+		woodSpecularTexture = glFactory.createTexture();
+		woodSpecularTexture.setFormat(Format.RED);
+		woodSpecularTexture.setInternalFormat(InternalFormat.R8);
+		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/wood_specular.png"), Format.RED, size);
+		data.flip();
+		woodSpecularTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		woodSpecularTexture.setMagFilter(FilterMode.LINEAR);
+		woodSpecularTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
+		woodSpecularTexture.setAnisotropicFiltering(16);
+		woodSpecularTexture.create();
 		// COLORS
 		colorsTexture = glFactory.createTexture();
 		colorsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
@@ -431,6 +457,10 @@ public class SandboxRenderer {
 		normalsTexture.setInternalFormat(InternalFormat.RGBA8);
 		normalsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		normalsTexture.create();
+		// MATERIALS
+		materialsTexture = glFactory.createTexture();
+		materialsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		materialsTexture.create();
 		// DEPTHS
 		depthsTexture = glFactory.createTexture();
 		depthsTexture.setFormat(Format.DEPTH);
@@ -460,14 +490,32 @@ public class SandboxRenderer {
 		UniformHolder uniforms;
 		// SOLID
 		solidMaterial = new Material(solidProgram);
+		uniforms = solidMaterial.getUniforms();
+		uniforms.add(new FloatUniform("diffuseIntensity", 0.8f));
+		uniforms.add(new FloatUniform("specularIntensity", 1));
+		uniforms.add(new FloatUniform("ambientIntensity", 0.2f));
+		// WIREFRAME
+		wireframeMaterial = new Material(solidProgram);
+		uniforms = wireframeMaterial.getUniforms();
+		uniforms.add(new FloatUniform("diffuseIntensity", 0));
+		uniforms.add(new FloatUniform("specularIntensity", 0));
+		uniforms.add(new FloatUniform("ambientIntensity", 1));
 		// CREEPER
 		creeperMaterial = new Material(texturedProgram);
 		creeperMaterial.addTexture(0, creeperDiffuseTexture);
 		creeperMaterial.addTexture(1, creeperNormalsTexture);
+		creeperMaterial.addTexture(2, creeperSpecularTexture);
+		uniforms = creeperMaterial.getUniforms();
+		uniforms.add(new FloatUniform("diffuseIntensity", 0.8f));
+		uniforms.add(new FloatUniform("ambientIntensity", 0.2f));
 		// WOOD
 		woodMaterial = new Material(texturedProgram);
 		woodMaterial.addTexture(0, woodDiffuseTexture);
 		woodMaterial.addTexture(1, woodNormalsTexture);
+		woodMaterial.addTexture(2, woodSpecularTexture);
+		uniforms = woodMaterial.getUniforms();
+		uniforms.add(new FloatUniform("diffuseIntensity", 0.8f));
+		uniforms.add(new FloatUniform("ambientIntensity", 0.2f));
 		// SSAO
 		ssaoMaterial = new Material(ssaoProgram);
 		ssaoMaterial.addTexture(0, normalsTexture);
@@ -487,14 +535,12 @@ public class SandboxRenderer {
 		lightingMaterial.addTexture(0, colorsTexture);
 		lightingMaterial.addTexture(1, normalsTexture);
 		lightingMaterial.addTexture(2, depthsTexture);
-		lightingMaterial.addTexture(3, ssaoBlurTexture);
+		lightingMaterial.addTexture(3, materialsTexture);
+		lightingMaterial.addTexture(4, ssaoBlurTexture);
 		uniforms = lightingMaterial.getUniforms();
 		uniforms.add(new FloatUniform("tanHalfFOV", TAN_HALF_FOV));
 		uniforms.add(new FloatUniform("aspectRatio", ASPECT_RATIO));
 		uniforms.add(lightPositionUniform);
-		uniforms.add(diffuseIntensityUniform);
-		uniforms.add(specularIntensityUniform);
-		uniforms.add(ambientIntensityUniform);
 		uniforms.add(lightAttenuationUniform);
 		// ANTI ALIASING
 		antiAliasingMaterial = new Material(antiAliasingProgram);
@@ -517,6 +563,7 @@ public class SandboxRenderer {
 		modelFrameBuffer = glFactory.createFrameBuffer();
 		modelFrameBuffer.attach(AttachmentPoint.COLOR0, colorsTexture);
 		modelFrameBuffer.attach(AttachmentPoint.COLOR1, normalsTexture);
+		modelFrameBuffer.attach(AttachmentPoint.COLOR2, materialsTexture);
 		modelFrameBuffer.attach(AttachmentPoint.DEPTH, depthsTexture);
 		modelFrameBuffer.create();
 		modelRenderList.setFrameBuffer(modelFrameBuffer);
@@ -638,14 +685,20 @@ public class SandboxRenderer {
 		creeperDiffuseTexture.destroy();
 		// CREEPER NORMALS
 		creeperNormalsTexture.destroy();
+		// CREEPER SPECULAR
+		creeperSpecularTexture.destroy();
 		// WOOD DIFFUSE
 		woodDiffuseTexture.destroy();
 		// WOOD NORMALS
 		woodNormalsTexture.destroy();
+		// WOOD SPECULAR
+		woodSpecularTexture.destroy();
 		// COLOR
 		colorsTexture.destroy();
 		// NORMALS
 		normalsTexture.destroy();
+		// MATERIALS
+		materialsTexture.destroy();
 		// DEPTH
 		depthsTexture.destroy();
 		// SSAO
@@ -695,18 +748,6 @@ public class SandboxRenderer {
 		backgroundColor = color;
 	}
 
-	public static void setDiffuseIntensity(float intensity) {
-		diffuseIntensityUniform.set(intensity);
-	}
-
-	public static void setSpecularIntensity(float intensity) {
-		specularIntensityUniform.set(intensity);
-	}
-
-	public static void setAmbientIntensity(float intensity) {
-		ambientIntensityUniform.set(intensity);
-	}
-
 	public static void setLightAttenuation(float attenuation) {
 		lightAttenuationUniform.set(attenuation);
 	}
@@ -752,7 +793,7 @@ public class SandboxRenderer {
 	}
 
 	public static Model addAABB(Vector3 position, Vector3 size) {
-		final Model model = new Model(unitCubeWireVertexArray, solidMaterial);
+		final Model model = new Model(unitCubeWireVertexArray, wireframeMaterial);
 		model.setPosition(position);
 		model.setScale(size);
 		model.getUniforms().add(new ColorUniform("modelColor", aabbModelColor));
@@ -844,7 +885,7 @@ public class SandboxRenderer {
 		final VertexArray vertexArray = glFactory.createVertexArray();
 		vertexArray.setData(MeshGenerator.generateCrosshairs(null, 0.02f));
 		vertexArray.create();
-		final Model model = new Model(vertexArray, solidMaterial);
+		final Model model = new Model(vertexArray, wireframeMaterial);
 		vertexArray.setDrawingMode(DrawingMode.LINES);
 		model.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
 		model.setPosition(new Vector3(0.5, (1 / ASPECT_RATIO) / 2, -0.1));
