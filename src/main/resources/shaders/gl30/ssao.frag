@@ -1,7 +1,6 @@
 #version 330
 
-const int MAX_KERNEL_SIZE = 128;
-const float OCCLUSION_THRESHOLD = 0.15;
+const int MAX_KERNEL_SIZE = 32;
 
 in vec2 textureUV;
 noperspective in vec3 viewRay;
@@ -11,15 +10,17 @@ layout(location = 0) out float outputOcclusion;
 uniform sampler2D normals;
 uniform sampler2D depths;
 uniform sampler2D noise;
+uniform vec2 projection;
 uniform mat4 projectionMatrix;
 uniform int kernelSize;
 uniform vec3[MAX_KERNEL_SIZE] kernel;
 uniform float radius;
+uniform float threshold;
 uniform vec2 noiseScale;
 uniform float power;
 
 float linearizeDepth(in float depth) {
-    return projectionMatrix[3][2] / (depth + projectionMatrix[2][2]);
+    return projection.y / (depth - projection.x);
 }
 
 void main() {
@@ -62,7 +63,7 @@ void main() {
 
         // Range check and accumulate
         float rangeCheck = smoothstep(0, 1, radius / abs(origin.z - sampleDepth));
-        occlusion += rangeCheck * (sampleDepth - sample.z >= OCCLUSION_THRESHOLD ? 1 : 0);
+        occlusion += rangeCheck * (sampleDepth - sample.z >= threshold ? 1 : 0);
     }
 
     // Average and invert occlusion

@@ -44,23 +44,22 @@ import org.spout.renderer.gl.Texture.Format;
 import org.spout.renderer.gl.Texture.InternalFormat;
 import org.spout.renderer.util.CausticUtil;
 
-/**
- *
- */
 public class SSAOEffect {
 	private final int kernelSize;
 	private final Vector3[] kernel;
 	private final float radius;
+	private final float threshold;
 	private final Vector2 noiseScale;
 	private final Texture noiseTexture;
 	private final float power;
 	private final int noiseSize;
 	private final Vector2 texelSize;
 
-	public SSAOEffect(GLFactory glFactory, Vector2 resolution, int kernelSize, int noiseSize, float radius, float power) {
+	public SSAOEffect(GLFactory glFactory, Vector2 resolution, int kernelSize, int noiseSize, float radius, float threshold, float power) {
 		this.kernelSize = kernelSize;
 		this.kernel = new Vector3[kernelSize];
 		this.radius = radius;
+		this.threshold = threshold;
 		this.noiseScale = resolution.div(noiseSize);
 		this.noiseTexture = glFactory.createTexture();
 		this.power = power;
@@ -70,7 +69,7 @@ public class SSAOEffect {
 		final Random random = new Random();
 		for (int i = 0; i < kernelSize; i++) {
 			float scale = (float) i / kernelSize;
-			scale = GenericMath.lerp(0.1f, 1, scale * scale);
+			scale = GenericMath.lerp(threshold, 1, scale * scale);
 			// Create a set of random unit vectors inside a hemisphere
 			// The vectors are scaled so that the amount falls of as we get further away from the center
 			kernel[i] = new Vector3(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, random.nextFloat()).normalize().mul(scale);
@@ -106,6 +105,7 @@ public class SSAOEffect {
 		destination.add(new IntUniform("kernelSize", kernelSize));
 		destination.add(new Vector3ArrayUniform("kernel", kernel));
 		destination.add(new FloatUniform("radius", radius));
+		destination.add(new FloatUniform("threshold", threshold));
 		destination.add(new Vector2Uniform("noiseScale", noiseScale));
 		destination.add(new FloatUniform("power", power));
 		destination.add(new IntUniform("noiseSize", noiseSize));

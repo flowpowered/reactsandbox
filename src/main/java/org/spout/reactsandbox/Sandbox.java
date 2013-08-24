@@ -41,6 +41,7 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 import org.yaml.snakeyaml.Yaml;
 
+import org.spout.math.TrigMath;
 import org.spout.physics.body.CollisionBody;
 import org.spout.physics.body.ImmobileRigidBody;
 import org.spout.physics.body.MobileRigidBody;
@@ -102,6 +103,9 @@ public class Sandbox {
 			setupPhysics();
 			startupLog();
 			SandboxRenderer.getCamera().setPosition(new org.spout.math.vector.Vector3(0, 5, 10));
+			SandboxRenderer.setLightPosition(new org.spout.math.vector.Vector3(0, 50, 50));
+			final float spotAngle = 60 * (float) TrigMath.DEG_TO_RAD;
+			SandboxRenderer.setLightDirection(new org.spout.math.vector.Vector3(0, -TrigMath.cos(spotAngle), -TrigMath.sin(spotAngle)));
 			Mouse.setGrabbed(true);
 			SandboxRenderer.startFPSMonitor();
 			while (!Display.isCloseRequested()) {
@@ -278,7 +282,6 @@ public class Sandbox {
 			position.add(Vector3.multiply(up, -cameraSpeed));
 		}
 		camera.setPosition(SandboxUtil.toMathVector3(position));
-		SandboxRenderer.setLightPosition(SandboxUtil.toMathVector3(position));
 	}
 
 	private static void handleSelection() {

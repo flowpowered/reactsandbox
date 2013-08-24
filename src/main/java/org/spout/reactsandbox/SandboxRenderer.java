@@ -38,6 +38,7 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 
+import org.spout.math.TrigMath;
 import org.spout.math.imaginary.Quaternion;
 import org.spout.math.vector.Vector2;
 import org.spout.math.vector.Vector3;
@@ -90,11 +91,13 @@ public class SandboxRenderer {
 	private static final float TAN_HALF_FOV = (float) Math.tan(Math.toRadians(FIELD_OF_VIEW) / 2);
 	private static final float NEAR_PLANE = 0.1f;
 	private static final float FAR_PLANE = 1000;
+	private static final Vector2 PROJECTION = new Vector2(FAR_PLANE / (FAR_PLANE - NEAR_PLANE), (-FAR_PLANE * NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE));
 	// SETTINGS
 	private static Color backgroundColor = Color.DARK_GRAY;
 	private static boolean cullBackFaces = true;
 	// LIGHTING UNIFORMS
 	private static final Vector3Uniform lightPositionUniform = new Vector3Uniform("lightPosition", Vector3.ZERO);
+	private static final Vector3Uniform spotDirectionUniform = new Vector3Uniform("spotDirection", new Vector3(0, 0, -1));
 	private static final FloatUniform lightAttenuationUniform = new FloatUniform("lightAttenuation", 0.03f);
 	// CAMERAS
 	private static final Camera modelCamera = Camera.createPerspective(FIELD_OF_VIEW, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY(), NEAR_PLANE, FAR_PLANE);
@@ -197,7 +200,7 @@ public class SandboxRenderer {
 		renderer.create();
 		renderer.setClearColor(new Color(backgroundColor.getRed(), backgroundColor.getGreen(), backgroundColor.getBlue(), 0));
 		// SSAO
-		ssaoEffect = new SSAOEffect(glFactory, WINDOW_SIZE, 8, 4, 0.5f, 2);
+		ssaoEffect = new SSAOEffect(glFactory, WINDOW_SIZE, 8, 4, 0.5f, 0.15f, 2);
 	}
 
 	private static void initRenderLists() {
@@ -464,6 +467,7 @@ public class SandboxRenderer {
 		// DEPTHS
 		depthsTexture = glFactory.createTexture();
 		depthsTexture.setFormat(Format.DEPTH);
+		depthsTexture.setInternalFormat(InternalFormat.DEPTH_COMPONENT32);
 		depthsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		depthsTexture.setWrapS(WrapMode.CLAMP_TO_EDGE);
 		depthsTexture.setWrapT(WrapMode.CLAMP_TO_EDGE);
@@ -522,6 +526,7 @@ public class SandboxRenderer {
 		ssaoMaterial.addTexture(1, depthsTexture);
 		ssaoMaterial.addTexture(2, ssaoEffect.getNoiseTexture());
 		uniforms = ssaoMaterial.getUniforms();
+		uniforms.add(new Vector2Uniform("projection", PROJECTION));
 		uniforms.add(new FloatUniform("tanHalfFOV", TAN_HALF_FOV));
 		uniforms.add(new FloatUniform("aspectRatio", ASPECT_RATIO));
 		ssaoEffect.addUniforms(uniforms);
@@ -538,16 +543,20 @@ public class SandboxRenderer {
 		lightingMaterial.addTexture(3, materialsTexture);
 		lightingMaterial.addTexture(4, ssaoBlurTexture);
 		uniforms = lightingMaterial.getUniforms();
+		uniforms.add(new Vector2Uniform("projection", PROJECTION));
 		uniforms.add(new FloatUniform("tanHalfFOV", TAN_HALF_FOV));
 		uniforms.add(new FloatUniform("aspectRatio", ASPECT_RATIO));
 		uniforms.add(lightPositionUniform);
 		uniforms.add(lightAttenuationUniform);
+		uniforms.add(new FloatUniform("spotCutoff", TrigMath.cos(60 * (float) TrigMath.DEG_TO_RAD)));
+		uniforms.add(spotDirectionUniform);
 		// ANTI ALIASING
 		antiAliasingMaterial = new Material(antiAliasingProgram);
 		antiAliasingMaterial.addTexture(0, auxColorsTexture);
 		antiAliasingMaterial.addTexture(1, normalsTexture);
 		antiAliasingMaterial.addTexture(2, depthsTexture);
 		uniforms = antiAliasingMaterial.getUniforms();
+		uniforms.add(new Vector2Uniform("projection", PROJECTION));
 		uniforms.add(new Vector2Uniform("resolution", WINDOW_SIZE));
 		uniforms.add(new FloatUniform("maxSpan", 8));
 		uniforms.add(new Vector2Uniform("barriers", new Vector2(0.8f, 0.5f)));
@@ -790,6 +799,10 @@ public class SandboxRenderer {
 
 	public static void setLightPosition(Vector3 position) {
 		lightPositionUniform.set(position);
+	}
+
+	public static void setLightDirection(Vector3 direction) {
+		spotDirectionUniform.set(direction.normalize());
 	}
 
 	public static Model addAABB(Vector3 position, Vector3 size) {
