@@ -43,12 +43,9 @@ import org.spout.math.imaginary.Quaternion;
 import org.spout.math.vector.Vector2;
 import org.spout.math.vector.Vector3;
 import org.spout.renderer.Camera;
+import org.spout.renderer.GLImplementation;
 import org.spout.renderer.GLVersioned.GLVersion;
 import org.spout.renderer.Material;
-import org.spout.renderer.data.VertexAttribute;
-import org.spout.renderer.data.VertexAttribute.DataType;
-import org.spout.renderer.data.VertexData;
-import org.spout.renderer.model.Model;
 import org.spout.renderer.data.Color;
 import org.spout.renderer.data.RenderList;
 import org.spout.renderer.data.Uniform.ColorUniform;
@@ -56,6 +53,9 @@ import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.Vector2Uniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
 import org.spout.renderer.data.UniformHolder;
+import org.spout.renderer.data.VertexAttribute;
+import org.spout.renderer.data.VertexAttribute.DataType;
+import org.spout.renderer.data.VertexData;
 import org.spout.renderer.gl.Capability;
 import org.spout.renderer.gl.FrameBuffer;
 import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
@@ -71,13 +71,12 @@ import org.spout.renderer.gl.Texture.InternalFormat;
 import org.spout.renderer.gl.Texture.WrapMode;
 import org.spout.renderer.gl.VertexArray;
 import org.spout.renderer.gl.VertexArray.DrawingMode;
-import org.spout.renderer.lwjgl.gl20.GL20GLFactory;
-import org.spout.renderer.lwjgl.gl30.GL30GLFactory;
-import org.spout.renderer.util.CausticUtil;
 import org.spout.renderer.model.InstancedModel;
 import org.spout.renderer.model.InstancedStringModel;
-import org.spout.renderer.util.ObjFileLoader;
+import org.spout.renderer.model.Model;
 import org.spout.renderer.model.StringModel;
+import org.spout.renderer.util.CausticUtil;
+import org.spout.renderer.util.ObjFileLoader;
 
 /**
  *
@@ -740,13 +739,7 @@ public class SandboxRenderer {
 
 	public static void setGLVersion(GLVersion version) {
 		glVersion = version;
-		switch (version) {
-			case GL20:
-				glFactory = new GL20GLFactory();
-				break;
-			case GL30:
-				glFactory = new GL30GLFactory();
-		}
+		glFactory = GLImplementation.get(version);
 	}
 
 	public static void setCullBackFaces(boolean cull) {
