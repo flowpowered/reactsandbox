@@ -6,6 +6,7 @@ attribute vec2 textureCoords;
 attribute vec4 tangent;
 
 varying vec3 positionView;
+varying vec3 normalView;
 varying vec2 textureUV;
 varying mat3 tangentMatrix;
 
@@ -19,7 +20,7 @@ void main() {
 
     textureUV = textureCoords;
 
-    vec3 normalView = (normalMatrix * vec4(normal, 0)).xyz;
+    normalView = (normalMatrix * vec4(normal, 0)).xyz;
     vec3 tangentView = (normalMatrix * vec4(tangent.xyz, 0)).xyz;
     vec3 biTangentView = cross(normalView, tangentView) * tangent.w;
     tangentMatrix = mat3(tangentView, biTangentView, normalView);

@@ -9,12 +9,13 @@ uniform sampler2D colors;
 uniform sampler2D normals;
 uniform sampler2D depths;
 uniform sampler2D materials;
-uniform sampler2D occlusion;
+uniform sampler2D occlusions;
+uniform sampler2D shadows;
 uniform vec2 projection;
 uniform float lightAttenuation;
 uniform	float spotCutoff;
 
-float linearizeDepth(in float depth) {
+float linearizeDepth(float depth) {
     return projection.y / (depth - projection.x);
 }
 
@@ -33,21 +34,25 @@ void main() {
     float lightDistance = length(lightDifference);
     vec3 lightDirection = lightDifference / lightDistance;
     float distanceIntensity = 1 / (1 + lightAttenuation * lightDistance);
+
     float spotDotLight = dot(spotDirectionView, -lightDirection);
-    float normalDotLight = max(0, dot(normalView, lightDirection));
+    float normalDotLight = dot(normalView, lightDirection);
 
     vec3 material = texture2D(materials, textureUV).rgb;
 
-    float occlusion = texture2D(occlusion, textureUV).r;
+    float occlusion = texture2D(occlusions, textureUV).r;
+
+    float shadow = texture2D(shadows, textureUV).r;
 
     float ambientTerm = material.z * occlusion;
     float diffuseTerm = 0;
     float specularTerm = 0;
-    if (spotDotLight > spotCutoff) {
+    if (spotDotLight > spotCutoff && shadow > 0) {
         distanceIntensity *= (spotDotLight - spotCutoff) / (1 - spotCutoff);
-        diffuseTerm = material.x * distanceIntensity * normalDotLight;
+        normalDotLight = max(0, normalDotLight);
+        diffuseTerm = material.x * distanceIntensity * shadow * normalDotLight;
         if (normalDotLight > 0) {
-            specularTerm = material.y * distanceIntensity * pow(max(0, dot(reflect(lightDirection, normalView), normalize(viewRay))), 20);
+            specularTerm = material.y * distanceIntensity * shadow * pow(max(0, dot(reflect(lightDirection, normalView), normalize(viewRay))), 20);
         }
     }
 

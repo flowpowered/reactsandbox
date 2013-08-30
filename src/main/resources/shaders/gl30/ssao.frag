@@ -19,7 +19,7 @@ uniform float threshold;
 uniform vec2 noiseScale;
 uniform float power;
 
-float linearizeDepth(in float depth) {
+float linearizeDepth(float depth) {
     return projection.y / (depth - projection.x);
 }
 

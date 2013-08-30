@@ -28,7 +28,6 @@ package org.spout.reactsandbox;
 
 import java.awt.Font;
 import java.awt.FontFormatException;
-import java.awt.Rectangle;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -38,8 +37,10 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 
+import org.spout.math.GenericMath;
 import org.spout.math.TrigMath;
 import org.spout.math.imaginary.Quaternion;
+import org.spout.math.matrix.Matrix4;
 import org.spout.math.vector.Vector2;
 import org.spout.math.vector.Vector3;
 import org.spout.renderer.Camera;
@@ -50,6 +51,7 @@ import org.spout.renderer.data.Color;
 import org.spout.renderer.data.RenderList;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
+import org.spout.renderer.data.Uniform.Matrix4Uniform;
 import org.spout.renderer.data.Uniform.Vector2Uniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
 import org.spout.renderer.data.UniformHolder;
@@ -65,18 +67,18 @@ import org.spout.renderer.gl.Renderer;
 import org.spout.renderer.gl.Shader;
 import org.spout.renderer.gl.Shader.ShaderType;
 import org.spout.renderer.gl.Texture;
+import org.spout.renderer.gl.Texture.CompareMode;
 import org.spout.renderer.gl.Texture.FilterMode;
 import org.spout.renderer.gl.Texture.Format;
 import org.spout.renderer.gl.Texture.InternalFormat;
 import org.spout.renderer.gl.Texture.WrapMode;
 import org.spout.renderer.gl.VertexArray;
 import org.spout.renderer.gl.VertexArray.DrawingMode;
-import org.spout.renderer.model.InstancedModel;
-import org.spout.renderer.model.InstancedStringModel;
 import org.spout.renderer.model.Model;
 import org.spout.renderer.model.StringModel;
 import org.spout.renderer.util.CausticUtil;
 import org.spout.renderer.util.ObjFileLoader;
+import org.spout.renderer.util.Rectangle;
 
 /**
  *
@@ -85,6 +87,7 @@ public class SandboxRenderer {
 	// CONSTANTS
 	private static final String WINDOW_TITLE = "Sandbox";
 	private static final Vector2 WINDOW_SIZE = new Vector2(1200, 800);
+	private static final Vector2 SHADOW_SIZE = new Vector2(2048, 2048);
 	private static final float ASPECT_RATIO = WINDOW_SIZE.getX() / WINDOW_SIZE.getY();
 	private static final float FIELD_OF_VIEW = 60;
 	private static final float TAN_HALF_FOV = (float) Math.tan(Math.toRadians(FIELD_OF_VIEW) / 2);
@@ -98,8 +101,12 @@ public class SandboxRenderer {
 	private static final Vector3Uniform lightPositionUniform = new Vector3Uniform("lightPosition", Vector3.ZERO);
 	private static final Vector3Uniform spotDirectionUniform = new Vector3Uniform("spotDirection", new Vector3(0, 0, -1));
 	private static final FloatUniform lightAttenuationUniform = new FloatUniform("lightAttenuation", 0.03f);
+	private static final Matrix4Uniform inverseViewMatrixUniform = new Matrix4Uniform("inverseViewMatrix", new Matrix4());
+	private static final Matrix4Uniform lightViewMatrixUniform = new Matrix4Uniform("lightViewMatrix", new Matrix4());
+	private static final Matrix4Uniform lightProjectionMatrixUniform = new Matrix4Uniform("lightProjectionMatrix", new Matrix4());
 	// CAMERAS
 	private static final Camera modelCamera = Camera.createPerspective(FIELD_OF_VIEW, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY(), NEAR_PLANE, FAR_PLANE);
+	private static final Camera lightCamera = Camera.createPerspective((float) TrigMath.RAD_TO_DEG * Sandbox.SPOT_CUTOFF * 2, 1, 1, 0.1f, (float) GenericMath.length(50d, 100d));
 	private static final Camera guiCamera = Camera.createOrthographic(1, 0, 1 / ASPECT_RATIO, 0, NEAR_PLANE, FAR_PLANE);
 	// OPENGL VERSION AND FACTORY
 	private static GLVersion glVersion;
@@ -108,11 +115,13 @@ public class SandboxRenderer {
 	private static Renderer renderer;
 	// RENDER LISTS
 	private static final RenderList modelRenderList = new RenderList("models", modelCamera, 0);
-	private static final RenderList ssaoRenderList = new RenderList("ssao", modelCamera, 1);
-	private static final RenderList ssaoBlurRenderList = new RenderList("ssao blur", modelCamera, 2);
-	private static final RenderList lightingRenderList = new RenderList("lighting", modelCamera, 3);
-	private static final RenderList antiAliasingRenderList = new RenderList("antiAliasing", modelCamera, 4);
-	private static final RenderList guiRenderList = new RenderList("gui", guiCamera, 5);
+	private static final RenderList lightModelRenderList = modelRenderList.getInstance("light", 1);
+	private static final RenderList ssaoRenderList = new RenderList("ssao", modelCamera, 2);
+	private static final RenderList ssaoBlurRenderList = new RenderList("ssao blur", modelCamera, 3);
+	private static final RenderList shadowRenderList = new RenderList("shadow", modelCamera, 4);
+	private static final RenderList lightingRenderList = new RenderList("lighting", modelCamera, 5);
+	private static final RenderList antiAliasingRenderList = new RenderList("antiAliasing", modelCamera, 6);
+	private static final RenderList guiRenderList = new RenderList("gui", guiCamera, 7);
 	// SHADERS
 	private static Shader solidVert;
 	private static Shader solidFrag;
@@ -122,6 +131,8 @@ public class SandboxRenderer {
 	private static Shader ssaoFrag;
 	private static Shader ssaoBlurVert;
 	private static Shader ssaoBlurFrag;
+	private static Shader shadowVert;
+	private static Shader shadowFrag;
 	private static Shader lightingVert;
 	private static Shader lightingFrag;
 	private static Shader antiAliasingVert;
@@ -133,6 +144,7 @@ public class SandboxRenderer {
 	private static Program texturedProgram;
 	private static Program ssaoProgram;
 	private static Program ssaoBlurProgram;
+	private static Program shadowProgram;
 	private static Program lightingProgram;
 	private static Program antiAliasingProgram;
 	private static Program screenProgram;
@@ -145,11 +157,13 @@ public class SandboxRenderer {
 	private static Texture woodSpecularTexture;
 	private static Texture colorsTexture;
 	private static Texture normalsTexture;
+	private static Texture vertexNormals;
 	private static Texture materialsTexture;
 	private static Texture depthsTexture;
+	private static Texture lightDepthsTexture;
+	private static Texture auxRTexture;
 	private static Texture ssaoTexture;
-	private static Texture ssaoBlurTexture;
-	private static Texture auxColorsTexture;
+	private static Texture auxRGBTexture;
 	// MATERIALS
 	private static Material solidMaterial;
 	private static Material wireframeMaterial;
@@ -157,20 +171,24 @@ public class SandboxRenderer {
 	private static Material woodMaterial;
 	private static Material ssaoMaterial;
 	private static Material ssaoBlurMaterial;
+	private static Material shadowMaterial;
 	private static Material lightingMaterial;
 	private static Material antiAliasingMaterial;
 	private static Material screenMaterial;
 	// FRAME BUFFERS
 	private static FrameBuffer modelFrameBuffer;
+	private static FrameBuffer lightModelFrameBuffer;
 	private static FrameBuffer ssaoFrameBuffer;
 	private static FrameBuffer ssaoBlurFrameBuffer;
+	private static FrameBuffer shadowFrameBuffer;
 	private static FrameBuffer lightingFrameBuffer;
 	private static FrameBuffer antiAliasingFrameBuffer;
 	// VERTEX ARRAYS
 	private static VertexArray unitCubeWireVertexArray;
 	private static VertexArray diamondModelVertexArray;
-	// SSAO
+	// EFFECTS
 	private static SSAOEffect ssaoEffect;
+	private static ShadowMappingEffect shadowMappingEffect;
 	// MODEL PROPERTIES
 	private static Color aabbModelColor;
 	private static Color diamondModelColor;
@@ -178,10 +196,11 @@ public class SandboxRenderer {
 	private static Color sphereModelColor;
 	// FPS MONITOR
 	private static final FPSMonitor fpsMonitor = new FPSMonitor();
-	private static InstancedStringModel fpsMonitorModel;
+	private static StringModel fpsMonitorModel;
 
 	public static void init() {
 		initRenderer();
+		initEffects();
 		initRenderLists();
 		initShaders();
 		initPrograms();
@@ -198,8 +217,13 @@ public class SandboxRenderer {
 		renderer.setWindowSize(WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		renderer.create();
 		renderer.setClearColor(new Color(backgroundColor.getRed(), backgroundColor.getGreen(), backgroundColor.getBlue(), 0));
+	}
+
+	private static void initEffects() {
 		// SSAO
 		ssaoEffect = new SSAOEffect(glFactory, WINDOW_SIZE, 8, 4, 0.5f, 0.15f, 2);
+		// SHADOW MAPPING
+		shadowMappingEffect = new ShadowMappingEffect(4, 0.000006f, 0.0003f);
 	}
 
 	private static void initRenderLists() {
@@ -212,6 +236,13 @@ public class SandboxRenderer {
 			modelRenderList.addCapability(Capability.DEPTH_CLAMP);
 		}
 		renderer.addRenderList(modelRenderList);
+		// LIGHT MODEL
+		lightModelRenderList.setCamera(lightCamera);
+		lightModelRenderList.addCapabilities(Capability.DEPTH_TEST, Capability.CULL_FACE);
+		if (glVersion == GLVersion.GL30) {
+			lightModelRenderList.addCapability(Capability.DEPTH_CLAMP);
+		}
+		renderer.addRenderList(lightModelRenderList);
 		// SSAO
 		if (cullBackFaces) {
 			ssaoRenderList.addCapability(Capability.CULL_FACE);
@@ -222,6 +253,11 @@ public class SandboxRenderer {
 			ssaoBlurRenderList.addCapability(Capability.CULL_FACE);
 		}
 		renderer.addRenderList(ssaoBlurRenderList);
+		// SHADOW
+		if (cullBackFaces) {
+			shadowRenderList.addCapability(Capability.CULL_FACE);
+		}
+		renderer.addRenderList(shadowRenderList);
 		// LIGHTING
 		if (cullBackFaces) {
 			lightingRenderList.addCapability(Capability.CULL_FACE);
@@ -282,6 +318,16 @@ public class SandboxRenderer {
 		ssaoBlurFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssaoBlur.frag"));
 		ssaoBlurFrag.setType(ShaderType.FRAGMENT);
 		ssaoBlurFrag.create();
+		// SHADOW VERT
+		shadowVert = glFactory.createShader();
+		shadowVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "shadow.vert"));
+		shadowVert.setType(ShaderType.VERTEX);
+		shadowVert.create();
+		// SHADOW FRAG
+		shadowFrag = glFactory.createShader();
+		shadowFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "shadow.frag"));
+		shadowFrag.setType(ShaderType.FRAGMENT);
+		shadowFrag.create();
 		// LIGHTING VERT
 		lightingVert = glFactory.createShader();
 		lightingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.vert"));
@@ -358,6 +404,17 @@ public class SandboxRenderer {
 		}
 		ssaoBlurProgram.addTextureLayout("occlusion", 0);
 		ssaoBlurProgram.create();
+		// SHADOW
+		shadowProgram = glFactory.createProgram();
+		shadowProgram.addShader(shadowVert);
+		shadowProgram.addShader(shadowFrag);
+		if (glVersion == GLVersion.GL20) {
+			shadowProgram.addAttributeLayout("position", 0);
+		}
+		shadowProgram.addTextureLayout("normals", 0);
+		shadowProgram.addTextureLayout("depths", 1);
+		shadowProgram.addTextureLayout("lightDepths", 2);
+		shadowProgram.create();
 		// LIGHTING
 		lightingProgram = glFactory.createProgram();
 		lightingProgram.addShader(lightingVert);
@@ -369,7 +426,8 @@ public class SandboxRenderer {
 		lightingProgram.addTextureLayout("normals", 1);
 		lightingProgram.addTextureLayout("depths", 2);
 		lightingProgram.addTextureLayout("materials", 3);
-		lightingProgram.addTextureLayout("occlusion", 4);
+		lightingProgram.addTextureLayout("occlusions", 4);
+		lightingProgram.addTextureLayout("shadows", 5);
 		lightingProgram.create();
 		// ANTI ALIASING
 		antiAliasingProgram = glFactory.createProgram();
@@ -400,13 +458,13 @@ public class SandboxRenderer {
 		creeperDiffuseTexture = glFactory.createTexture();
 		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper_diffuse.png"), Format.RGB, size);
 		data.flip();
-		creeperDiffuseTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		creeperDiffuseTexture.setImageData(data, size.getWidth(), size.getHeight());
 		creeperDiffuseTexture.create();
 		// CREEPER NORMALS
 		creeperNormalsTexture = glFactory.createTexture();
 		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper_normals.png"), Format.RGB, size);
 		data.flip();
-		creeperNormalsTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		creeperNormalsTexture.setImageData(data, size.getWidth(), size.getHeight());
 		creeperNormalsTexture.setMagFilter(FilterMode.LINEAR);
 		creeperNormalsTexture.setMinFilter(FilterMode.LINEAR);
 		creeperNormalsTexture.create();
@@ -416,7 +474,7 @@ public class SandboxRenderer {
 		creeperSpecularTexture.setInternalFormat(InternalFormat.R8);
 		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/creeper_specular.png"), Format.RED, size);
 		data.flip();
-		creeperSpecularTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		creeperSpecularTexture.setImageData(data, size.getWidth(), size.getHeight());
 		creeperSpecularTexture.setMagFilter(FilterMode.LINEAR);
 		creeperSpecularTexture.setMinFilter(FilterMode.LINEAR);
 		creeperSpecularTexture.create();
@@ -424,7 +482,7 @@ public class SandboxRenderer {
 		woodDiffuseTexture = glFactory.createTexture();
 		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/wood_diffuse.png"), Format.RGB, size);
 		data.flip();
-		woodDiffuseTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		woodDiffuseTexture.setImageData(data, size.getWidth(), size.getHeight());
 		woodDiffuseTexture.setMagFilter(FilterMode.LINEAR);
 		woodDiffuseTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		woodDiffuseTexture.setAnisotropicFiltering(16);
@@ -433,7 +491,7 @@ public class SandboxRenderer {
 		woodNormalsTexture = glFactory.createTexture();
 		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/wood_normals.png"), Format.RGB, size);
 		data.flip();
-		woodNormalsTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		woodNormalsTexture.setImageData(data, size.getWidth(), size.getHeight());
 		woodNormalsTexture.setMagFilter(FilterMode.LINEAR);
 		woodNormalsTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		woodNormalsTexture.setAnisotropicFiltering(16);
@@ -444,7 +502,7 @@ public class SandboxRenderer {
 		woodSpecularTexture.setInternalFormat(InternalFormat.R8);
 		data = CausticUtil.getImageData(Sandbox.class.getResourceAsStream("/textures/wood_specular.png"), Format.RED, size);
 		data.flip();
-		woodSpecularTexture.setImageData(data, (int) size.getWidth(), (int) size.getHeight());
+		woodSpecularTexture.setImageData(data, size.getWidth(), size.getHeight());
 		woodSpecularTexture.setMagFilter(FilterMode.LINEAR);
 		woodSpecularTexture.setMinFilter(FilterMode.LINEAR_MIPMAP_LINEAR);
 		woodSpecularTexture.setAnisotropicFiltering(16);
@@ -459,6 +517,12 @@ public class SandboxRenderer {
 		normalsTexture.setInternalFormat(InternalFormat.RGBA8);
 		normalsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		normalsTexture.create();
+		// VERTEX NORMALS
+		vertexNormals = glFactory.createTexture();
+		vertexNormals.setFormat(Format.RGBA);
+		vertexNormals.setInternalFormat(InternalFormat.RGBA8);
+		vertexNormals.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		vertexNormals.create();
 		// MATERIALS
 		materialsTexture = glFactory.createTexture();
 		materialsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
@@ -471,22 +535,33 @@ public class SandboxRenderer {
 		depthsTexture.setWrapS(WrapMode.CLAMP_TO_EDGE);
 		depthsTexture.setWrapT(WrapMode.CLAMP_TO_EDGE);
 		depthsTexture.create();
+		// LIGHT DEPTHS
+		lightDepthsTexture = glFactory.createTexture();
+		lightDepthsTexture.setFormat(Format.DEPTH);
+		lightDepthsTexture.setInternalFormat(InternalFormat.DEPTH_COMPONENT32);
+		lightDepthsTexture.setImageData(null, SHADOW_SIZE.getFloorX(), SHADOW_SIZE.getFloorY());
+		lightDepthsTexture.setWrapS(WrapMode.CLAMP_TO_BORDER);
+		lightDepthsTexture.setWrapT(WrapMode.CLAMP_TO_BORDER);
+		lightDepthsTexture.setMagFilter(FilterMode.LINEAR);
+		lightDepthsTexture.setMinFilter(FilterMode.LINEAR);
+		lightDepthsTexture.setCompareMode(CompareMode.LESS);
+		lightDepthsTexture.create();
+		// AUX R
+		auxRTexture = glFactory.createTexture();
+		auxRTexture.setFormat(Format.RED);
+		auxRTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		auxRTexture.create();
 		// SSAO
 		ssaoTexture = glFactory.createTexture();
 		ssaoTexture.setFormat(Format.RED);
 		ssaoTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		ssaoTexture.create();
-		// SSAO BLUR
-		ssaoBlurTexture = glFactory.createTexture();
-		ssaoBlurTexture.setFormat(Format.RED);
-		ssaoBlurTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
-		ssaoBlurTexture.create();
-		// AUX COLOR
-		auxColorsTexture = glFactory.createTexture();
-		auxColorsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
-		auxColorsTexture.setMagFilter(FilterMode.LINEAR);
-		auxColorsTexture.setMinFilter(FilterMode.LINEAR);
-		auxColorsTexture.create();
+		// AUX RGB
+		auxRGBTexture = glFactory.createTexture();
+		auxRGBTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		auxRGBTexture.setMagFilter(FilterMode.LINEAR);
+		auxRGBTexture.setMinFilter(FilterMode.LINEAR);
+		auxRGBTexture.create();
 	}
 
 	private static void initMaterials() {
@@ -531,28 +606,43 @@ public class SandboxRenderer {
 		ssaoEffect.addUniforms(uniforms);
 		// SSAO BLUR
 		ssaoBlurMaterial = new Material(ssaoBlurProgram);
-		ssaoBlurMaterial.addTexture(0, ssaoTexture);
+		ssaoBlurMaterial.addTexture(0, auxRTexture);
 		uniforms = ssaoBlurMaterial.getUniforms();
 		ssaoEffect.addUniforms(uniforms);
+		// SHADOW
+		shadowMaterial = new Material(shadowProgram);
+		shadowMaterial.addTexture(0, vertexNormals);
+		shadowMaterial.addTexture(1, depthsTexture);
+		shadowMaterial.addTexture(2, lightDepthsTexture);
+		uniforms = shadowMaterial.getUniforms();
+		uniforms.add(new Vector2Uniform("projection", PROJECTION));
+		uniforms.add(new FloatUniform("tanHalfFOV", TAN_HALF_FOV));
+		uniforms.add(new FloatUniform("aspectRatio", ASPECT_RATIO));
+		uniforms.add(lightPositionUniform);
+		uniforms.add(inverseViewMatrixUniform);
+		uniforms.add(lightViewMatrixUniform);
+		uniforms.add(lightProjectionMatrixUniform);
+		shadowMappingEffect.addUniforms(uniforms);
 		// LIGHTING
 		lightingMaterial = new Material(lightingProgram);
 		lightingMaterial.addTexture(0, colorsTexture);
 		lightingMaterial.addTexture(1, normalsTexture);
 		lightingMaterial.addTexture(2, depthsTexture);
 		lightingMaterial.addTexture(3, materialsTexture);
-		lightingMaterial.addTexture(4, ssaoBlurTexture);
+		lightingMaterial.addTexture(4, ssaoTexture);
+		lightingMaterial.addTexture(5, auxRTexture);
 		uniforms = lightingMaterial.getUniforms();
 		uniforms.add(new Vector2Uniform("projection", PROJECTION));
 		uniforms.add(new FloatUniform("tanHalfFOV", TAN_HALF_FOV));
 		uniforms.add(new FloatUniform("aspectRatio", ASPECT_RATIO));
 		uniforms.add(lightPositionUniform);
 		uniforms.add(lightAttenuationUniform);
-		uniforms.add(new FloatUniform("spotCutoff", TrigMath.cos(60 * (float) TrigMath.DEG_TO_RAD)));
+		uniforms.add(new FloatUniform("spotCutoff", TrigMath.cos(Sandbox.SPOT_CUTOFF)));
 		uniforms.add(spotDirectionUniform);
 		// ANTI ALIASING
 		antiAliasingMaterial = new Material(antiAliasingProgram);
-		antiAliasingMaterial.addTexture(0, auxColorsTexture);
-		antiAliasingMaterial.addTexture(1, normalsTexture);
+		antiAliasingMaterial.addTexture(0, auxRGBTexture);
+		antiAliasingMaterial.addTexture(1, vertexNormals);
 		antiAliasingMaterial.addTexture(2, depthsTexture);
 		uniforms = antiAliasingMaterial.getUniforms();
 		uniforms.add(new Vector2Uniform("projection", PROJECTION));
@@ -571,23 +661,35 @@ public class SandboxRenderer {
 		modelFrameBuffer = glFactory.createFrameBuffer();
 		modelFrameBuffer.attach(AttachmentPoint.COLOR0, colorsTexture);
 		modelFrameBuffer.attach(AttachmentPoint.COLOR1, normalsTexture);
-		modelFrameBuffer.attach(AttachmentPoint.COLOR2, materialsTexture);
+		modelFrameBuffer.attach(AttachmentPoint.COLOR2, vertexNormals);
+		modelFrameBuffer.attach(AttachmentPoint.COLOR3, materialsTexture);
 		modelFrameBuffer.attach(AttachmentPoint.DEPTH, depthsTexture);
 		modelFrameBuffer.create();
 		modelRenderList.setFrameBuffer(modelFrameBuffer);
+		// LIGHT MODEL
+		lightModelFrameBuffer = glFactory.createFrameBuffer();
+		lightModelFrameBuffer.attach(AttachmentPoint.DEPTH, lightDepthsTexture);
+		lightModelFrameBuffer.setViewPort(new Rectangle(SHADOW_SIZE.getFloorX(), SHADOW_SIZE.getFloorY()));
+		lightModelFrameBuffer.create();
+		lightModelRenderList.setFrameBuffer(lightModelFrameBuffer);
 		// SSAO
 		ssaoFrameBuffer = glFactory.createFrameBuffer();
-		ssaoFrameBuffer.attach(AttachmentPoint.COLOR0, ssaoTexture);
+		ssaoFrameBuffer.attach(AttachmentPoint.COLOR0, auxRTexture);
 		ssaoFrameBuffer.create();
 		ssaoRenderList.setFrameBuffer(ssaoFrameBuffer);
 		// SSAO BLUR
 		ssaoBlurFrameBuffer = glFactory.createFrameBuffer();
-		ssaoBlurFrameBuffer.attach(AttachmentPoint.COLOR0, ssaoBlurTexture);
+		ssaoBlurFrameBuffer.attach(AttachmentPoint.COLOR0, ssaoTexture);
 		ssaoBlurFrameBuffer.create();
 		ssaoBlurRenderList.setFrameBuffer(ssaoBlurFrameBuffer);
+		// SHADOW
+		shadowFrameBuffer = glFactory.createFrameBuffer();
+		shadowFrameBuffer.attach(AttachmentPoint.COLOR0, auxRTexture);
+		shadowFrameBuffer.create();
+		shadowRenderList.setFrameBuffer(shadowFrameBuffer);
 		// LIGHTING
 		lightingFrameBuffer = glFactory.createFrameBuffer();
-		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxColorsTexture);
+		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBTexture);
 		lightingFrameBuffer.create();
 		lightingRenderList.setFrameBuffer(lightingFrameBuffer);
 		// ANTI ALIASING
@@ -611,6 +713,7 @@ public class SandboxRenderer {
 
 	public static void dispose() {
 		disposeRenderLists();
+		disposeEffects();
 		disposeShaders();
 		disposePrograms();
 		disposeTextures();
@@ -620,22 +723,33 @@ public class SandboxRenderer {
 	}
 
 	private static void disposeRenderer() {
-		// SSAO
-		ssaoEffect.dispose();
 		// RENDERER
 		renderer.destroy();
+	}
+
+	private static void disposeEffects() {
+		// SSAO
+		ssaoEffect.dispose();
+		// SHADOW MAPPING
+		shadowMappingEffect.dispose();
 	}
 
 	private static void disposeRenderLists() {
 		// MODEL
 		modelRenderList.clear();
 		modelRenderList.clearCapabilities();
+		// LIGHT MODEL
+		lightModelRenderList.clear();
+		lightModelRenderList.clearCapabilities();
 		// SSAO
 		ssaoRenderList.clear();
 		ssaoRenderList.clearCapabilities();
 		// SSAO BLUR
 		ssaoBlurRenderList.clear();
 		ssaoBlurRenderList.clearCapabilities();
+		// SHADOW
+		shadowRenderList.clear();
+		shadowRenderList.clearCapabilities();
 		// LIGHTING
 		lightingRenderList.clear();
 		lightingRenderList.clearCapabilities();
@@ -660,6 +774,9 @@ public class SandboxRenderer {
 		// SSAO BLUR
 		ssaoBlurVert.destroy();
 		ssaoBlurFrag.destroy();
+		// SHADOW
+		shadowVert.destroy();
+		shadowFrag.destroy();
 		// LIGHTING
 		lightingVert.destroy();
 		lightingFrag.destroy();
@@ -680,6 +797,8 @@ public class SandboxRenderer {
 		ssaoProgram.destroy();
 		// SSAO BLUR
 		ssaoBlurProgram.destroy();
+		// SHADOW
+		shadowProgram.destroy();
 		// LIGHTING
 		lightingProgram.destroy();
 		// ANTI ALIASING
@@ -705,25 +824,33 @@ public class SandboxRenderer {
 		colorsTexture.destroy();
 		// NORMALS
 		normalsTexture.destroy();
+		// VERTEX NORMALS
+		vertexNormals.destroy();
 		// MATERIALS
 		materialsTexture.destroy();
-		// DEPTH
+		// DEPTHS
 		depthsTexture.destroy();
+		// LIGHT DEPTHS
+		lightDepthsTexture.destroy();
+		// AUX R
+		auxRTexture.destroy();
 		// SSAO
 		ssaoTexture.destroy();
-		// SSAO BLUR
-		ssaoBlurTexture.destroy();
-		// AUX COLOR
-		auxColorsTexture.destroy();
+		// AUX RGB
+		auxRGBTexture.destroy();
 	}
 
 	private static void disposeFrameBuffers() {
 		// MODEL
 		modelFrameBuffer.destroy();
+		// SHADOW
+		lightModelFrameBuffer.destroy();
 		// SSAO
 		ssaoFrameBuffer.destroy();
 		// SSAO BLUR
 		ssaoBlurFrameBuffer.destroy();
+		// SHADOW
+		shadowFrameBuffer.destroy();
 		// LIGHTING
 		lightingFrameBuffer.destroy();
 		// ANTI ALIASING
@@ -792,10 +919,13 @@ public class SandboxRenderer {
 
 	public static void setLightPosition(Vector3 position) {
 		lightPositionUniform.set(position);
+		lightCamera.setPosition(position);
 	}
 
 	public static void setLightDirection(Vector3 direction) {
-		spotDirectionUniform.set(direction.normalize());
+		direction = direction.normalize();
+		spotDirectionUniform.set(direction);
+		lightCamera.setRotation(Quaternion.fromRotationTo(Vector3.FORWARD.negate(), direction));
 	}
 
 	public static Model addAABB(Vector3 position, Vector3 size) {
@@ -876,6 +1006,9 @@ public class SandboxRenderer {
 		// SSAO BLUR
 		final Model ssaoBlur = new Model(vertexArray, ssaoBlurMaterial);
 		ssaoBlurRenderList.add(ssaoBlur);
+		// SHADOW
+		final Model shadow = new Model(vertexArray, shadowMaterial);
+		shadowRenderList.add(shadow);
 		// LIGHTING
 		final Model lighting = new Model(vertexArray, lightingMaterial);
 		lightingRenderList.add(lighting);
@@ -912,7 +1045,7 @@ public class SandboxRenderer {
 		final String white = "#ffffffff", brown = "#ffC19953", green = "#ff00ff00", cyan = "#ff4fB5ff";
 		sandboxModel.setString(brown + "Sandbox\n" + white + "Powered by " + green + "Caustic" + white + " & " + cyan + "React");
 		guiRenderList.add(sandboxModel);
-		final InstancedStringModel fpsModel = new InstancedStringModel(sandboxModel);
+		final StringModel fpsModel = sandboxModel.getInstance();
 		fpsModel.setPosition(new Vector3(0.005, aspect / 2 + 0.285, -0.1));
 		fpsModel.setString("FPS: " + fpsMonitor.getFPS());
 		guiRenderList.add(fpsModel);
@@ -923,12 +1056,12 @@ public class SandboxRenderer {
 		final VertexArray vertexArray = glFactory.createVertexArray();
 		vertexArray.setData(loadOBJ(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
 		vertexArray.create();
-		final Model model = new Model(vertexArray, creeperMaterial);
-		model.setPosition(new Vector3(10, 10, 0));
-		model.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(-90, 0, 1, 0));
-		modelRenderList.add(model);
+		final Model mobModel = new Model(vertexArray, creeperMaterial);
+		mobModel.setPosition(new Vector3(10, 10, 0));
+		mobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(-90, 0, 1, 0));
+		modelRenderList.add(mobModel);
 		// Add a second mob, instanced from the first one
-		final Model instancedMobModel = new InstancedModel(model);
+		final Model instancedMobModel = mobModel.getInstance();
 		instancedMobModel.setPosition(new Vector3(-10, 10, 0));
 		instancedMobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(90, 0, 1, 0));
 		modelRenderList.add(instancedMobModel);
@@ -939,6 +1072,9 @@ public class SandboxRenderer {
 	}
 
 	public static void render() {
+		inverseViewMatrixUniform.set(modelCamera.getViewMatrix().invert());
+		lightViewMatrixUniform.set(lightCamera.getViewMatrix());
+		lightProjectionMatrixUniform.set(lightCamera.getProjectionMatrix());
 		renderer.render();
 		updateFPSMonitor();
 	}

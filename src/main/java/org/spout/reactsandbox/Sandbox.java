@@ -72,6 +72,7 @@ public class Sandbox {
 	private static final int TARGET_FPS = 60;
 	private static final float TIMESTEP = 1f / TARGET_FPS;
 	private static final RigidBodyMaterial PHYSICS_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0.2f, 0.8f));
+	public static final float SPOT_CUTOFF = (float) (TrigMath.atan(100 / 50) / 2);
 	// Settings
 	private static float mouseSensitivity = 0.08f;
 	private static float cameraSpeed = 0.2f;
@@ -104,8 +105,7 @@ public class Sandbox {
 			startupLog();
 			SandboxRenderer.getCamera().setPosition(new org.spout.math.vector.Vector3(0, 5, 10));
 			SandboxRenderer.setLightPosition(new org.spout.math.vector.Vector3(0, 50, 50));
-			final float spotAngle = 60 * (float) TrigMath.DEG_TO_RAD;
-			SandboxRenderer.setLightDirection(new org.spout.math.vector.Vector3(0, -TrigMath.cos(spotAngle), -TrigMath.sin(spotAngle)));
+			SandboxRenderer.setLightDirection(new org.spout.math.vector.Vector3(0, -TrigMath.cos(SPOT_CUTOFF), -TrigMath.sin(SPOT_CUTOFF)));
 			Mouse.setGrabbed(true);
 			SandboxRenderer.startFPSMonitor();
 			while (!Display.isCloseRequested()) {

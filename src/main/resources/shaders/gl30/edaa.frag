@@ -25,7 +25,7 @@ uniform vec2 barriers; // x = normal, y = depth
 uniform vec2 weights; // x = normal, y = depth
 uniform float kernel; // 0 = no aa, 1 = full aa
 
-float linearizeDepth(in float depth) {
+float linearizeDepth(float depth) {
     return -projection.y / (depth - projection.x);
 }
 
