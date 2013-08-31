@@ -26,14 +26,22 @@
  */
 package org.spout.reactsandbox;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
@@ -61,8 +69,8 @@ import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.Camera;
 import org.spout.renderer.GLVersioned.GLVersion;
-import org.spout.renderer.model.Model;
 import org.spout.renderer.data.Color;
+import org.spout.renderer.model.Model;
 
 /**
  * The main class of the ReactSandbox.
@@ -229,6 +237,9 @@ public class Sandbox {
 				switch (Keyboard.getEventKey()) {
 					case Keyboard.KEY_ESCAPE:
 						mouseGrabbed ^= true;
+						break;
+					case Keyboard.KEY_F2:
+						saveScreenshot();
 				}
 			}
 		}
@@ -321,7 +332,7 @@ public class Sandbox {
 		world.start();
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings ("unchecked")
 	private static void loadConfiguration() throws Exception {
 		try {
 			final Map<String, Object> config =
@@ -352,18 +363,18 @@ public class Sandbox {
 		final String osPath;
 		final String[] nativeLibs;
 		if (SystemUtils.IS_OS_WINDOWS) {
-			nativeLibs = new String[]{
+			nativeLibs = new String[] {
 					"jinput-dx8_64.dll", "jinput-dx8.dll", "jinput-raw_64.dll", "jinput-raw.dll",
 					"jinput-wintab.dll", "lwjgl.dll", "lwjgl64.dll", "OpenAL32.dll", "OpenAL64.dll"
 			};
 			osPath = "windows/";
 		} else if (SystemUtils.IS_OS_MAC) {
-			nativeLibs = new String[]{
+			nativeLibs = new String[] {
 					"libjinput-osx.jnilib", "liblwjgl.jnilib", "openal.dylib"
 			};
 			osPath = "mac/";
 		} else if (SystemUtils.IS_OS_LINUX) {
-			nativeLibs = new String[]{
+			nativeLibs = new String[] {
 					"liblwjgl.so", "liblwjgl64.so", "libopenal.so", "libopenal64.so", "libjinput-linux.so",
 					"libjinput-linux64.so"
 			};
@@ -391,5 +402,41 @@ public class Sandbox {
 				Float.parseFloat(ss[1].trim()),
 				Float.parseFloat(ss[2].trim()),
 				alpha);
+	}
+
+	private static void saveScreenshot() {
+		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
+		Calendar calendar = Calendar.getInstance();
+
+		GL11.glReadBuffer(GL11.GL_FRONT);
+		int width = Display.getDisplayMode().getWidth();
+		int height = Display.getDisplayMode().getHeight();
+		int bpp = 4;
+		ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * bpp);
+		GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+
+		final File screenshotsDir = new File(System.getProperty("user.dir") + File.separator + "screenshots" + File.separator);
+		if (!screenshotsDir.exists()) {
+			screenshotsDir.mkdir();
+		}
+		File file = new File(screenshotsDir, dateFormat.format(calendar.getTime()) + ".png");
+		String format = "PNG";
+		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+		for (int x = 0; x < width; x++) {
+			for (int y = 0; y < height; y++) {
+				int i = (x + (width * y)) * bpp;
+				int r = buffer.get(i) & 0xFF;
+				int g = buffer.get(i + 1) & 0xFF;
+				int b = buffer.get(i + 2) & 0xFF;
+				image.setRGB(x, height - (y + 1), (0xFF << 24) | (r << 16) | (g << 8) | b);
+			}
+		}
+
+		try {
+			ImageIO.write(image, format, file);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }
