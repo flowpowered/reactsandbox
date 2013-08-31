@@ -26,7 +26,9 @@
  */
 package org.spout.reactsandbox;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,7 +39,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -46,6 +47,7 @@ import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
+import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
 import org.yaml.snakeyaml.Yaml;
 
@@ -81,6 +83,7 @@ public class Sandbox {
 	private static final float TIMESTEP = 1f / TARGET_FPS;
 	private static final RigidBodyMaterial PHYSICS_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0.2f, 0.8f));
 	public static final float SPOT_CUTOFF = (float) (TrigMath.atan(100 / 50) / 2);
+	private static final DateFormat SCREENSHOT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
 	// Settings
 	private static float mouseSensitivity = 0.08f;
 	private static float cameraSpeed = 0.2f;
@@ -332,7 +335,7 @@ public class Sandbox {
 		world.start();
 	}
 
-	@SuppressWarnings ("unchecked")
+	@SuppressWarnings("unchecked")
 	private static void loadConfiguration() throws Exception {
 		try {
 			final Map<String, Object> config =
@@ -363,18 +366,18 @@ public class Sandbox {
 		final String osPath;
 		final String[] nativeLibs;
 		if (SystemUtils.IS_OS_WINDOWS) {
-			nativeLibs = new String[] {
+			nativeLibs = new String[]{
 					"jinput-dx8_64.dll", "jinput-dx8.dll", "jinput-raw_64.dll", "jinput-raw.dll",
 					"jinput-wintab.dll", "lwjgl.dll", "lwjgl64.dll", "OpenAL32.dll", "OpenAL64.dll"
 			};
 			osPath = "windows/";
 		} else if (SystemUtils.IS_OS_MAC) {
-			nativeLibs = new String[] {
+			nativeLibs = new String[]{
 					"libjinput-osx.jnilib", "liblwjgl.jnilib", "openal.dylib"
 			};
 			osPath = "mac/";
 		} else if (SystemUtils.IS_OS_LINUX) {
-			nativeLibs = new String[] {
+			nativeLibs = new String[]{
 					"liblwjgl.so", "liblwjgl64.so", "libopenal.so", "libopenal64.so", "libjinput-linux.so",
 					"libjinput-linux64.so"
 			};
@@ -393,6 +396,10 @@ public class Sandbox {
 		final String nativesPath = nativesDir.getAbsolutePath();
 		System.setProperty("org.lwjgl.librarypath", nativesPath);
 		System.setProperty("net.java.games.input.librarypath", nativesPath);
+		final File screenshotDir = new File("screenshots");
+		if (!screenshotDir.exists()) {
+			screenshotDir.mkdir();
+		}
 	}
 
 	private static Color parseColor(String s, float alpha) {
@@ -405,36 +412,25 @@ public class Sandbox {
 	}
 
 	private static void saveScreenshot() {
-		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
-		Calendar calendar = Calendar.getInstance();
-
+		final DisplayMode mode = Display.getDisplayMode();
+		final int width = mode.getWidth();
+		final int height = mode.getHeight();
+		final ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * 3);
 		GL11.glReadBuffer(GL11.GL_FRONT);
-		int width = Display.getDisplayMode().getWidth();
-		int height = Display.getDisplayMode().getHeight();
-		int bpp = 4;
-		ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * bpp);
-		GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
-
-		final File screenshotsDir = new File(System.getProperty("user.dir") + File.separator + "screenshots" + File.separator);
-		if (!screenshotsDir.exists()) {
-			screenshotsDir.mkdir();
-		}
-		File file = new File(screenshotsDir, dateFormat.format(calendar.getTime()) + ".png");
-		String format = "PNG";
-		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-
+		GL11.glReadPixels(0, 0, width, height, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, buffer);
+		final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+		final byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
-				int i = (x + (width * y)) * bpp;
-				int r = buffer.get(i) & 0xFF;
-				int g = buffer.get(i + 1) & 0xFF;
-				int b = buffer.get(i + 2) & 0xFF;
-				image.setRGB(x, height - (y + 1), (0xFF << 24) | (r << 16) | (g << 8) | b);
+				final int srcIndex = (x + y * width) * 3;
+				final int destIndex = (x + (height - y - 1) * width) * 3;
+				data[destIndex + 2] = buffer.get(srcIndex);
+				data[destIndex + 1] = buffer.get(srcIndex + 1);
+				data[destIndex] = buffer.get(srcIndex + 2);
 			}
 		}
-
 		try {
-			ImageIO.write(image, format, file);
+			ImageIO.write(image, "PNG", new File("screenshots" + File.separator + SCREENSHOT_DATE_FORMAT.format(Calendar.getInstance().getTime()) + ".png"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
