@@ -26,28 +26,18 @@
  */
 package org.spout.reactsandbox;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
-import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
 import org.yaml.snakeyaml.Yaml;
 
@@ -83,7 +73,6 @@ public class Sandbox {
 	private static final float TIMESTEP = 1f / TARGET_FPS;
 	private static final RigidBodyMaterial PHYSICS_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0.2f, 0.8f));
 	public static final float SPOT_CUTOFF = (float) (TrigMath.atan(100 / 50) / 2);
-	private static final DateFormat SCREENSHOT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
 	// Settings
 	private static float mouseSensitivity = 0.08f;
 	private static float cameraSpeed = 0.2f;
@@ -242,7 +231,7 @@ public class Sandbox {
 						mouseGrabbed ^= true;
 						break;
 					case Keyboard.KEY_F2:
-						saveScreenshot();
+						SandboxRenderer.saveScreenshot();
 				}
 			}
 		}
@@ -409,30 +398,5 @@ public class Sandbox {
 				Float.parseFloat(ss[1].trim()),
 				Float.parseFloat(ss[2].trim()),
 				alpha);
-	}
-
-	private static void saveScreenshot() {
-		final DisplayMode mode = Display.getDisplayMode();
-		final int width = mode.getWidth();
-		final int height = mode.getHeight();
-		final ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * 3);
-		GL11.glReadBuffer(GL11.GL_FRONT);
-		GL11.glReadPixels(0, 0, width, height, GL11.GL_RGB, GL11.GL_UNSIGNED_BYTE, buffer);
-		final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
-		final byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
-				final int srcIndex = (x + y * width) * 3;
-				final int destIndex = (x + (height - y - 1) * width) * 3;
-				data[destIndex + 2] = buffer.get(srcIndex);
-				data[destIndex + 1] = buffer.get(srcIndex + 1);
-				data[destIndex] = buffer.get(srcIndex + 2);
-			}
-		}
-		try {
-			ImageIO.write(image, "PNG", new File("screenshots" + File.separator + SCREENSHOT_DATE_FORMAT.format(Calendar.getInstance().getTime()) + ".png"));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 }

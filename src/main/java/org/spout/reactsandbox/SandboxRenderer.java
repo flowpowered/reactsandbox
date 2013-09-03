@@ -28,9 +28,14 @@ package org.spout.reactsandbox;
 
 import java.awt.Font;
 import java.awt.FontFormatException;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -94,6 +99,7 @@ public class SandboxRenderer {
 	private static final float NEAR_PLANE = 0.1f;
 	private static final float FAR_PLANE = 1000;
 	private static final Vector2 PROJECTION = new Vector2(FAR_PLANE / (FAR_PLANE - NEAR_PLANE), (-FAR_PLANE * NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE));
+	private static final DateFormat SCREENSHOT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
 	// SETTINGS
 	private static Color backgroundColor = Color.DARK_GRAY;
 	private static boolean cullBackFaces = true;
@@ -1091,5 +1097,17 @@ public class SandboxRenderer {
 		// INDICES
 		vertexData.getIndices().addAll(indices);
 		return vertexData;
+	}
+
+	public static void saveScreenshot() {
+		File saveFile = new File("screenshots" + File.separator + SCREENSHOT_DATE_FORMAT.format(Calendar.getInstance().getTime()) + ".png");
+		try {
+			FileOutputStream output = new FileOutputStream(saveFile);
+			renderer.dumpScreenshot(output);
+			output.flush();
+			output.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }
