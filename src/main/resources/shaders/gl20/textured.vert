@@ -1,3 +1,8 @@
+// $attrib_layout: position = 0
+// $attrib_layout: normal = 1
+// $attrib_layout: textureCoords = 2
+// $attrib_layout: tangent = 3
+
 #version 120
 
 attribute vec3 position;

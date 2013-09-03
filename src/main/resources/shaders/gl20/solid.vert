@@ -1,3 +1,6 @@
+// $attrib_layout: position = 0
+// $attrib_layout: normal = 1
+
 #version 120
 
 attribute vec3 position;

@@ -365,21 +365,11 @@ public class SandboxRenderer {
 		solidProgram = glFactory.createProgram();
 		solidProgram.addShader(solidVert);
 		solidProgram.addShader(solidFrag);
-		if (glVersion == GLVersion.GL20) {
-			solidProgram.addAttributeLayout("position", 0);
-			solidProgram.addAttributeLayout("normal", 1);
-		}
 		solidProgram.create();
 		// TEXTURED
 		texturedProgram = glFactory.createProgram();
 		texturedProgram.addShader(texturedVert);
 		texturedProgram.addShader(texturedFrag);
-		if (glVersion == GLVersion.GL20) {
-			texturedProgram.addAttributeLayout("position", 0);
-			texturedProgram.addAttributeLayout("normal", 1);
-			texturedProgram.addAttributeLayout("textureCoords", 2);
-			texturedProgram.addAttributeLayout("tangent", 3);
-		}
 		texturedProgram.addTextureLayout("diffuse", 0);
 		texturedProgram.addTextureLayout("normals", 1);
 		texturedProgram.addTextureLayout("specular", 2);
@@ -388,9 +378,6 @@ public class SandboxRenderer {
 		ssaoProgram = glFactory.createProgram();
 		ssaoProgram.addShader(ssaoVert);
 		ssaoProgram.addShader(ssaoFrag);
-		if (glVersion == GLVersion.GL20) {
-			ssaoProgram.addAttributeLayout("position", 0);
-		}
 		ssaoProgram.addTextureLayout("normals", 0);
 		ssaoProgram.addTextureLayout("depths", 1);
 		ssaoProgram.addTextureLayout("noise", 2);
@@ -399,18 +386,12 @@ public class SandboxRenderer {
 		ssaoBlurProgram = glFactory.createProgram();
 		ssaoBlurProgram.addShader(ssaoBlurVert);
 		ssaoBlurProgram.addShader(ssaoBlurFrag);
-		if (glVersion == GLVersion.GL20) {
-			ssaoBlurProgram.addAttributeLayout("position", 0);
-		}
 		ssaoBlurProgram.addTextureLayout("occlusion", 0);
 		ssaoBlurProgram.create();
 		// SHADOW
 		shadowProgram = glFactory.createProgram();
 		shadowProgram.addShader(shadowVert);
 		shadowProgram.addShader(shadowFrag);
-		if (glVersion == GLVersion.GL20) {
-			shadowProgram.addAttributeLayout("position", 0);
-		}
 		shadowProgram.addTextureLayout("normals", 0);
 		shadowProgram.addTextureLayout("depths", 1);
 		shadowProgram.addTextureLayout("lightDepths", 2);
@@ -419,9 +400,6 @@ public class SandboxRenderer {
 		lightingProgram = glFactory.createProgram();
 		lightingProgram.addShader(lightingVert);
 		lightingProgram.addShader(lightingFrag);
-		if (glVersion == GLVersion.GL20) {
-			lightingProgram.addAttributeLayout("position", 0);
-		}
 		lightingProgram.addTextureLayout("colors", 0);
 		lightingProgram.addTextureLayout("normals", 1);
 		lightingProgram.addTextureLayout("depths", 2);
@@ -433,9 +411,6 @@ public class SandboxRenderer {
 		antiAliasingProgram = glFactory.createProgram();
 		antiAliasingProgram.addShader(antiAliasingVert);
 		antiAliasingProgram.addShader(antiAliasingFrag);
-		if (glVersion == GLVersion.GL20) {
-			antiAliasingProgram.addAttributeLayout("position", 0);
-		}
 		antiAliasingProgram.addTextureLayout("diffuse", 0);
 		antiAliasingProgram.addTextureLayout("normals", 1);
 		antiAliasingProgram.addTextureLayout("depths", 2);
@@ -444,9 +419,6 @@ public class SandboxRenderer {
 		screenProgram = glFactory.createProgram();
 		screenProgram.addShader(screenVert);
 		screenProgram.addShader(screenFrag);
-		if (glVersion == GLVersion.GL20) {
-			screenProgram.addAttributeLayout("position", 0);
-		}
 		screenProgram.addTextureLayout("diffuse", 0);
 		screenProgram.create();
 	}
