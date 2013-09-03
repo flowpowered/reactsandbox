@@ -1,3 +1,10 @@
+// $texture_layout: colors = 0
+// $texture_layout: normals = 1
+// $texture_layout: depths = 2
+// $texture_layout: materials = 3
+// $texture_layout: occlusions = 4
+// $texture_layout: shadows = 5
+
 #version 330
 
 in vec2 textureUV;

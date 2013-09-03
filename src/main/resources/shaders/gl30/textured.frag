@@ -1,3 +1,7 @@
+// $texture_layout: diffuse = 0
+// $texture_layout: normals = 1
+// $texture_layout: specular = 2
+
 #version 330
 
 in vec3 positionView;

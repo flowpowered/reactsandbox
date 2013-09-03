@@ -376,56 +376,36 @@ public class SandboxRenderer {
 		texturedProgram = glFactory.createProgram();
 		texturedProgram.addShader(texturedVert);
 		texturedProgram.addShader(texturedFrag);
-		texturedProgram.addTextureLayout("diffuse", 0);
-		texturedProgram.addTextureLayout("normals", 1);
-		texturedProgram.addTextureLayout("specular", 2);
 		texturedProgram.create();
 		// SSAO
 		ssaoProgram = glFactory.createProgram();
 		ssaoProgram.addShader(ssaoVert);
 		ssaoProgram.addShader(ssaoFrag);
-		ssaoProgram.addTextureLayout("normals", 0);
-		ssaoProgram.addTextureLayout("depths", 1);
-		ssaoProgram.addTextureLayout("noise", 2);
 		ssaoProgram.create();
 		// SSAO BLUR
 		ssaoBlurProgram = glFactory.createProgram();
 		ssaoBlurProgram.addShader(ssaoBlurVert);
 		ssaoBlurProgram.addShader(ssaoBlurFrag);
-		ssaoBlurProgram.addTextureLayout("occlusion", 0);
 		ssaoBlurProgram.create();
 		// SHADOW
 		shadowProgram = glFactory.createProgram();
 		shadowProgram.addShader(shadowVert);
 		shadowProgram.addShader(shadowFrag);
-		shadowProgram.addTextureLayout("normals", 0);
-		shadowProgram.addTextureLayout("depths", 1);
-		shadowProgram.addTextureLayout("lightDepths", 2);
 		shadowProgram.create();
 		// LIGHTING
 		lightingProgram = glFactory.createProgram();
 		lightingProgram.addShader(lightingVert);
 		lightingProgram.addShader(lightingFrag);
-		lightingProgram.addTextureLayout("colors", 0);
-		lightingProgram.addTextureLayout("normals", 1);
-		lightingProgram.addTextureLayout("depths", 2);
-		lightingProgram.addTextureLayout("materials", 3);
-		lightingProgram.addTextureLayout("occlusions", 4);
-		lightingProgram.addTextureLayout("shadows", 5);
 		lightingProgram.create();
 		// ANTI ALIASING
 		antiAliasingProgram = glFactory.createProgram();
 		antiAliasingProgram.addShader(antiAliasingVert);
 		antiAliasingProgram.addShader(antiAliasingFrag);
-		antiAliasingProgram.addTextureLayout("diffuse", 0);
-		antiAliasingProgram.addTextureLayout("normals", 1);
-		antiAliasingProgram.addTextureLayout("depths", 2);
 		antiAliasingProgram.create();
 		// SCREEN
 		screenProgram = glFactory.createProgram();
 		screenProgram.addShader(screenVert);
 		screenProgram.addShader(screenFrag);
-		screenProgram.addTextureLayout("diffuse", 0);
 		screenProgram.create();
 	}
 

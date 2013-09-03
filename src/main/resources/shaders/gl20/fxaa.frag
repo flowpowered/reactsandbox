@@ -1,3 +1,5 @@
+// $texture_layout: diffuse = 0
+
 #version 120
 
 const float FXAA_REDUCE_MUL = 1.0 / 8.0;

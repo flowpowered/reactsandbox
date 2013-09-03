@@ -1,3 +1,5 @@
+// $texture_layout: occlusions = 0
+
 #version 120
 
 varying vec2 textureUV;

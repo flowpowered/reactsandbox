@@ -1,3 +1,7 @@
+// $texture_layout: normals = 0
+// $texture_layout: depths = 1
+// $texture_layout: lightDepths = 2
+
 #version 330
 
 const int MAX_KERNEL_SIZE = 32;

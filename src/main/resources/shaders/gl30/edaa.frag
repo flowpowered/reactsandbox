@@ -1,6 +1,10 @@
 // Edge detection anti aliasing
 // Adapted from: http://http.developer.nvidia.com/GPUGems2/gpugems2_chapter09.html (Example 9-2)
 
+// $texture_layout: diffuse = 0
+// $texture_layout: normals = 1
+// $texture_layout: depths = 2
+
 #version 330
 
 const vec2 LT = vec2(-1, 1);
