@@ -108,8 +108,11 @@ public class Sandbox {
 			SandboxRenderer.setLightDirection(new org.spout.math.vector.Vector3(0, -TrigMath.cos(SPOT_CUTOFF), -TrigMath.sin(SPOT_CUTOFF)));
 			Mouse.setGrabbed(true);
 			SandboxRenderer.startFPSMonitor();
+			long lastTime = System.currentTimeMillis();
 			while (!Display.isCloseRequested()) {
-				processInput();
+				final long currentTime = System.currentTimeMillis();
+				processInput((currentTime - lastTime) / 1000f);
+				lastTime = currentTime;
 				world.update();
 				handleSelection();
 				updateBodies();
@@ -222,7 +225,8 @@ public class Sandbox {
 		}
 	}
 
-	private static void processInput() {
+	private static void processInput(float dt) {
+		dt /= TIMESTEP;
 		final boolean mouseGrabbedBefore = mouseGrabbed;
 		while (Keyboard.next()) {
 			if (Keyboard.getEventKeyState()) {
@@ -253,10 +257,11 @@ public class Sandbox {
 				Mouse.setGrabbed(!mouseGrabbedBefore);
 			}
 			if (mouseGrabbed) {
-				cameraPitch -= Mouse.getDX() * mouseSensitivity;
+				final float sensitivity = mouseSensitivity * dt;
+				cameraPitch -= Mouse.getDX() * sensitivity;
 				cameraPitch %= 360;
 				final Quaternion pitch = SandboxUtil.angleAxisToQuaternion(cameraPitch, 0, 1, 0);
-				cameraYaw += Mouse.getDY() * mouseSensitivity;
+				cameraYaw += Mouse.getDY() * sensitivity;
 				cameraYaw %= 360;
 				final Quaternion yaw = SandboxUtil.angleAxisToQuaternion(cameraYaw, 1, 0, 0);
 				camera.setRotation(SandboxUtil.toMathQuaternion(Quaternion.multiply(pitch, yaw)));
@@ -266,23 +271,24 @@ public class Sandbox {
 		final Vector3 up = SandboxUtil.toReactVector3(camera.getUp());
 		final Vector3 forward = SandboxUtil.toReactVector3(camera.getForward());
 		final Vector3 position = SandboxUtil.toReactVector3(camera.getPosition());
+		final float speed = cameraSpeed * dt;
 		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
-			position.add(Vector3.multiply(forward, cameraSpeed));
+			position.add(Vector3.multiply(forward, speed));
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
-			position.add(Vector3.multiply(forward, -cameraSpeed));
+			position.add(Vector3.multiply(forward, -speed));
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
-			position.add(Vector3.multiply(right, cameraSpeed));
+			position.add(Vector3.multiply(right, speed));
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
-			position.add(Vector3.multiply(right, -cameraSpeed));
+			position.add(Vector3.multiply(right, -speed));
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
-			position.add(Vector3.multiply(up, cameraSpeed));
+			position.add(Vector3.multiply(up, speed));
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
-			position.add(Vector3.multiply(up, -cameraSpeed));
+			position.add(Vector3.multiply(up, -speed));
 		}
 		camera.setPosition(SandboxUtil.toMathVector3(position));
 	}
