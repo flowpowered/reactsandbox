@@ -26,10 +26,12 @@
  */
 package org.spout.reactsandbox;
 
+import javax.imageio.ImageIO;
 import java.awt.Font;
 import java.awt.FontFormatException;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -1080,12 +1082,22 @@ public class SandboxRenderer {
 	}
 
 	public static void saveScreenshot() {
-		File saveFile = new File("screenshots" + File.separator + SCREENSHOT_DATE_FORMAT.format(Calendar.getInstance().getTime()) + ".png");
+		final ByteBuffer buffer = renderer.readCurrentFrame(Format.RGB);
+		final int width = renderer.getWindowWidth();
+		final int height = renderer.getWindowHeight();
+		final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+		final byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+		for (int x = 0; x < width; x++) {
+			for (int y = 0; y < height; y++) {
+				final int srcIndex = (x + y * width) * 3;
+				final int destIndex = (x + (height - y - 1) * width) * 3;
+				data[destIndex + 2] = buffer.get(srcIndex);
+				data[destIndex + 1] = buffer.get(srcIndex + 1);
+				data[destIndex] = buffer.get(srcIndex + 2);
+			}
+		}
 		try {
-			FileOutputStream output = new FileOutputStream(saveFile);
-			renderer.dumpScreenshot(output);
-			output.flush();
-			output.close();
+			ImageIO.write(image, "PNG", new File("screenshots" + File.separator + SCREENSHOT_DATE_FORMAT.format(Calendar.getInstance().getTime()) + ".png"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
