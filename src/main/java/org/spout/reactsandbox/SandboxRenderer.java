@@ -222,7 +222,7 @@ public class SandboxRenderer {
 		// RENDERER
 		renderer = glFactory.createRenderer();
 		renderer.setWindowTitle(WINDOW_TITLE);
-		renderer.setWindowSize(WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		renderer.getViewPort().setSize(WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		renderer.create();
 		renderer.setClearColor(new Color(backgroundColor.getRed(), backgroundColor.getGreen(), backgroundColor.getBlue(), 0));
 	}
