@@ -37,7 +37,6 @@ import org.spout.renderer.data.Uniform.IntUniform;
 import org.spout.renderer.data.Uniform.Vector2Uniform;
 import org.spout.renderer.data.Uniform.Vector3ArrayUniform;
 import org.spout.renderer.data.UniformHolder;
-import org.spout.renderer.data.VertexAttribute.DataType;
 import org.spout.renderer.gl.GLFactory;
 import org.spout.renderer.gl.Texture;
 import org.spout.renderer.gl.Texture.Format;
@@ -52,8 +51,6 @@ public class SSAOEffect {
 	private final Vector2 noiseScale;
 	private final Texture noiseTexture;
 	private final float power;
-	private final int noiseSize;
-	private final Vector2 texelSize;
 
 	public SSAOEffect(GLFactory glFactory, Vector2 resolution, int kernelSize, int noiseSize, float radius, float threshold, float power) {
 		this.kernelSize = kernelSize;
@@ -63,8 +60,6 @@ public class SSAOEffect {
 		this.noiseScale = resolution.div(noiseSize);
 		this.noiseTexture = glFactory.createTexture();
 		this.power = power;
-		this.noiseSize = noiseSize;
-		this.texelSize = new Vector2(1, 1).div(resolution);
 		// Generate the kernel
 		final Random random = new Random();
 		for (int i = 0; i < kernelSize; i++) {
@@ -76,18 +71,18 @@ public class SSAOEffect {
 		}
 		// Generate the noise texture
 		final int noiseTextureSize = noiseSize * noiseSize;
-		// 3 floats components = 12 bytes per pixel
-		final ByteBuffer noiseTextureBuffer = CausticUtil.createByteBuffer(noiseTextureSize * 12);
+		final ByteBuffer noiseTextureBuffer = CausticUtil.createByteBuffer(noiseTextureSize * 3);
 		for (int i = 0; i < noiseTextureSize; i++) {
 			// Random unit vectors around the z axis
-			final Vector3 noise = new Vector3(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, 0).normalize();
-			noiseTextureBuffer.putFloat(noise.getX());
-			noiseTextureBuffer.putFloat(noise.getY());
-			noiseTextureBuffer.putFloat(noise.getZ());
+			Vector3 noise = new Vector3(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, 0).normalize();
+			// Encode to unsigned byte, and place in buffer
+			noise = noise.mul(128).add(128, 128, 128);
+			noiseTextureBuffer.put((byte) (noise.getFloorX() & 0xff));
+			noiseTextureBuffer.put((byte) (noise.getFloorY() & 0xff));
+			noiseTextureBuffer.put((byte) (noise.getFloorZ() & 0xff));
 		}
 		noiseTexture.setFormat(Format.RGB);
-		noiseTexture.setInternalFormat(InternalFormat.RGB32F);
-		noiseTexture.setComponentType(DataType.FLOAT);
+		noiseTexture.setInternalFormat(InternalFormat.RGB8);
 		noiseTextureBuffer.flip();
 		noiseTexture.setImageData(noiseTextureBuffer, noiseSize, noiseSize);
 		noiseTexture.create();
@@ -108,7 +103,5 @@ public class SSAOEffect {
 		destination.add(new FloatUniform("threshold", threshold));
 		destination.add(new Vector2Uniform("noiseScale", noiseScale));
 		destination.add(new FloatUniform("power", power));
-		destination.add(new IntUniform("noiseSize", noiseSize));
-		destination.add(new Vector2Uniform("texelSize", texelSize));
 	}
 }

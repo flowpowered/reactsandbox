@@ -639,11 +639,6 @@ public class MeshGenerator {
 				(v0.getZ() + v1.getZ()) / 2);
 	}
 
-	private static void addVector(TFloatList to, Vector2 v) {
-		to.add(v.getX());
-		to.add(v.getY());
-	}
-
 	private static void addVector(TFloatList to, Vector3 v) {
 		to.add(v.getX());
 		to.add(v.getY());

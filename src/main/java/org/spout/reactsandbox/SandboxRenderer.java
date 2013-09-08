@@ -125,8 +125,8 @@ public class SandboxRenderer {
 	private static final RenderList modelRenderList = new RenderList("models", modelCamera, 0);
 	private static final RenderList lightModelRenderList = modelRenderList.getInstance("light", 1);
 	private static final RenderList ssaoRenderList = new RenderList("ssao", modelCamera, 2);
-	private static final RenderList ssaoBlurRenderList = new RenderList("ssao blur", modelCamera, 3);
-	private static final RenderList shadowRenderList = new RenderList("shadow", modelCamera, 4);
+	private static final RenderList shadowRenderList = new RenderList("shadow", modelCamera, 3);
+	private static final RenderList blurRenderList = new RenderList("blur", modelCamera, 4);
 	private static final RenderList lightingRenderList = new RenderList("lighting", modelCamera, 5);
 	private static final RenderList antiAliasingRenderList = new RenderList("antiAliasing", modelCamera, 6);
 	private static final RenderList guiRenderList = new RenderList("gui", guiCamera, 7);
@@ -137,8 +137,8 @@ public class SandboxRenderer {
 	private static Shader texturedFrag;
 	private static Shader ssaoVert;
 	private static Shader ssaoFrag;
-	private static Shader ssaoBlurVert;
-	private static Shader ssaoBlurFrag;
+	private static Shader blurVert;
+	private static Shader blurFrag;
 	private static Shader shadowVert;
 	private static Shader shadowFrag;
 	private static Shader lightingVert;
@@ -151,7 +151,7 @@ public class SandboxRenderer {
 	private static Program solidProgram;
 	private static Program texturedProgram;
 	private static Program ssaoProgram;
-	private static Program ssaoBlurProgram;
+	private static Program blurProgram;
 	private static Program shadowProgram;
 	private static Program lightingProgram;
 	private static Program antiAliasingProgram;
@@ -169,8 +169,9 @@ public class SandboxRenderer {
 	private static Texture materialsTexture;
 	private static Texture depthsTexture;
 	private static Texture lightDepthsTexture;
-	private static Texture auxRTexture;
 	private static Texture ssaoTexture;
+	private static Texture shadowTexture;
+	private static Texture auxRTexture;
 	private static Texture auxRGBTexture;
 	// MATERIALS
 	private static Material solidMaterial;
@@ -178,7 +179,7 @@ public class SandboxRenderer {
 	private static Material creeperMaterial;
 	private static Material woodMaterial;
 	private static Material ssaoMaterial;
-	private static Material ssaoBlurMaterial;
+	private static Material blurMaterial;
 	private static Material shadowMaterial;
 	private static Material lightingMaterial;
 	private static Material antiAliasingMaterial;
@@ -187,7 +188,7 @@ public class SandboxRenderer {
 	private static FrameBuffer modelFrameBuffer;
 	private static FrameBuffer lightModelFrameBuffer;
 	private static FrameBuffer ssaoFrameBuffer;
-	private static FrameBuffer ssaoBlurFrameBuffer;
+	private static FrameBuffer blurFrameBuffer;
 	private static FrameBuffer shadowFrameBuffer;
 	private static FrameBuffer lightingFrameBuffer;
 	private static FrameBuffer antiAliasingFrameBuffer;
@@ -197,6 +198,7 @@ public class SandboxRenderer {
 	// EFFECTS
 	private static SSAOEffect ssaoEffect;
 	private static ShadowMappingEffect shadowMappingEffect;
+	private static BlurEffect blurEffect;
 	// MODEL PROPERTIES
 	private static Color aabbModelColor;
 	private static Color diamondModelColor;
@@ -228,10 +230,13 @@ public class SandboxRenderer {
 	}
 
 	private static void initEffects() {
+		final int blurSize = 2;
 		// SSAO
-		ssaoEffect = new SSAOEffect(glFactory, WINDOW_SIZE, 8, 4, 0.5f, 0.15f, 2);
+		ssaoEffect = new SSAOEffect(glFactory, WINDOW_SIZE, 8, blurSize, 0.5f, 0.15f, 2);
 		// SHADOW MAPPING
-		shadowMappingEffect = new ShadowMappingEffect(4, 0.000006f, 0.0003f);
+		shadowMappingEffect = new ShadowMappingEffect(glFactory, WINDOW_SIZE, 8, blurSize, 0.000006f, 0.0004f);
+		// BLUR
+		blurEffect = new BlurEffect(WINDOW_SIZE, blurSize);
 	}
 
 	private static void initRenderLists() {
@@ -256,16 +261,16 @@ public class SandboxRenderer {
 			ssaoRenderList.addCapability(Capability.CULL_FACE);
 		}
 		renderer.addRenderList(ssaoRenderList);
-		// SSAO BLUR
-		if (cullBackFaces) {
-			ssaoBlurRenderList.addCapability(Capability.CULL_FACE);
-		}
-		renderer.addRenderList(ssaoBlurRenderList);
 		// SHADOW
 		if (cullBackFaces) {
 			shadowRenderList.addCapability(Capability.CULL_FACE);
 		}
 		renderer.addRenderList(shadowRenderList);
+		// BLUR
+		if (cullBackFaces) {
+			blurRenderList.addCapability(Capability.CULL_FACE);
+		}
+		renderer.addRenderList(blurRenderList);
 		// LIGHTING
 		if (cullBackFaces) {
 			lightingRenderList.addCapability(Capability.CULL_FACE);
@@ -316,16 +321,6 @@ public class SandboxRenderer {
 		ssaoFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssao.frag"));
 		ssaoFrag.setType(ShaderType.FRAGMENT);
 		ssaoFrag.create();
-		// SSAO BLUR VERT
-		ssaoBlurVert = glFactory.createShader();
-		ssaoBlurVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssaoBlur.vert"));
-		ssaoBlurVert.setType(ShaderType.VERTEX);
-		ssaoBlurVert.create();
-		// SSAO BLUR FRAG
-		ssaoBlurFrag = glFactory.createShader();
-		ssaoBlurFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssaoBlur.frag"));
-		ssaoBlurFrag.setType(ShaderType.FRAGMENT);
-		ssaoBlurFrag.create();
 		// SHADOW VERT
 		shadowVert = glFactory.createShader();
 		shadowVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "shadow.vert"));
@@ -336,6 +331,16 @@ public class SandboxRenderer {
 		shadowFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "shadow.frag"));
 		shadowFrag.setType(ShaderType.FRAGMENT);
 		shadowFrag.create();
+		// BLUR VERT
+		blurVert = glFactory.createShader();
+		blurVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "blur.vert"));
+		blurVert.setType(ShaderType.VERTEX);
+		blurVert.create();
+		// BLUR FRAG
+		blurFrag = glFactory.createShader();
+		blurFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "blur.frag"));
+		blurFrag.setType(ShaderType.FRAGMENT);
+		blurFrag.create();
 		// LIGHTING VERT
 		lightingVert = glFactory.createShader();
 		lightingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.vert"));
@@ -384,16 +389,16 @@ public class SandboxRenderer {
 		ssaoProgram.addShader(ssaoVert);
 		ssaoProgram.addShader(ssaoFrag);
 		ssaoProgram.create();
-		// SSAO BLUR
-		ssaoBlurProgram = glFactory.createProgram();
-		ssaoBlurProgram.addShader(ssaoBlurVert);
-		ssaoBlurProgram.addShader(ssaoBlurFrag);
-		ssaoBlurProgram.create();
 		// SHADOW
 		shadowProgram = glFactory.createProgram();
 		shadowProgram.addShader(shadowVert);
 		shadowProgram.addShader(shadowFrag);
 		shadowProgram.create();
+		// BLUR
+		blurProgram = glFactory.createProgram();
+		blurProgram.addShader(blurVert);
+		blurProgram.addShader(blurFrag);
+		blurProgram.create();
 		// LIGHTING
 		lightingProgram = glFactory.createProgram();
 		lightingProgram.addShader(lightingVert);
@@ -506,16 +511,21 @@ public class SandboxRenderer {
 		lightDepthsTexture.setMinFilter(FilterMode.LINEAR);
 		lightDepthsTexture.setCompareMode(CompareMode.LESS);
 		lightDepthsTexture.create();
-		// AUX R
-		auxRTexture = glFactory.createTexture();
-		auxRTexture.setFormat(Format.RED);
-		auxRTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
-		auxRTexture.create();
 		// SSAO
 		ssaoTexture = glFactory.createTexture();
 		ssaoTexture.setFormat(Format.RED);
 		ssaoTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		ssaoTexture.create();
+		// SHADOW
+		shadowTexture = glFactory.createTexture();
+		shadowTexture.setFormat(Format.RED);
+		shadowTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		shadowTexture.create();
+		// AUX R
+		auxRTexture = glFactory.createTexture();
+		auxRTexture.setFormat(Format.RED);
+		auxRTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		auxRTexture.create();
 		// AUX RGB
 		auxRGBTexture = glFactory.createTexture();
 		auxRGBTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
@@ -564,16 +574,12 @@ public class SandboxRenderer {
 		uniforms.add(new FloatUniform("tanHalfFOV", TAN_HALF_FOV));
 		uniforms.add(new FloatUniform("aspectRatio", ASPECT_RATIO));
 		ssaoEffect.addUniforms(uniforms);
-		// SSAO BLUR
-		ssaoBlurMaterial = new Material(ssaoBlurProgram);
-		ssaoBlurMaterial.addTexture(0, auxRTexture);
-		uniforms = ssaoBlurMaterial.getUniforms();
-		ssaoEffect.addUniforms(uniforms);
 		// SHADOW
 		shadowMaterial = new Material(shadowProgram);
 		shadowMaterial.addTexture(0, vertexNormals);
 		shadowMaterial.addTexture(1, depthsTexture);
 		shadowMaterial.addTexture(2, lightDepthsTexture);
+		shadowMaterial.addTexture(3, shadowMappingEffect.getNoiseTexture());
 		uniforms = shadowMaterial.getUniforms();
 		uniforms.add(new Vector2Uniform("projection", PROJECTION));
 		uniforms.add(new FloatUniform("tanHalfFOV", TAN_HALF_FOV));
@@ -583,6 +589,12 @@ public class SandboxRenderer {
 		uniforms.add(lightViewMatrixUniform);
 		uniforms.add(lightProjectionMatrixUniform);
 		shadowMappingEffect.addUniforms(uniforms);
+		// BLUR
+		blurMaterial = new Material(blurProgram);
+		blurMaterial.addTexture(0, auxRTexture);
+		blurMaterial.addTexture(1, auxRGBTexture);
+		uniforms = blurMaterial.getUniforms();
+		blurEffect.addUniforms(uniforms);
 		// LIGHTING
 		lightingMaterial = new Material(lightingProgram);
 		lightingMaterial.addTexture(0, colorsTexture);
@@ -590,7 +602,7 @@ public class SandboxRenderer {
 		lightingMaterial.addTexture(2, depthsTexture);
 		lightingMaterial.addTexture(3, materialsTexture);
 		lightingMaterial.addTexture(4, ssaoTexture);
-		lightingMaterial.addTexture(5, auxRTexture);
+		lightingMaterial.addTexture(5, shadowTexture);
 		uniforms = lightingMaterial.getUniforms();
 		uniforms.add(new Vector2Uniform("projection", PROJECTION));
 		uniforms.add(new FloatUniform("tanHalfFOV", TAN_HALF_FOV));
@@ -637,16 +649,17 @@ public class SandboxRenderer {
 		ssaoFrameBuffer.attach(AttachmentPoint.COLOR0, auxRTexture);
 		ssaoFrameBuffer.create();
 		ssaoRenderList.setFrameBuffer(ssaoFrameBuffer);
-		// SSAO BLUR
-		ssaoBlurFrameBuffer = glFactory.createFrameBuffer();
-		ssaoBlurFrameBuffer.attach(AttachmentPoint.COLOR0, ssaoTexture);
-		ssaoBlurFrameBuffer.create();
-		ssaoBlurRenderList.setFrameBuffer(ssaoBlurFrameBuffer);
 		// SHADOW
 		shadowFrameBuffer = glFactory.createFrameBuffer();
-		shadowFrameBuffer.attach(AttachmentPoint.COLOR0, auxRTexture);
+		shadowFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBTexture);
 		shadowFrameBuffer.create();
 		shadowRenderList.setFrameBuffer(shadowFrameBuffer);
+		// BLUR
+		blurFrameBuffer = glFactory.createFrameBuffer();
+		blurFrameBuffer.attach(AttachmentPoint.COLOR0, ssaoTexture);
+		blurFrameBuffer.attach(AttachmentPoint.COLOR1, shadowTexture);
+		blurFrameBuffer.create();
+		blurRenderList.setFrameBuffer(blurFrameBuffer);
 		// LIGHTING
 		lightingFrameBuffer = glFactory.createFrameBuffer();
 		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBTexture);
@@ -692,6 +705,8 @@ public class SandboxRenderer {
 		ssaoEffect.dispose();
 		// SHADOW MAPPING
 		shadowMappingEffect.dispose();
+		// BLUR
+		blurEffect.dispose();
 	}
 
 	private static void disposeRenderLists() {
@@ -704,12 +719,12 @@ public class SandboxRenderer {
 		// SSAO
 		ssaoRenderList.clear();
 		ssaoRenderList.clearCapabilities();
-		// SSAO BLUR
-		ssaoBlurRenderList.clear();
-		ssaoBlurRenderList.clearCapabilities();
 		// SHADOW
 		shadowRenderList.clear();
 		shadowRenderList.clearCapabilities();
+		// BLUR
+		blurRenderList.clear();
+		blurRenderList.clearCapabilities();
 		// LIGHTING
 		lightingRenderList.clear();
 		lightingRenderList.clearCapabilities();
@@ -731,12 +746,12 @@ public class SandboxRenderer {
 		// SSAO
 		ssaoVert.destroy();
 		ssaoFrag.destroy();
-		// SSAO BLUR
-		ssaoBlurVert.destroy();
-		ssaoBlurFrag.destroy();
 		// SHADOW
 		shadowVert.destroy();
 		shadowFrag.destroy();
+		// BLUR
+		blurVert.destroy();
+		blurFrag.destroy();
 		// LIGHTING
 		lightingVert.destroy();
 		lightingFrag.destroy();
@@ -755,10 +770,10 @@ public class SandboxRenderer {
 		texturedProgram.destroy();
 		// SSAO
 		ssaoProgram.destroy();
-		// SSAO BLUR
-		ssaoBlurProgram.destroy();
 		// SHADOW
 		shadowProgram.destroy();
+		// BLUR
+		blurProgram.destroy();
 		// LIGHTING
 		lightingProgram.destroy();
 		// ANTI ALIASING
@@ -792,10 +807,12 @@ public class SandboxRenderer {
 		depthsTexture.destroy();
 		// LIGHT DEPTHS
 		lightDepthsTexture.destroy();
-		// AUX R
-		auxRTexture.destroy();
 		// SSAO
 		ssaoTexture.destroy();
+		// SHADOW
+		shadowTexture.destroy();
+		// AUX R
+		auxRTexture.destroy();
 		// AUX RGB
 		auxRGBTexture.destroy();
 	}
@@ -807,10 +824,10 @@ public class SandboxRenderer {
 		lightModelFrameBuffer.destroy();
 		// SSAO
 		ssaoFrameBuffer.destroy();
-		// SSAO BLUR
-		ssaoBlurFrameBuffer.destroy();
 		// SHADOW
 		shadowFrameBuffer.destroy();
+		// BLUR
+		blurFrameBuffer.destroy();
 		// LIGHTING
 		lightingFrameBuffer.destroy();
 		// ANTI ALIASING
@@ -963,12 +980,12 @@ public class SandboxRenderer {
 		// SSAO
 		final Model ssao = new Model(vertexArray, ssaoMaterial);
 		ssaoRenderList.add(ssao);
-		// SSAO BLUR
-		final Model ssaoBlur = new Model(vertexArray, ssaoBlurMaterial);
-		ssaoBlurRenderList.add(ssaoBlur);
 		// SHADOW
 		final Model shadow = new Model(vertexArray, shadowMaterial);
 		shadowRenderList.add(shadow);
+		// BLUR
+		final Model blur = new Model(vertexArray, blurMaterial);
+		blurRenderList.add(blur);
 		// LIGHTING
 		final Model lighting = new Model(vertexArray, lightingMaterial);
 		lightingRenderList.add(lighting);

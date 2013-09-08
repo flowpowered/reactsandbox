@@ -26,23 +26,34 @@
  */
 package org.spout.reactsandbox;
 
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.spout.math.vector.Vector2;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.IntUniform;
 import org.spout.renderer.data.Uniform.Vector2ArrayUniform;
+import org.spout.renderer.data.Uniform.Vector2Uniform;
 import org.spout.renderer.data.UniformHolder;
+import org.spout.renderer.gl.GLFactory;
+import org.spout.renderer.gl.Texture;
+import org.spout.renderer.gl.Texture.Format;
+import org.spout.renderer.gl.Texture.InternalFormat;
+import org.spout.renderer.util.CausticUtil;
 
 public class ShadowMappingEffect {
 	private final int kernelSize;
 	private final Vector2[] kernel;
+	private final Vector2 noiseScale;
+	private final Texture noiseTexture;
 	private final float bias;
 	private final float radius;
 
-	public ShadowMappingEffect(int kernelSize, float bias, float radius) {
+	public ShadowMappingEffect(GLFactory glFactory, Vector2 resolution, int kernelSize, int noiseSize, float bias, float radius) {
 		this.kernelSize = kernelSize;
 		this.kernel = new Vector2[kernelSize];
+		this.noiseScale = resolution.div(noiseSize);
+		this.noiseTexture = glFactory.createTexture();
 		this.bias = bias;
 		this.radius = radius;
 		// Generate the kernel
@@ -51,14 +62,37 @@ public class ShadowMappingEffect {
 			// Create a set of random unit vectors
 			kernel[i] = new Vector2(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1).normalize();
 		}
+		// Generate the noise texture
+		final int noiseTextureSize = noiseSize * noiseSize;
+		final ByteBuffer noiseTextureBuffer = CausticUtil.createByteBuffer(noiseTextureSize * 3);
+		for (int i = 0; i < noiseTextureSize; i++) {
+			// Random unit vectors around the z axis
+			Vector2 noise = new Vector2(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1).normalize();
+			// Encode to unsigned byte, and place in buffer
+			noise = noise.mul(128).add(128, 128);
+			noiseTextureBuffer.put((byte) (noise.getFloorX() & 0xff));
+			noiseTextureBuffer.put((byte) (noise.getFloorY() & 0xff));
+			noiseTextureBuffer.put((byte) 0);
+		}
+		noiseTexture.setFormat(Format.RGB);
+		noiseTexture.setInternalFormat(InternalFormat.RGB8);
+		noiseTextureBuffer.flip();
+		noiseTexture.setImageData(noiseTextureBuffer, noiseSize, noiseSize);
+		noiseTexture.create();
 	}
 
 	public void dispose() {
+		noiseTexture.destroy();
+	}
+
+	public Texture getNoiseTexture() {
+		return noiseTexture;
 	}
 
 	public void addUniforms(UniformHolder destination) {
 		destination.add(new IntUniform("kernelSize", kernelSize));
 		destination.add(new Vector2ArrayUniform("kernel", kernel));
+		destination.add(new Vector2Uniform("noiseScale", noiseScale));
 		destination.add(new FloatUniform("bias", bias));
 		destination.add(new FloatUniform("radius", radius));
 	}

@@ -42,7 +42,7 @@ void main() {
 
     // Construct a change of basis matrix to reorient our sample kernel along the object's normal
     // Extract the random vector from the noise texture
-    vec3 noiseVector = texture(noise, textureUV * noiseScale).xyz;
+    vec3 noiseVector = texture(noise, textureUV * noiseScale).xyz * 2 - 1;
 
     // Calculate the tangent and bi-tangent using Gram-Schmidt
     vec3 tangent = normalize(noiseVector - normal * dot(noiseVector, normal));

@@ -1,6 +1,7 @@
 // $texture_layout: normals = 0
 // $texture_layout: depths = 1
 // $texture_layout: lightDepths = 2
+// $texture_layout: noise = 3
 
 #version 330
 
@@ -15,21 +16,19 @@ layout(location = 0) out float outputShadow;
 uniform sampler2D normals;
 uniform sampler2D depths;
 uniform sampler2DShadow lightDepths;
+uniform sampler2D noise;
 uniform mat4 inverseViewMatrix;
 uniform mat4 lightViewMatrix;
 uniform mat4 lightProjectionMatrix;
 uniform vec2 projection;
 uniform int kernelSize;
 uniform vec2[MAX_KERNEL_SIZE] kernel;
+uniform vec2 noiseScale;
 uniform float bias;
 uniform float radius;
 
 float linearizeDepth(float depth) {
     return projection.y / (depth - projection.x);
-}
-
-vec2 rand(vec2 seed) {
-    return vec2(fract(sin(dot(seed, vec2(12.9898, 78.233))) * 43758.5453), fract(cos(dot(seed, vec2(17.0391, 41.241))) * 29151.3212));
 }
 
 void main() {
@@ -49,9 +48,9 @@ void main() {
 
     float slopedBias = clamp(tan(acos(normalDotLight)) * bias, bias / 2, bias * 2);
 
-    vec2 randomVector = normalize(rand(gl_FragCoord.xy) * 2 - 1);
-    vec2 orthogonalVector = vec2(randomVector.y, -randomVector.x);
-    mat2 basis = mat2(randomVector, orthogonalVector);
+    vec2 noiseVector = texture(noise, textureUV * noiseScale).xy * 2 - 1;
+    vec2 orthogonalVector = vec2(noiseVector.y, -noiseVector.x);
+    mat2 basis = mat2(noiseVector, orthogonalVector);
 
     float shadow;
     for (int i = 0; i < kernelSize; i++) {
