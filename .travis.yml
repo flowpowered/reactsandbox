@@ -1,18 +1,13 @@
+# Source language and JDK version to use.
 language: java
 jdk: oraclejdk7
 
+# Compile and package JAR and set build properties.
 install: mvn package -DbuildNumber=$TRAVIS_BUILD_NUMBER -DciSystem=travis -Dcommit=${TRAVIS_COMMIT:0:7}
-after_success:
-  - "git clone -b travis `git config --get remote.origin.url` target/travis"
-  - "[[ \"$TRAVIS_BRANCH\" == \"master\" ]] && mvn deploy --settings target/travis/settings.xml"
 
 notifications:
+  # Disable build status email notifications, until the issue with forks is fixed.
   email: false
   webhooks:
-    - http://get.spout.org/hook
+    # Send build information and status to Notifico.
     - http://n.tkte.ch/h/1149/nXcJTK9aTwXpdxYs4NjH-rbc
-
-env:
-  global:
-    - secure: "TdHqblVnloBOMRYwgunObuRd1EZf7YnJtKJtawk8KWvndZeg24t/T0tQ/r3NDLUTlbUNpygbcvToQ+hYMsQWAWp1Ah84B/8ZnNgvZvf3s18RPtDShjdNgv2ll+5shEvRdR4LbRzPGwt2zirtopLHBd7eZIfKzVNq4kFwUpEm7ak="
-    - secure: "Mc7fMo2FUuYedTag04ONcw0GveYcwXFPqR5NstIpXVoYWTUWAaZGwlEI5g+9dzqChWkm80SUnfpfAsd7uH6ilXOdQpwh0nHw/8q+7wyBDrWov2scfYmHVI2EBuXqiTTk6CuWDPVhrsjrCYudqwUl+TUFPenB67RLwlRx4VD/43U="
