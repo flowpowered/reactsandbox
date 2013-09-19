@@ -7,23 +7,28 @@
 	<artifactId>reactsandbox</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
-	<url>http://www.spout.org</url>
 	<inceptionYear>2013</inceptionYear>
+	<url>http://www.spout.org</url>
 	<description>Visual debugging and testing for the React physics library.</description>
-
-	<!-- Parent information -->
-	<parent>
-		<groupId>org.spout</groupId>
-		<artifactId>shared-parent</artifactId>
-		<version>1</version>
-	</parent>
 
 	<!-- Build properties -->
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<buildNumber>0</buildNumber>
+		<ciSystem>unknown</ciSystem>
+		<commit>unknown</commit>
 		<mainClass>${project.groupId}.${project.artifactId}.Sandbox</mainClass>
 	</properties>
+
+	<!-- License information -->
+	<licenses>
+		<license>
+			<name>Spout License Version 1</name>
+			<url>http://spout.in/licensev1</url>
+			<distribution>repo</distribution>
+			<comments>GNU Lesser General Public License Version 3, but with a provision that files are released under the MIT license 180 days after they are published.</comments>
+		</license>
+	</licenses>
 
 	<!-- Organization information -->
 	<organization>
@@ -50,16 +55,6 @@
 		</developer>
 	</developers>
 
-	<!-- License information -->
-	<licenses>
-		<license>
-			<name>Spout License Version 1</name>
-			<url>http://spout.in/licensev1</url>
-			<distribution>repo</distribution>
-			<comments>GNU Lesser General Public License Version 3, but with a provision that files are released under the MIT license 180 days after they are published.</comments>
-		</license>
-	</licenses>
-
 	<!-- Source code access -->
 	<scm>
 		<connection>scm:git:git://github.com/SpoutDev/ReactSandbox.git</connection>
@@ -82,14 +77,34 @@
 	<!-- Dependency repositories -->
 	<repositories>
 		<repository>
-			<id>spout-repo</id>
-			<url>http://nexus.spout.org/content/groups/public/</url>
+			<id>sonatype-nexus-releases</id>
+			<url>https://oss.sonatype.org/content/repositories/releases</url>
+		</repository>
+		<repository>
+			<id>sonatype-nexus-snapshots</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
 			<snapshots>
 				<enabled>true</enabled>
 				<updatePolicy>always</updatePolicy>
 			</snapshots>
 		</repository>
 	</repositories>
+
+	<!-- Build plugin repositories -->
+	<pluginRepositories>
+		<pluginRepository>
+			<id>sonatype-nexus-releases</id>
+			<url>https://oss.sonatype.org/content/repositories/releases</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>sonatype-nexus-snapshots</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
 
 	<!-- Project dependencies -->
 	<dependencies>
