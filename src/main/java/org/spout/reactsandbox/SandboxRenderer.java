@@ -563,6 +563,8 @@ public class SandboxRenderer {
 		auxRGBTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		auxRGBTexture.setWrapS(WrapMode.CLAMP_TO_EDGE);
 		auxRGBTexture.setWrapT(WrapMode.CLAMP_TO_EDGE);
+		auxRGBTexture.setMagFilter(FilterMode.LINEAR);
+		auxRGBTexture.setMinFilter(FilterMode.LINEAR);
 		auxRGBTexture.create();
 	}
 
