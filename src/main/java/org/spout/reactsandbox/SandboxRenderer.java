@@ -58,6 +58,7 @@ import org.spout.renderer.data.Color;
 import org.spout.renderer.data.RenderList;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
+import org.spout.renderer.data.Uniform.IntUniform;
 import org.spout.renderer.data.Uniform.Matrix4Uniform;
 import org.spout.renderer.data.Uniform.Vector2Uniform;
 import org.spout.renderer.data.Uniform.Vector3Uniform;
@@ -105,13 +106,16 @@ public class SandboxRenderer {
 	// SETTINGS
 	private static Color backgroundColor = Color.DARK_GRAY;
 	private static boolean cullBackFaces = true;
-	// LIGHTING UNIFORMS
+	// EFFECT UNIFORMS
 	private static final Vector3Uniform lightPositionUniform = new Vector3Uniform("lightPosition", Vector3.ZERO);
 	private static final Vector3Uniform spotDirectionUniform = new Vector3Uniform("spotDirection", new Vector3(0, 0, -1));
 	private static final FloatUniform lightAttenuationUniform = new FloatUniform("lightAttenuation", 0.03f);
 	private static final Matrix4Uniform inverseViewMatrixUniform = new Matrix4Uniform("inverseViewMatrix", new Matrix4());
 	private static final Matrix4Uniform lightViewMatrixUniform = new Matrix4Uniform("lightViewMatrix", new Matrix4());
 	private static final Matrix4Uniform lightProjectionMatrixUniform = new Matrix4Uniform("lightProjectionMatrix", new Matrix4());
+	private static final Matrix4Uniform previousViewMatrixUniform = new Matrix4Uniform("previousViewMatrix", new Matrix4());
+	private static final Matrix4Uniform previousProjectionMatrixUniform = new Matrix4Uniform("previousProjectionMatrix", new Matrix4());
+	private static final FloatUniform blurStrengthUniform = new FloatUniform("blurStrength", 1);
 	// CAMERAS
 	private static final Camera modelCamera = Camera.createPerspective(FIELD_OF_VIEW, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY(), NEAR_PLANE, FAR_PLANE);
 	private static final Camera lightCamera = Camera.createPerspective((float) TrigMath.RAD_TO_DEG * Sandbox.SPOT_CUTOFF * 2, 1, 1, 0.1f, (float) GenericMath.length(50d, 100d));
@@ -128,8 +132,9 @@ public class SandboxRenderer {
 	private static final RenderList shadowRenderList = new RenderList("shadow", modelCamera, 3);
 	private static final RenderList blurRenderList = new RenderList("blur", modelCamera, 4);
 	private static final RenderList lightingRenderList = new RenderList("lighting", modelCamera, 5);
-	private static final RenderList antiAliasingRenderList = new RenderList("antiAliasing", modelCamera, 6);
-	private static final RenderList guiRenderList = new RenderList("gui", guiCamera, 7);
+	private static final RenderList motionBlurRenderList = new RenderList("motionBlur", modelCamera, 6);
+	private static final RenderList antiAliasingRenderList = new RenderList("antiAliasing", modelCamera, 7);
+	private static final RenderList guiRenderList = new RenderList("gui", guiCamera, 8);
 	// SHADERS
 	private static Shader solidVert;
 	private static Shader solidFrag;
@@ -143,6 +148,8 @@ public class SandboxRenderer {
 	private static Shader shadowFrag;
 	private static Shader lightingVert;
 	private static Shader lightingFrag;
+	private static Shader motionBlurVert;
+	private static Shader motionBlurFrag;
 	private static Shader antiAliasingVert;
 	private static Shader antiAliasingFrag;
 	private static Shader screenVert;
@@ -154,6 +161,7 @@ public class SandboxRenderer {
 	private static Program blurProgram;
 	private static Program shadowProgram;
 	private static Program lightingProgram;
+	private static Program motionBlurProgram;
 	private static Program antiAliasingProgram;
 	private static Program screenProgram;
 	// TEXTURES
@@ -182,6 +190,7 @@ public class SandboxRenderer {
 	private static Material blurMaterial;
 	private static Material shadowMaterial;
 	private static Material lightingMaterial;
+	private static Material motionBlurMaterial;
 	private static Material antiAliasingMaterial;
 	private static Material screenMaterial;
 	// FRAME BUFFERS
@@ -191,6 +200,7 @@ public class SandboxRenderer {
 	private static FrameBuffer blurFrameBuffer;
 	private static FrameBuffer shadowFrameBuffer;
 	private static FrameBuffer lightingFrameBuffer;
+	private static FrameBuffer motionBlurFrameBuffer;
 	private static FrameBuffer antiAliasingFrameBuffer;
 	// VERTEX ARRAYS
 	private static VertexArray unitCubeWireVertexArray;
@@ -276,6 +286,11 @@ public class SandboxRenderer {
 			lightingRenderList.addCapability(Capability.CULL_FACE);
 		}
 		renderer.addRenderList(lightingRenderList);
+		// MOTION BLUR
+		if (cullBackFaces) {
+			motionBlurRenderList.addCapability(Capability.CULL_FACE);
+		}
+		renderer.addRenderList(motionBlurRenderList);
 		// ANTI ALIASING
 		if (cullBackFaces) {
 			antiAliasingRenderList.addCapability(Capability.CULL_FACE);
@@ -351,6 +366,16 @@ public class SandboxRenderer {
 		lightingFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.frag"));
 		lightingFrag.setType(ShaderType.FRAGMENT);
 		lightingFrag.create();
+		// MOTION BLUR VERT
+		motionBlurVert = glFactory.createShader();
+		motionBlurVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "motionBlur.vert"));
+		motionBlurVert.setType(ShaderType.VERTEX);
+		motionBlurVert.create();
+		// MOTION BLUR FRAG
+		motionBlurFrag = glFactory.createShader();
+		motionBlurFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "motionBlur.frag"));
+		motionBlurFrag.setType(ShaderType.FRAGMENT);
+		motionBlurFrag.create();
 		// ANTI ALIASING VERT
 		antiAliasingVert = glFactory.createShader();
 		antiAliasingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "edaa.vert"));
@@ -404,6 +429,11 @@ public class SandboxRenderer {
 		lightingProgram.addShader(lightingVert);
 		lightingProgram.addShader(lightingFrag);
 		lightingProgram.create();
+		// MOTION BLUR
+		motionBlurProgram = glFactory.createProgram();
+		motionBlurProgram.addShader(motionBlurVert);
+		motionBlurProgram.addShader(motionBlurFrag);
+		motionBlurProgram.create();
 		// ANTI ALIASING
 		antiAliasingProgram = glFactory.createProgram();
 		antiAliasingProgram.addShader(antiAliasingVert);
@@ -475,6 +505,8 @@ public class SandboxRenderer {
 		// COLORS
 		colorsTexture = glFactory.createTexture();
 		colorsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		colorsTexture.setMagFilter(FilterMode.LINEAR);
+		colorsTexture.setMinFilter(FilterMode.LINEAR);
 		colorsTexture.create();
 		// NORMALS
 		normalsTexture = glFactory.createTexture();
@@ -529,8 +561,8 @@ public class SandboxRenderer {
 		// AUX RGB
 		auxRGBTexture = glFactory.createTexture();
 		auxRGBTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
-		auxRGBTexture.setMagFilter(FilterMode.LINEAR);
-		auxRGBTexture.setMinFilter(FilterMode.LINEAR);
+		auxRGBTexture.setWrapS(WrapMode.CLAMP_TO_EDGE);
+		auxRGBTexture.setWrapT(WrapMode.CLAMP_TO_EDGE);
 		auxRGBTexture.create();
 	}
 
@@ -611,9 +643,22 @@ public class SandboxRenderer {
 		uniforms.add(lightAttenuationUniform);
 		uniforms.add(new FloatUniform("spotCutoff", TrigMath.cos(Sandbox.SPOT_CUTOFF)));
 		uniforms.add(spotDirectionUniform);
+		// MOTION BLUR
+		motionBlurMaterial = new Material(motionBlurProgram);
+		motionBlurMaterial.addTexture(0, auxRGBTexture);
+		motionBlurMaterial.addTexture(1, depthsTexture);
+		uniforms = motionBlurMaterial.getUniforms();
+		uniforms.add(new Vector2Uniform("projection", PROJECTION));
+		uniforms.add(new FloatUniform("tanHalfFOV", TAN_HALF_FOV));
+		uniforms.add(new FloatUniform("aspectRatio", ASPECT_RATIO));
+		uniforms.add(inverseViewMatrixUniform);
+		uniforms.add(previousViewMatrixUniform);
+		uniforms.add(previousProjectionMatrixUniform);
+		uniforms.add(new IntUniform("sampleCount", 8));
+		uniforms.add(blurStrengthUniform);
 		// ANTI ALIASING
 		antiAliasingMaterial = new Material(antiAliasingProgram);
-		antiAliasingMaterial.addTexture(0, auxRGBTexture);
+		antiAliasingMaterial.addTexture(0, colorsTexture);
 		antiAliasingMaterial.addTexture(1, vertexNormals);
 		antiAliasingMaterial.addTexture(2, depthsTexture);
 		uniforms = antiAliasingMaterial.getUniforms();
@@ -625,7 +670,7 @@ public class SandboxRenderer {
 		uniforms.add(new FloatUniform("kernel", 0.75f));
 		// SCREEN
 		screenMaterial = new Material(screenProgram);
-		screenMaterial.addTexture(0, colorsTexture);
+		screenMaterial.addTexture(0, auxRGBTexture);
 	}
 
 	private static void initFrameBuffers() {
@@ -665,9 +710,14 @@ public class SandboxRenderer {
 		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBTexture);
 		lightingFrameBuffer.create();
 		lightingRenderList.setFrameBuffer(lightingFrameBuffer);
+		// MOTION BLUR
+		motionBlurFrameBuffer = glFactory.createFrameBuffer();
+		motionBlurFrameBuffer.attach(AttachmentPoint.COLOR0, colorsTexture);
+		motionBlurFrameBuffer.create();
+		motionBlurRenderList.setFrameBuffer(motionBlurFrameBuffer);
 		// ANTI ALIASING
 		antiAliasingFrameBuffer = glFactory.createFrameBuffer();
-		antiAliasingFrameBuffer.attach(AttachmentPoint.COLOR0, colorsTexture);
+		antiAliasingFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBTexture);
 		antiAliasingFrameBuffer.create();
 		antiAliasingRenderList.setFrameBuffer(antiAliasingFrameBuffer);
 	}
@@ -728,6 +778,9 @@ public class SandboxRenderer {
 		// LIGHTING
 		lightingRenderList.clear();
 		lightingRenderList.clearCapabilities();
+		// MOTION BLUR
+		motionBlurRenderList.clear();
+		motionBlurRenderList.clearCapabilities();
 		// ANTI ALIASING
 		antiAliasingRenderList.clear();
 		antiAliasingRenderList.clearCapabilities();
@@ -755,6 +808,9 @@ public class SandboxRenderer {
 		// LIGHTING
 		lightingVert.destroy();
 		lightingFrag.destroy();
+		// MOTION BLUR
+		motionBlurVert.destroy();
+		motionBlurFrag.destroy();
 		// ANTI ALIASING
 		antiAliasingVert.destroy();
 		antiAliasingFrag.destroy();
@@ -776,6 +832,8 @@ public class SandboxRenderer {
 		blurProgram.destroy();
 		// LIGHTING
 		lightingProgram.destroy();
+		// MOTION BLUR
+		motionBlurProgram.destroy();
 		// ANTI ALIASING
 		antiAliasingProgram.destroy();
 		// SCREEN
@@ -830,6 +888,8 @@ public class SandboxRenderer {
 		blurFrameBuffer.destroy();
 		// LIGHTING
 		lightingFrameBuffer.destroy();
+		// MOTION BLUR
+		motionBlurFrameBuffer.destroy();
 		// ANTI ALIASING
 		antiAliasingFrameBuffer.destroy();
 	}
@@ -989,6 +1049,9 @@ public class SandboxRenderer {
 		// LIGHTING
 		final Model lighting = new Model(vertexArray, lightingMaterial);
 		lightingRenderList.add(lighting);
+		// MOTION BLUR
+		final Model motionBlur = new Model(vertexArray, motionBlurMaterial);
+		motionBlurRenderList.add(motionBlur);
 		// ANTI ALIASING
 		final Model antiAliasing = new Model(vertexArray, antiAliasingMaterial);
 		antiAliasingRenderList.add(antiAliasing);
@@ -1052,7 +1115,10 @@ public class SandboxRenderer {
 		inverseViewMatrixUniform.set(modelCamera.getViewMatrix().invert());
 		lightViewMatrixUniform.set(lightCamera.getViewMatrix());
 		lightProjectionMatrixUniform.set(lightCamera.getProjectionMatrix());
+		blurStrengthUniform.set((float) fpsMonitor.getFPS() / Sandbox.TARGET_FPS);
 		renderer.render();
+		previousViewMatrixUniform.set(modelCamera.getViewMatrix());
+		previousProjectionMatrixUniform.set(modelCamera.getProjectionMatrix());
 		updateFPSMonitor();
 	}
 

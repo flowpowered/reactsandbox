@@ -69,7 +69,7 @@ import org.spout.renderer.model.Model;
  */
 public class Sandbox {
 	// Constants
-	private static final int TARGET_FPS = 60;
+	public static final int TARGET_FPS = 60;
 	private static final float TIMESTEP = 1f / TARGET_FPS;
 	private static final RigidBodyMaterial PHYSICS_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0.2f, 0.8f));
 	public static final float SPOT_CUTOFF = (float) (TrigMath.atan(100 / 50) / 2);
