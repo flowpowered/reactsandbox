@@ -4,7 +4,8 @@
 
 #version 120
 
-varying vec3 positionView;
+varying vec4 positionClip;
+varying vec4 previousPositionClip;
 varying vec3 normalView;
 varying vec2 textureUV;
 varying mat3 tangentMatrix;
@@ -25,4 +26,6 @@ void main() {
 
     float specularIntensity = texture2D(specular, textureUV).r;
     gl_FragData[3] = vec4(diffuseIntensity, specularIntensity, ambientIntensity, 1);
+
+    gl_FragData[4] = vec4((positionClip.xy / positionClip.w - previousPositionClip.xy / previousPositionClip.w) * 0.5, 0, 1);
 }

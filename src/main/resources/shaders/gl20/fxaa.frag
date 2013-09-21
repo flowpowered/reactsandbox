@@ -46,13 +46,13 @@ void main() {
 
     dir = min(vec2(maxSpan, maxSpan), max(vec2(-maxSpan, -maxSpan), dir * rcpDirMin)) / resolution;
 
-    vec3 rgbA = 0.5 * (texture2D(diffuse, textureUV.xy + dir * ONE_THIRD_MINUS_HALF).xyz + texture2D(diffuse, textureUV.xy + dir * TWO_THIRDS_MINUS_HALF).xyz);
-    vec3 rgbB = rgbA * 0.5 + 0.25 * (texture2D(diffuse, textureUV.xy + dir * ZERO_THIRDS_MINUS_HALF).xyz + texture2D(diffuse, textureUV.xy + dir * THREE_THIRDS_MINUS_HALF).xyz);
+    vec4 rgbA = 0.5 * (texture2D(diffuse, textureUV.xy + dir * ONE_THIRD_MINUS_HALF) + texture2D(diffuse, textureUV.xy + dir * TWO_THIRDS_MINUS_HALF));
+    vec4 rgbB = rgbA * 0.5 + 0.25 * (texture2D(diffuse, textureUV.xy + dir * ZERO_THIRDS_MINUS_HALF) + texture2D(diffuse, textureUV.xy + dir * THREE_THIRDS_MINUS_HALF));
     float lumaB = dot(rgbB, LUMA);
 
     if (lumaB < lumaMin || lumaB > lumaMax) {
-        gl_FragColor = vec4(rgbA, 1);
+        gl_FragColor = rgbA;
     } else {
-        gl_FragColor = vec4(rgbB, 1);
+        gl_FragColor = rgbB;
     }
 }

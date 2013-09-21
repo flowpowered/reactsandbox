@@ -1,8 +1,10 @@
-#version 330
+// $attrib_layout: position = 0
 
-layout(location = 0) in vec3 position;
+#version 120
 
-out vec2 textureUV;
+attribute vec3 position;
+
+varying vec2 textureUV;
 
 void main() {
     textureUV = (position.xy + 1) / 2;

@@ -1,6 +1,7 @@
 #version 120
 
-varying vec3 positionView;
+varying vec4 positionClip;
+varying vec4 previousPositionClip;
 varying vec3 normalView;
 
 uniform vec4 modelColor;
@@ -16,4 +17,6 @@ void main() {
     gl_FragData[2] = gl_FragData[1];
 
     gl_FragData[3] = vec4(diffuseIntensity, specularIntensity, ambientIntensity, 1);
+
+    gl_FragData[4] = vec4((positionClip.xy / positionClip.w - previousPositionClip.xy / previousPositionClip.w) * 0.5, 0, 1);
 }

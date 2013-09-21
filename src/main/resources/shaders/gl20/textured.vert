@@ -10,7 +10,8 @@ attribute vec3 normal;
 attribute vec2 textureCoords;
 attribute vec4 tangent;
 
-varying vec3 positionView;
+varying vec4 positionClip;
+varying vec4 previousPositionClip;
 varying vec3 normalView;
 varying vec2 textureUV;
 varying mat3 tangentMatrix;
@@ -19,9 +20,14 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 normalMatrix;
 uniform mat4 projectionMatrix;
+uniform mat4 previousModelMatrix;
+uniform mat4 previousViewMatrix;
+uniform mat4 previousProjectionMatrix;
 
 void main() {
-    positionView = (viewMatrix * modelMatrix * vec4(position, 1)).xyz;
+    positionClip = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1);
+
+    previousPositionClip = previousProjectionMatrix * previousViewMatrix * previousModelMatrix * vec4(position, 1);
 
     textureUV = textureCoords;
 
@@ -30,5 +36,5 @@ void main() {
     vec3 biTangentView = cross(normalView, tangentView) * tangent.w;
     tangentMatrix = mat3(tangentView, biTangentView, normalView);
 
-    gl_Position = projectionMatrix * vec4(positionView, 1);
+    gl_Position = positionClip;
 }

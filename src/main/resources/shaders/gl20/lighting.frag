@@ -63,5 +63,5 @@ void main() {
         }
     }
 
-    gl_FragColor *= (diffuseTerm + specularTerm + ambientTerm);
+    gl_FragColor.rgb *= (diffuseTerm + specularTerm + ambientTerm);
 }

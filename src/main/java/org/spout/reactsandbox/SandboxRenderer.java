@@ -88,9 +88,6 @@ import org.spout.renderer.util.CausticUtil;
 import org.spout.renderer.util.ObjFileLoader;
 import org.spout.renderer.util.Rectangle;
 
-/**
- *
- */
 public class SandboxRenderer {
 	// CONSTANTS
 	private static final String WINDOW_TITLE = "Sandbox";
@@ -175,12 +172,13 @@ public class SandboxRenderer {
 	private static Texture normalsTexture;
 	private static Texture vertexNormals;
 	private static Texture materialsTexture;
+	private static Texture velocitiesTexture;
 	private static Texture depthsTexture;
 	private static Texture lightDepthsTexture;
 	private static Texture ssaoTexture;
 	private static Texture shadowTexture;
 	private static Texture auxRTexture;
-	private static Texture auxRGBTexture;
+	private static Texture auxRGBATexture;
 	// MATERIALS
 	private static Material solidMaterial;
 	private static Material wireframeMaterial;
@@ -214,6 +212,8 @@ public class SandboxRenderer {
 	private static Color diamondModelColor;
 	private static Color cylinderModelColor;
 	private static Color sphereModelColor;
+	// MODELS
+	private static Model movingMobModel;
 	// FPS MONITOR
 	private static final FPSMonitor fpsMonitor = new FPSMonitor();
 	private static StringModel fpsMonitorModel;
@@ -250,6 +250,7 @@ public class SandboxRenderer {
 	}
 
 	private static void initRenderLists() {
+		UniformHolder uniforms;
 		// MODEL
 		modelRenderList.addCapability(Capability.DEPTH_TEST);
 		if (cullBackFaces) {
@@ -258,6 +259,9 @@ public class SandboxRenderer {
 		if (glVersion == GLVersion.GL30) {
 			modelRenderList.addCapability(Capability.DEPTH_CLAMP);
 		}
+		uniforms = modelRenderList.getUniforms();
+		uniforms.add(previousViewMatrixUniform);
+		uniforms.add(previousProjectionMatrixUniform);
 		renderer.addRenderList(modelRenderList);
 		// LIGHT MODEL
 		lightModelRenderList.setCamera(lightCamera);
@@ -504,6 +508,8 @@ public class SandboxRenderer {
 		woodSpecularTexture.create();
 		// COLORS
 		colorsTexture = glFactory.createTexture();
+		colorsTexture.setFormat(Format.RGBA);
+		colorsTexture.setInternalFormat(InternalFormat.RGBA8);
 		colorsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		colorsTexture.setMagFilter(FilterMode.LINEAR);
 		colorsTexture.setMinFilter(FilterMode.LINEAR);
@@ -524,6 +530,12 @@ public class SandboxRenderer {
 		materialsTexture = glFactory.createTexture();
 		materialsTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		materialsTexture.create();
+		// VELOCITIES
+		velocitiesTexture = glFactory.createTexture();
+		velocitiesTexture.setFormat(Format.RG);
+		velocitiesTexture.setInternalFormat(InternalFormat.RG16F);
+		velocitiesTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		velocitiesTexture.create();
 		// DEPTHS
 		depthsTexture = glFactory.createTexture();
 		depthsTexture.setFormat(Format.DEPTH);
@@ -558,14 +570,16 @@ public class SandboxRenderer {
 		auxRTexture.setFormat(Format.RED);
 		auxRTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		auxRTexture.create();
-		// AUX RGB
-		auxRGBTexture = glFactory.createTexture();
-		auxRGBTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
-		auxRGBTexture.setWrapS(WrapMode.CLAMP_TO_EDGE);
-		auxRGBTexture.setWrapT(WrapMode.CLAMP_TO_EDGE);
-		auxRGBTexture.setMagFilter(FilterMode.LINEAR);
-		auxRGBTexture.setMinFilter(FilterMode.LINEAR);
-		auxRGBTexture.create();
+		// AUX RGBA
+		auxRGBATexture = glFactory.createTexture();
+		auxRGBATexture.setFormat(Format.RGBA);
+		auxRGBATexture.setInternalFormat(InternalFormat.RGBA8);
+		auxRGBATexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
+		auxRGBATexture.setWrapS(WrapMode.CLAMP_TO_EDGE);
+		auxRGBATexture.setWrapT(WrapMode.CLAMP_TO_EDGE);
+		auxRGBATexture.setMagFilter(FilterMode.LINEAR);
+		auxRGBATexture.setMinFilter(FilterMode.LINEAR);
+		auxRGBATexture.create();
 	}
 
 	private static void initMaterials() {
@@ -626,7 +640,7 @@ public class SandboxRenderer {
 		// BLUR
 		blurMaterial = new Material(blurProgram);
 		blurMaterial.addTexture(0, auxRTexture);
-		blurMaterial.addTexture(1, auxRGBTexture);
+		blurMaterial.addTexture(1, auxRGBATexture);
 		uniforms = blurMaterial.getUniforms();
 		blurEffect.addUniforms(uniforms);
 		// LIGHTING
@@ -647,15 +661,10 @@ public class SandboxRenderer {
 		uniforms.add(spotDirectionUniform);
 		// MOTION BLUR
 		motionBlurMaterial = new Material(motionBlurProgram);
-		motionBlurMaterial.addTexture(0, auxRGBTexture);
-		motionBlurMaterial.addTexture(1, depthsTexture);
+		motionBlurMaterial.addTexture(0, auxRGBATexture);
+		motionBlurMaterial.addTexture(1, velocitiesTexture);
 		uniforms = motionBlurMaterial.getUniforms();
-		uniforms.add(new Vector2Uniform("projection", PROJECTION));
-		uniforms.add(new FloatUniform("tanHalfFOV", TAN_HALF_FOV));
-		uniforms.add(new FloatUniform("aspectRatio", ASPECT_RATIO));
-		uniforms.add(inverseViewMatrixUniform);
-		uniforms.add(previousViewMatrixUniform);
-		uniforms.add(previousProjectionMatrixUniform);
+		uniforms.add(new Vector2Uniform("resolution", WINDOW_SIZE));
 		uniforms.add(new IntUniform("sampleCount", 8));
 		uniforms.add(blurStrengthUniform);
 		// ANTI ALIASING
@@ -672,7 +681,7 @@ public class SandboxRenderer {
 		uniforms.add(new FloatUniform("kernel", 0.75f));
 		// SCREEN
 		screenMaterial = new Material(screenProgram);
-		screenMaterial.addTexture(0, auxRGBTexture);
+		screenMaterial.addTexture(0, auxRGBATexture);
 	}
 
 	private static void initFrameBuffers() {
@@ -682,6 +691,7 @@ public class SandboxRenderer {
 		modelFrameBuffer.attach(AttachmentPoint.COLOR1, normalsTexture);
 		modelFrameBuffer.attach(AttachmentPoint.COLOR2, vertexNormals);
 		modelFrameBuffer.attach(AttachmentPoint.COLOR3, materialsTexture);
+		modelFrameBuffer.attach(AttachmentPoint.COLOR4, velocitiesTexture);
 		modelFrameBuffer.attach(AttachmentPoint.DEPTH, depthsTexture);
 		modelFrameBuffer.create();
 		modelRenderList.setFrameBuffer(modelFrameBuffer);
@@ -698,7 +708,7 @@ public class SandboxRenderer {
 		ssaoRenderList.setFrameBuffer(ssaoFrameBuffer);
 		// SHADOW
 		shadowFrameBuffer = glFactory.createFrameBuffer();
-		shadowFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBTexture);
+		shadowFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBATexture);
 		shadowFrameBuffer.create();
 		shadowRenderList.setFrameBuffer(shadowFrameBuffer);
 		// BLUR
@@ -709,7 +719,7 @@ public class SandboxRenderer {
 		blurRenderList.setFrameBuffer(blurFrameBuffer);
 		// LIGHTING
 		lightingFrameBuffer = glFactory.createFrameBuffer();
-		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBTexture);
+		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBATexture);
 		lightingFrameBuffer.create();
 		lightingRenderList.setFrameBuffer(lightingFrameBuffer);
 		// MOTION BLUR
@@ -719,7 +729,7 @@ public class SandboxRenderer {
 		motionBlurRenderList.setFrameBuffer(motionBlurFrameBuffer);
 		// ANTI ALIASING
 		antiAliasingFrameBuffer = glFactory.createFrameBuffer();
-		antiAliasingFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBTexture);
+		antiAliasingFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBATexture);
 		antiAliasingFrameBuffer.create();
 		antiAliasingRenderList.setFrameBuffer(antiAliasingFrameBuffer);
 	}
@@ -863,6 +873,8 @@ public class SandboxRenderer {
 		vertexNormals.destroy();
 		// MATERIALS
 		materialsTexture.destroy();
+		// VELOCITIES
+		velocitiesTexture.destroy();
 		// DEPTHS
 		depthsTexture.destroy();
 		// LIGHT DEPTHS
@@ -874,7 +886,7 @@ public class SandboxRenderer {
 		// AUX R
 		auxRTexture.destroy();
 		// AUX RGB
-		auxRGBTexture.destroy();
+		auxRGBATexture.destroy();
 	}
 
 	private static void disposeFrameBuffers() {
@@ -972,7 +984,7 @@ public class SandboxRenderer {
 		model.setPosition(position);
 		model.setScale(size);
 		model.getUniforms().add(new ColorUniform("modelColor", aabbModelColor));
-		modelRenderList.add(model);
+		addModel(model);
 		return model;
 	}
 
@@ -983,7 +995,7 @@ public class SandboxRenderer {
 		final Model model = new Model(vertexArray, woodMaterial);
 		model.setPosition(position);
 		model.setRotation(orientation);
-		modelRenderList.add(model);
+		addModel(model);
 		return model;
 	}
 
@@ -992,7 +1004,7 @@ public class SandboxRenderer {
 		model.setPosition(position);
 		model.setRotation(orientation);
 		model.getUniforms().add(new ColorUniform("modelColor", diamondModelColor));
-		modelRenderList.add(model);
+		addModel(model);
 		return model;
 	}
 
@@ -1004,7 +1016,7 @@ public class SandboxRenderer {
 		model.setPosition(position);
 		model.setRotation(orientation);
 		model.getUniforms().add(new ColorUniform("modelColor", cylinderModelColor));
-		modelRenderList.add(model);
+		addModel(model);
 		return model;
 	}
 
@@ -1016,11 +1028,12 @@ public class SandboxRenderer {
 		model.setPosition(position);
 		model.setRotation(orientation);
 		model.getUniforms().add(new ColorUniform("modelColor", sphereModelColor));
-		modelRenderList.add(model);
+		addModel(model);
 		return model;
 	}
 
 	public static void addModel(Model model) {
+		model.getUniforms().add(new Matrix4Uniform("previousModelMatrix", model.getMatrix()));
 		modelRenderList.add(model);
 	}
 
@@ -1101,12 +1114,10 @@ public class SandboxRenderer {
 		final Model mobModel = new Model(vertexArray, creeperMaterial);
 		mobModel.setPosition(new Vector3(10, 10, 0));
 		mobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(-90, 0, 1, 0));
-		modelRenderList.add(mobModel);
+		addModel(mobModel);
 		// Add a second mob, instanced from the first one
-		final Model instancedMobModel = mobModel.getInstance();
-		instancedMobModel.setPosition(new Vector3(-10, 10, 0));
-		instancedMobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(90, 0, 1, 0));
-		modelRenderList.add(instancedMobModel);
+		movingMobModel = mobModel.getInstance();
+		addModel(movingMobModel);
 	}
 
 	public static void startFPSMonitor() {
@@ -1118,10 +1129,20 @@ public class SandboxRenderer {
 		lightViewMatrixUniform.set(lightCamera.getViewMatrix());
 		lightProjectionMatrixUniform.set(lightCamera.getProjectionMatrix());
 		blurStrengthUniform.set((float) fpsMonitor.getFPS() / Sandbox.TARGET_FPS);
+		final float time = (System.currentTimeMillis() % 1000) / 1000f;
+		movingMobModel.setPosition(new Vector3(2 * TrigMath.sin(2 * (float) TrigMath.PI * time), 0, 0).add(-10, 10, 0));
+		movingMobModel.setRotation(Quaternion.fromAngleDegAxis(time * 360, 1, 1, 1));
 		renderer.render();
+		setPreviousModelMatrices();
 		previousViewMatrixUniform.set(modelCamera.getViewMatrix());
 		previousProjectionMatrixUniform.set(modelCamera.getProjectionMatrix());
 		updateFPSMonitor();
+	}
+
+	private static void setPreviousModelMatrices() {
+		for (Model model : modelRenderList) {
+			model.getUniforms().getMatrix4("previousModelMatrix").set(model.getMatrix());
+		}
 	}
 
 	private static void updateFPSMonitor() {

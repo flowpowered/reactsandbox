@@ -12,7 +12,7 @@ noperspective in vec3 viewRay;
 in vec3 lightPositionView;
 in vec3 spotDirectionView;
 
-layout(location = 0) out vec3 outputColor;
+layout(location = 0) out vec4 outputColor;
 
 uniform sampler2D colors;
 uniform sampler2D normals;
@@ -29,7 +29,7 @@ float linearizeDepth(float depth) {
 }
 
 void main() {
-    outputColor = texture(colors, textureUV).rgb;
+    outputColor = texture(colors, textureUV);
 
     vec4 rawNormalView = texture(normals, textureUV);
     if (rawNormalView.a <= 0) {
@@ -65,5 +65,5 @@ void main() {
         }
     }
 
-    outputColor *= (diffuseTerm + specularTerm + ambientTerm);
+    outputColor.rgb *= (diffuseTerm + specularTerm + ambientTerm);
 }
