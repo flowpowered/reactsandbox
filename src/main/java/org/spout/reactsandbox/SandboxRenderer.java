@@ -137,6 +137,8 @@ public class SandboxRenderer {
 	private static Shader solidFrag;
 	private static Shader texturedVert;
 	private static Shader texturedFrag;
+	private static Shader fontVert;
+	private static Shader fontFrag;
 	private static Shader ssaoVert;
 	private static Shader ssaoFrag;
 	private static Shader blurVert;
@@ -154,6 +156,7 @@ public class SandboxRenderer {
 	// PROGRAMS
 	private static Program solidProgram;
 	private static Program texturedProgram;
+	private static Program fontProgram;
 	private static Program ssaoProgram;
 	private static Program blurProgram;
 	private static Program shadowProgram;
@@ -325,11 +328,21 @@ public class SandboxRenderer {
 		texturedVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "textured.vert"));
 		texturedVert.setType(ShaderType.VERTEX);
 		texturedVert.create();
-		// TEXTURED
+		// TEXTURED FRAG
 		texturedFrag = glFactory.createShader();
 		texturedFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "textured.frag"));
 		texturedFrag.setType(ShaderType.FRAGMENT);
 		texturedFrag.create();
+		// FONT VERT
+		fontVert = glFactory.createShader();
+		fontVert.setSource(StringModel.class.getResourceAsStream(shaderPath + "font.vert"));
+		fontVert.setType(ShaderType.VERTEX);
+		fontVert.create();
+		// FONT FRAG
+		fontFrag = glFactory.createShader();
+		fontFrag.setSource(StringModel.class.getResourceAsStream(shaderPath + "font.frag"));
+		fontFrag.setType(ShaderType.FRAGMENT);
+		fontFrag.create();
 		// SSAO VERT
 		ssaoVert = glFactory.createShader();
 		ssaoVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssao.vert"));
@@ -413,6 +426,11 @@ public class SandboxRenderer {
 		texturedProgram.addShader(texturedVert);
 		texturedProgram.addShader(texturedFrag);
 		texturedProgram.create();
+		/// FONT
+		fontProgram = glFactory.createProgram();
+		fontProgram.addShader(fontVert);
+		fontProgram.addShader(fontFrag);
+		fontProgram.create();
 		// SSAO
 		ssaoProgram = glFactory.createProgram();
 		ssaoProgram.addShader(ssaoVert);
@@ -808,6 +826,9 @@ public class SandboxRenderer {
 		// TEXTURED
 		texturedVert.destroy();
 		texturedFrag.destroy();
+		// FONT
+		fontVert.destroy();
+		fontFrag.destroy();
 		// SSAO
 		ssaoVert.destroy();
 		ssaoFrag.destroy();
@@ -836,6 +857,8 @@ public class SandboxRenderer {
 		solidProgram.destroy();
 		// TEXTURED
 		texturedProgram.destroy();
+		// FONT
+		fontProgram.destroy();
 		// SSAO
 		ssaoProgram.destroy();
 		// SHADOW
@@ -1094,7 +1117,7 @@ public class SandboxRenderer {
 			System.out.println(e);
 			return;
 		}
-		final StringModel sandboxModel = new StringModel(glFactory, "SandboxPweryCusticRF0123456789,&: ", ubuntu.deriveFont(Font.PLAIN, 15), WINDOW_SIZE.getFloorX());
+		final StringModel sandboxModel = new StringModel(glFactory, fontProgram, "SandboxPweryCusticRF0123456789,&: ", ubuntu.deriveFont(Font.PLAIN, 15), WINDOW_SIZE.getFloorX());
 		final float aspect = 1 / ASPECT_RATIO;
 		sandboxModel.setPosition(new Vector3(0.005, aspect / 2 + 0.315, -0.1));
 		final String white = "#ffffffff", brown = "#ffC19953", green = "#ff00ff00", cyan = "#ff4fB5ff";
