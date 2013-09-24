@@ -552,6 +552,7 @@ public class SandboxRenderer {
 		velocitiesTexture = glFactory.createTexture();
 		velocitiesTexture.setFormat(Format.RG);
 		velocitiesTexture.setInternalFormat(InternalFormat.RG16F);
+		velocitiesTexture.setComponentType(DataType.HALF_FLOAT);
 		velocitiesTexture.setImageData(null, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
 		velocitiesTexture.create();
 		// DEPTHS
