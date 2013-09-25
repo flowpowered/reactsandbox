@@ -1,3 +1,5 @@
+// $shader_type: fragment
+
 // $texture_layout: normals = 0
 // $texture_layout: depths = 1
 // $texture_layout: lightDepths = 2

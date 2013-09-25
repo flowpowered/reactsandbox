@@ -1,3 +1,5 @@
+// $shader_type: fragment
+
 #version 120
 
 varying vec4 positionClip;

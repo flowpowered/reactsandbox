@@ -73,7 +73,6 @@ import org.spout.renderer.gl.GLFactory;
 import org.spout.renderer.gl.Program;
 import org.spout.renderer.gl.Renderer;
 import org.spout.renderer.gl.Shader;
-import org.spout.renderer.gl.Shader.ShaderType;
 import org.spout.renderer.gl.Texture;
 import org.spout.renderer.gl.Texture.CompareMode;
 import org.spout.renderer.gl.Texture.FilterMode;
@@ -316,102 +315,82 @@ public class SandboxRenderer {
 		// SOLID VERT
 		solidVert = glFactory.createShader();
 		solidVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "solid.vert"));
-		solidVert.setType(ShaderType.VERTEX);
 		solidVert.create();
 		// SOLID FRAG
 		solidFrag = glFactory.createShader();
 		solidFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "solid.frag"));
-		solidFrag.setType(ShaderType.FRAGMENT);
 		solidFrag.create();
 		// TEXTURED VERT
 		texturedVert = glFactory.createShader();
 		texturedVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "textured.vert"));
-		texturedVert.setType(ShaderType.VERTEX);
 		texturedVert.create();
 		// TEXTURED FRAG
 		texturedFrag = glFactory.createShader();
 		texturedFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "textured.frag"));
-		texturedFrag.setType(ShaderType.FRAGMENT);
 		texturedFrag.create();
 		// FONT VERT
 		fontVert = glFactory.createShader();
 		fontVert.setSource(StringModel.class.getResourceAsStream(shaderPath + "font.vert"));
-		fontVert.setType(ShaderType.VERTEX);
 		fontVert.create();
 		// FONT FRAG
 		fontFrag = glFactory.createShader();
 		fontFrag.setSource(StringModel.class.getResourceAsStream(shaderPath + "font.frag"));
-		fontFrag.setType(ShaderType.FRAGMENT);
 		fontFrag.create();
 		// SSAO VERT
 		ssaoVert = glFactory.createShader();
 		ssaoVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssao.vert"));
-		ssaoVert.setType(ShaderType.VERTEX);
 		ssaoVert.create();
 		// SSAO FRAG
 		ssaoFrag = glFactory.createShader();
 		ssaoFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssao.frag"));
-		ssaoFrag.setType(ShaderType.FRAGMENT);
 		ssaoFrag.create();
 		// SHADOW VERT
 		shadowVert = glFactory.createShader();
 		shadowVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "shadow.vert"));
-		shadowVert.setType(ShaderType.VERTEX);
 		shadowVert.create();
 		// SHADOW FRAG
 		shadowFrag = glFactory.createShader();
 		shadowFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "shadow.frag"));
-		shadowFrag.setType(ShaderType.FRAGMENT);
 		shadowFrag.create();
 		// BLUR VERT
 		blurVert = glFactory.createShader();
 		blurVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "blur.vert"));
-		blurVert.setType(ShaderType.VERTEX);
 		blurVert.create();
 		// BLUR FRAG
 		blurFrag = glFactory.createShader();
 		blurFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "blur.frag"));
-		blurFrag.setType(ShaderType.FRAGMENT);
 		blurFrag.create();
 		// LIGHTING VERT
 		lightingVert = glFactory.createShader();
 		lightingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.vert"));
-		lightingVert.setType(ShaderType.VERTEX);
 		lightingVert.create();
 		// LIGHTING FRAG
 		lightingFrag = glFactory.createShader();
 		lightingFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.frag"));
-		lightingFrag.setType(ShaderType.FRAGMENT);
 		lightingFrag.create();
 		// MOTION BLUR VERT
 		motionBlurVert = glFactory.createShader();
 		motionBlurVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "motionBlur.vert"));
-		motionBlurVert.setType(ShaderType.VERTEX);
 		motionBlurVert.create();
 		// MOTION BLUR FRAG
 		motionBlurFrag = glFactory.createShader();
 		motionBlurFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "motionBlur.frag"));
-		motionBlurFrag.setType(ShaderType.FRAGMENT);
 		motionBlurFrag.create();
 		// ANTI ALIASING VERT
 		antiAliasingVert = glFactory.createShader();
 		antiAliasingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "edaa.vert"));
-		antiAliasingVert.setType(ShaderType.VERTEX);
 		antiAliasingVert.create();
 		// ANTI ALIASING FRAG
 		antiAliasingFrag = glFactory.createShader();
 		antiAliasingFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "edaa.frag"));
-		antiAliasingFrag.setType(ShaderType.FRAGMENT);
 		antiAliasingFrag.create();
 		// SCREEN VERT
 		screenVert = glFactory.createShader();
 		screenVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "screen.vert"));
-		screenVert.setType(ShaderType.VERTEX);
 		screenVert.create();
 		// SCREEN FRAG
 		screenFrag = glFactory.createShader();
 		screenFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "screen.frag"));
-		screenFrag.setType(ShaderType.FRAGMENT);
 		screenFrag.create();
 	}
 

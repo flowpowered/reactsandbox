@@ -1,3 +1,5 @@
+// $shader_type: fragment
+
 // $texture_layout: colors = 0
 // $texture_layout: velocities = 1
 

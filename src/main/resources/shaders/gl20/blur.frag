@@ -1,3 +1,5 @@
+// $shader_type: fragment
+
 // $texture_layout: occlusions = 0
 // $texture_layout: shadows = 1
 
