@@ -37,12 +37,17 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.List;
 
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
+
+import org.lwjgl.opengl.GLContext;
 
 import org.spout.math.GenericMath;
 import org.spout.math.TrigMath;
@@ -50,12 +55,14 @@ import org.spout.math.imaginary.Quaternion;
 import org.spout.math.matrix.Matrix4;
 import org.spout.math.vector.Vector2;
 import org.spout.math.vector.Vector3;
+import org.spout.renderer.Action.RenderModelsAction;
 import org.spout.renderer.Camera;
 import org.spout.renderer.GLImplementation;
 import org.spout.renderer.GLVersioned.GLVersion;
 import org.spout.renderer.Material;
+import org.spout.renderer.Pipeline;
+import org.spout.renderer.Pipeline.PipelineBuilder;
 import org.spout.renderer.data.Color;
-import org.spout.renderer.data.RenderList;
 import org.spout.renderer.data.Uniform.ColorUniform;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.IntUniform;
@@ -66,12 +73,12 @@ import org.spout.renderer.data.UniformHolder;
 import org.spout.renderer.data.VertexAttribute;
 import org.spout.renderer.data.VertexAttribute.DataType;
 import org.spout.renderer.data.VertexData;
-import org.spout.renderer.gl.Capability;
+import org.spout.renderer.gl.Context;
+import org.spout.renderer.gl.Context.Capability;
 import org.spout.renderer.gl.FrameBuffer;
 import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
 import org.spout.renderer.gl.GLFactory;
 import org.spout.renderer.gl.Program;
-import org.spout.renderer.gl.Renderer;
 import org.spout.renderer.gl.Shader;
 import org.spout.renderer.gl.Texture;
 import org.spout.renderer.gl.Texture.CompareMode;
@@ -119,18 +126,13 @@ public class SandboxRenderer {
 	// OPENGL VERSION AND FACTORY
 	private static GLVersion glVersion;
 	private static GLFactory glFactory;
-	// RENDERER
-	private static Renderer renderer;
+	// CONTEXT
+	private static Context context;
 	// RENDER LISTS
-	private static final RenderList modelRenderList = new RenderList("models", modelCamera, 0);
-	private static final RenderList lightModelRenderList = modelRenderList.getInstance("light", 1);
-	private static final RenderList ssaoRenderList = new RenderList("ssao", modelCamera, 2);
-	private static final RenderList shadowRenderList = new RenderList("shadow", modelCamera, 3);
-	private static final RenderList blurRenderList = new RenderList("blur", modelCamera, 4);
-	private static final RenderList lightingRenderList = new RenderList("lighting", modelCamera, 5);
-	private static final RenderList motionBlurRenderList = new RenderList("motionBlur", modelCamera, 6);
-	private static final RenderList antiAliasingRenderList = new RenderList("antiAliasing", modelCamera, 7);
-	private static final RenderList guiRenderList = new RenderList("gui", guiCamera, 8);
+	private static final List<Model> modelRenderList = new ArrayList<>();
+	private static final List<Model> guiRenderList = new ArrayList<>();
+	// PIPELINE
+	private static Pipeline pipeline;
 	// SHADERS
 	private static Shader solidVert;
 	private static Shader solidFrag;
@@ -205,6 +207,7 @@ public class SandboxRenderer {
 	// VERTEX ARRAYS
 	private static VertexArray unitCubeWireVertexArray;
 	private static VertexArray diamondModelVertexArray;
+	private static VertexArray deferredStageScreenVertexArray;
 	// EFFECTS
 	private static SSAOEffect ssaoEffect;
 	private static ShadowMappingEffect shadowMappingEffect;
@@ -221,24 +224,35 @@ public class SandboxRenderer {
 	private static StringModel fpsMonitorModel;
 
 	public static void init() {
-		initRenderer();
+		initContext();
 		initEffects();
-		initRenderLists();
 		initShaders();
 		initPrograms();
 		initTextures();
 		initMaterials();
 		initFrameBuffers();
 		initVertexArrays();
+		initPipeline();
 	}
 
-	private static void initRenderer() {
-		// RENDERER
-		renderer = glFactory.createRenderer();
-		renderer.setWindowTitle(WINDOW_TITLE);
-		renderer.getViewPort().setSize(WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY());
-		renderer.create();
-		renderer.setClearColor(new Color(backgroundColor.getRed(), backgroundColor.getGreen(), backgroundColor.getBlue(), 0));
+	private static void initContext() {
+		// CONTEXT
+		context = glFactory.createContext();
+		context.setWindowTitle(WINDOW_TITLE);
+		context.setWindowSize(WINDOW_SIZE);
+		context.create();
+		context.setClearColor(new Color(backgroundColor.getRed(), backgroundColor.getGreen(), backgroundColor.getBlue(), 0));
+		context.setCamera(modelCamera);
+		if (cullBackFaces) {
+			context.enableCapability(Capability.CULL_FACE);
+		}
+		context.enableCapability(Capability.DEPTH_TEST);
+		if (glVersion == GLVersion.GL30 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
+			context.enableCapability(Capability.DEPTH_CLAMP);
+		}
+		final UniformHolder uniforms = context.getUniforms();
+		uniforms.add(previousViewMatrixUniform);
+		uniforms.add(previousProjectionMatrixUniform);
 	}
 
 	private static void initEffects() {
@@ -251,63 +265,35 @@ public class SandboxRenderer {
 		blurEffect = new BlurEffect(WINDOW_SIZE, blurSize);
 	}
 
-	private static void initRenderLists() {
-		UniformHolder uniforms;
+	private static void initPipeline() {
+		PipelineBuilder pipelineBuilder = new PipelineBuilder();
 		// MODEL
-		modelRenderList.addCapability(Capability.DEPTH_TEST);
-		if (cullBackFaces) {
-			modelRenderList.addCapability(Capability.CULL_FACE);
-		}
-		if (glVersion == GLVersion.GL30) {
-			modelRenderList.addCapability(Capability.DEPTH_CLAMP);
-		}
-		uniforms = modelRenderList.getUniforms();
-		uniforms.add(previousViewMatrixUniform);
-		uniforms.add(previousProjectionMatrixUniform);
-		renderer.addRenderList(modelRenderList);
+		pipelineBuilder = pipelineBuilder.bindFrameBuffer(modelFrameBuffer).clearBuffer().renderModels(modelRenderList).unbindFrameBuffer(modelFrameBuffer);
 		// LIGHT MODEL
-		lightModelRenderList.setCamera(lightCamera);
-		lightModelRenderList.addCapabilities(Capability.DEPTH_TEST, Capability.CULL_FACE);
-		if (glVersion == GLVersion.GL30) {
-			lightModelRenderList.addCapability(Capability.DEPTH_CLAMP);
-		}
-		renderer.addRenderList(lightModelRenderList);
+		pipelineBuilder = pipelineBuilder.useViewPort(new Rectangle(Vector2.ZERO, SHADOW_SIZE)).useCamera(lightCamera).bindFrameBuffer(lightModelFrameBuffer).clearBuffer()
+				.renderModels(modelRenderList).unbindFrameBuffer(lightModelFrameBuffer).useViewPort(new Rectangle(Vector2.ZERO, WINDOW_SIZE)).useCamera(modelCamera);
 		// SSAO
-		if (cullBackFaces) {
-			ssaoRenderList.addCapability(Capability.CULL_FACE);
+		if (glVersion == GLVersion.GL30 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
+			pipelineBuilder = pipelineBuilder.disableCapabilities(Capability.DEPTH_CLAMP);
 		}
-		renderer.addRenderList(ssaoRenderList);
+		pipelineBuilder = pipelineBuilder.disableCapabilities(Capability.DEPTH_TEST).doAction(new DoDeferredStageAction(ssaoFrameBuffer, deferredStageScreenVertexArray, ssaoMaterial));
 		// SHADOW
-		if (cullBackFaces) {
-			shadowRenderList.addCapability(Capability.CULL_FACE);
-		}
-		renderer.addRenderList(shadowRenderList);
+		pipelineBuilder = pipelineBuilder.doAction(new DoDeferredStageAction(shadowFrameBuffer, deferredStageScreenVertexArray, shadowMaterial));
 		// BLUR
-		if (cullBackFaces) {
-			blurRenderList.addCapability(Capability.CULL_FACE);
-		}
-		renderer.addRenderList(blurRenderList);
+		pipelineBuilder = pipelineBuilder.doAction(new DoDeferredStageAction(blurFrameBuffer, deferredStageScreenVertexArray, blurMaterial));
 		// LIGHTING
-		if (cullBackFaces) {
-			lightingRenderList.addCapability(Capability.CULL_FACE);
-		}
-		renderer.addRenderList(lightingRenderList);
+		pipelineBuilder = pipelineBuilder.doAction(new DoDeferredStageAction(lightingFrameBuffer, deferredStageScreenVertexArray, lightingMaterial));
 		// MOTION BLUR
-		if (cullBackFaces) {
-			motionBlurRenderList.addCapability(Capability.CULL_FACE);
-		}
-		renderer.addRenderList(motionBlurRenderList);
+		pipelineBuilder = pipelineBuilder.doAction(new DoDeferredStageAction(motionBlurFrameBuffer, deferredStageScreenVertexArray, motionBlurMaterial));
 		// ANTI ALIASING
-		if (cullBackFaces) {
-			antiAliasingRenderList.addCapability(Capability.CULL_FACE);
+		pipelineBuilder = pipelineBuilder.doAction(new DoDeferredStageAction(antiAliasingFrameBuffer, deferredStageScreenVertexArray, antiAliasingMaterial))
+				.unbindFrameBuffer(antiAliasingFrameBuffer).enableCapabilities(Capability.DEPTH_TEST);
+		if (glVersion == GLVersion.GL30 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
+			pipelineBuilder = pipelineBuilder.enableCapabilities(Capability.DEPTH_CLAMP);
 		}
-		renderer.addRenderList(antiAliasingRenderList);
 		// GUI
-		guiRenderList.addCapabilities(Capability.DEPTH_TEST, Capability.BLEND);
-		if (cullBackFaces) {
-			guiRenderList.addCapability(Capability.CULL_FACE);
-		}
-		renderer.addRenderList(guiRenderList);
+		pipelineBuilder = pipelineBuilder.useCamera(guiCamera).clearBuffer().renderModels(guiRenderList).useCamera(modelCamera).updateDisplay();
+		pipeline = pipelineBuilder.build();
 	}
 
 	private static void initShaders() {
@@ -692,44 +678,35 @@ public class SandboxRenderer {
 		modelFrameBuffer.attach(AttachmentPoint.COLOR4, velocitiesTexture);
 		modelFrameBuffer.attach(AttachmentPoint.DEPTH, depthsTexture);
 		modelFrameBuffer.create();
-		modelRenderList.setFrameBuffer(modelFrameBuffer);
 		// LIGHT MODEL
 		lightModelFrameBuffer = glFactory.createFrameBuffer();
 		lightModelFrameBuffer.attach(AttachmentPoint.DEPTH, lightDepthsTexture);
-		lightModelFrameBuffer.setViewPort(new Rectangle(SHADOW_SIZE.getFloorX(), SHADOW_SIZE.getFloorY()));
 		lightModelFrameBuffer.create();
-		lightModelRenderList.setFrameBuffer(lightModelFrameBuffer);
 		// SSAO
 		ssaoFrameBuffer = glFactory.createFrameBuffer();
 		ssaoFrameBuffer.attach(AttachmentPoint.COLOR0, auxRTexture);
 		ssaoFrameBuffer.create();
-		ssaoRenderList.setFrameBuffer(ssaoFrameBuffer);
 		// SHADOW
 		shadowFrameBuffer = glFactory.createFrameBuffer();
 		shadowFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBATexture);
 		shadowFrameBuffer.create();
-		shadowRenderList.setFrameBuffer(shadowFrameBuffer);
 		// BLUR
 		blurFrameBuffer = glFactory.createFrameBuffer();
 		blurFrameBuffer.attach(AttachmentPoint.COLOR0, ssaoTexture);
 		blurFrameBuffer.attach(AttachmentPoint.COLOR1, shadowTexture);
 		blurFrameBuffer.create();
-		blurRenderList.setFrameBuffer(blurFrameBuffer);
 		// LIGHTING
 		lightingFrameBuffer = glFactory.createFrameBuffer();
 		lightingFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBATexture);
 		lightingFrameBuffer.create();
-		lightingRenderList.setFrameBuffer(lightingFrameBuffer);
 		// MOTION BLUR
 		motionBlurFrameBuffer = glFactory.createFrameBuffer();
 		motionBlurFrameBuffer.attach(AttachmentPoint.COLOR0, colorsTexture);
 		motionBlurFrameBuffer.create();
-		motionBlurRenderList.setFrameBuffer(motionBlurFrameBuffer);
 		// ANTI ALIASING
 		antiAliasingFrameBuffer = glFactory.createFrameBuffer();
 		antiAliasingFrameBuffer.attach(AttachmentPoint.COLOR0, auxRGBATexture);
 		antiAliasingFrameBuffer.create();
-		antiAliasingRenderList.setFrameBuffer(antiAliasingFrameBuffer);
 	}
 
 	private static void initVertexArrays() {
@@ -742,22 +719,25 @@ public class SandboxRenderer {
 		diamondModelVertexArray = glFactory.createVertexArray();
 		diamondModelVertexArray.setData(loadOBJ(Sandbox.class.getResourceAsStream("/models/diamond.obj")));
 		diamondModelVertexArray.create();
+		// DEFERRED STAGE SCREEN
+		deferredStageScreenVertexArray = glFactory.createVertexArray();
+		deferredStageScreenVertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2(2, 2)));
+		deferredStageScreenVertexArray.create();
 	}
 
 	public static void dispose() {
-		disposeRenderLists();
 		disposeEffects();
 		disposeShaders();
 		disposePrograms();
 		disposeTextures();
 		disposeFrameBuffers();
 		disposeVertexArrays();
-		disposeRenderer();
+		disposeContext();
 	}
 
-	private static void disposeRenderer() {
-		// RENDERER
-		renderer.destroy();
+	private static void disposeContext() {
+		// CONTEXT
+		context.destroy();
 	}
 
 	private static void disposeEffects() {
@@ -767,36 +747,6 @@ public class SandboxRenderer {
 		shadowMappingEffect.dispose();
 		// BLUR
 		blurEffect.dispose();
-	}
-
-	private static void disposeRenderLists() {
-		// MODEL
-		modelRenderList.clear();
-		modelRenderList.clearCapabilities();
-		// LIGHT MODEL
-		lightModelRenderList.clear();
-		lightModelRenderList.clearCapabilities();
-		// SSAO
-		ssaoRenderList.clear();
-		ssaoRenderList.clearCapabilities();
-		// SHADOW
-		shadowRenderList.clear();
-		shadowRenderList.clearCapabilities();
-		// BLUR
-		blurRenderList.clear();
-		blurRenderList.clearCapabilities();
-		// LIGHTING
-		lightingRenderList.clear();
-		lightingRenderList.clearCapabilities();
-		// MOTION BLUR
-		motionBlurRenderList.clear();
-		motionBlurRenderList.clearCapabilities();
-		// ANTI ALIASING
-		antiAliasingRenderList.clear();
-		antiAliasingRenderList.clearCapabilities();
-		// GUI
-		guiRenderList.clear();
-		guiRenderList.clearCapabilities();
 	}
 
 	private static void disposeShaders() {
@@ -916,6 +866,8 @@ public class SandboxRenderer {
 		unitCubeWireVertexArray.destroy();
 		// DIAMOND MODEL
 		diamondModelVertexArray.destroy();
+		// DEFERRED STAGE SCREEN
+		deferredStageScreenVertexArray.destroy();
 	}
 
 	public static void setGLVersion(GLVersion version) {
@@ -1045,37 +997,14 @@ public class SandboxRenderer {
 	}
 
 	public static void addDefaultObjects() {
-		addDeferredStageScreens();
+		addScreen();
 		addCrosshairs();
 		addFPSMonitor();
 		addCreeper();
 	}
 
-	private static void addDeferredStageScreens() {
-		final VertexArray vertexArray = glFactory.createVertexArray();
-		vertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2(2, 2)));
-		vertexArray.create();
-		// SSAO
-		final Model ssao = new Model(vertexArray, ssaoMaterial);
-		ssaoRenderList.add(ssao);
-		// SHADOW
-		final Model shadow = new Model(vertexArray, shadowMaterial);
-		shadowRenderList.add(shadow);
-		// BLUR
-		final Model blur = new Model(vertexArray, blurMaterial);
-		blurRenderList.add(blur);
-		// LIGHTING
-		final Model lighting = new Model(vertexArray, lightingMaterial);
-		lightingRenderList.add(lighting);
-		// MOTION BLUR
-		final Model motionBlur = new Model(vertexArray, motionBlurMaterial);
-		motionBlurRenderList.add(motionBlur);
-		// ANTI ALIASING
-		final Model antiAliasing = new Model(vertexArray, antiAliasingMaterial);
-		antiAliasingRenderList.add(antiAliasing);
-		// SCREEN
-		final Model screen = new Model(vertexArray, screenMaterial);
-		guiRenderList.add(screen);
+	private static void addScreen() {
+		guiRenderList.add(new Model(deferredStageScreenVertexArray, screenMaterial));
 	}
 
 	private static void addCrosshairs() {
@@ -1128,17 +1057,22 @@ public class SandboxRenderer {
 	}
 
 	public static void render() {
+		// UPDATE PER-FRAME UNIFORMS
 		inverseViewMatrixUniform.set(modelCamera.getViewMatrix().invert());
 		lightViewMatrixUniform.set(lightCamera.getViewMatrix());
 		lightProjectionMatrixUniform.set(lightCamera.getProjectionMatrix());
 		blurStrengthUniform.set((float) fpsMonitor.getFPS() / Sandbox.TARGET_FPS);
+		// ANIMATE MOVING MOB
 		final float time = (System.currentTimeMillis() % 1000) / 1000f;
 		movingMobModel.setPosition(new Vector3(2 * TrigMath.sin(2 * (float) TrigMath.PI * time), 0, 0).add(-10, 10, 0));
 		movingMobModel.setRotation(Quaternion.fromAngleDegAxis(time * 360, 1, 1, 1));
-		renderer.render();
+		// RENDER
+		pipeline.run(context);
+		// UPDATE PREVIOUS FRAME UNIFORMS
 		setPreviousModelMatrices();
 		previousViewMatrixUniform.set(modelCamera.getViewMatrix());
 		previousProjectionMatrixUniform.set(modelCamera.getProjectionMatrix());
+		// UPDATE FPS
 		updateFPSMonitor();
 	}
 
@@ -1191,9 +1125,9 @@ public class SandboxRenderer {
 	}
 
 	public static void saveScreenshot() {
-		final ByteBuffer buffer = renderer.readCurrentFrame(Format.RGB);
-		final int width = renderer.getWindowWidth();
-		final int height = renderer.getWindowHeight();
+		final ByteBuffer buffer = context.readCurrentFrame(new Rectangle(Vector2.ZERO, WINDOW_SIZE), Format.RGB);
+		final int width = context.getWindowWidth();
+		final int height = context.getWindowHeight();
 		final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
 		final byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
 		for (int x = 0; x < width; x++) {
@@ -1209,6 +1143,21 @@ public class SandboxRenderer {
 			ImageIO.write(image, "PNG", new File("screenshots" + File.separator + SCREENSHOT_DATE_FORMAT.format(Calendar.getInstance().getTime()) + ".png"));
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+
+	private static class DoDeferredStageAction extends RenderModelsAction {
+		private final FrameBuffer frameBuffer;
+
+		private DoDeferredStageAction(FrameBuffer frameBuffer, VertexArray screen, Material material) {
+			super(Arrays.asList(new Model(screen, material)));
+			this.frameBuffer = frameBuffer;
+		}
+
+		@Override
+		public void execute(Context context) {
+			frameBuffer.bind();
+			super.execute(context);
 		}
 	}
 }
