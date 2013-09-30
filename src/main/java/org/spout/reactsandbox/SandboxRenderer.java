@@ -26,7 +26,6 @@
  */
 package org.spout.reactsandbox;
 
-import javax.imageio.ImageIO;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
@@ -41,12 +40,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
+import javax.imageio.ImageIO;
 
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
-
 import org.lwjgl.opengl.GLContext;
 
 import org.spout.math.GenericMath;
@@ -91,6 +90,7 @@ import org.spout.renderer.gl.VertexArray.DrawingMode;
 import org.spout.renderer.model.Model;
 import org.spout.renderer.model.StringModel;
 import org.spout.renderer.util.CausticUtil;
+import org.spout.renderer.util.ColladaFileLoader;
 import org.spout.renderer.util.ObjFileLoader;
 import org.spout.renderer.util.Rectangle;
 
@@ -1001,6 +1001,7 @@ public class SandboxRenderer {
 		addCrosshairs();
 		addFPSMonitor();
 		addCreeper();
+		addSuzanne();
 	}
 
 	private static void addScreen() {
@@ -1052,6 +1053,15 @@ public class SandboxRenderer {
 		addModel(movingMobModel);
 	}
 
+	private static void addSuzanne() {
+		final VertexArray vertexArray = glFactory.createVertexArray();
+		vertexArray.setData(loadCollada(Sandbox.class.getResourceAsStream("/models/suzanne.dae")));
+		vertexArray.create();
+		final Model mobModel = new Model(vertexArray, solidMaterial);
+		mobModel.setPosition(new Vector3(20, 20, 0));
+		addModel(mobModel);
+	}
+
 	public static void startFPSMonitor() {
 		fpsMonitor.start();
 	}
@@ -1087,13 +1097,7 @@ public class SandboxRenderer {
 		fpsMonitorModel.setString("FPS: " + fpsMonitor.getFPS());
 	}
 
-	private static VertexData loadOBJ(InputStream file) {
-		// LOAD
-		final TFloatList positions = new TFloatArrayList();
-		final TFloatList textureCoords = new TFloatArrayList();
-		final TFloatList normals = new TFloatArrayList();
-		final TIntList indices = new TIntArrayList();
-		final Vector3 sizes = ObjFileLoader.load(file, positions, textureCoords, normals, indices);
+	private static VertexData loadMesh(Vector3 sizes, TFloatList positions, TFloatList textureCoords, TFloatList normals, TIntList indices) {
 		final VertexData vertexData = new VertexData();
 		// POSITIONS
 		final VertexAttribute positionAttribute = new VertexAttribute("positions", DataType.FLOAT, sizes.getFloorX());
@@ -1122,6 +1126,27 @@ public class SandboxRenderer {
 		// INDICES
 		vertexData.getIndices().addAll(indices);
 		return vertexData;
+	}
+
+	private static VertexData loadOBJ(InputStream file) {
+		// LOAD
+		final TFloatList positions = new TFloatArrayList();
+		final TFloatList textureCoords = new TFloatArrayList();
+		final TFloatList normals = new TFloatArrayList();
+		final TIntList indices = new TIntArrayList();
+		final Vector3 sizes = ObjFileLoader.load(file, positions, textureCoords, normals, indices);
+		return loadMesh(sizes, positions, textureCoords, normals, indices);
+	}
+
+	private static VertexData loadCollada(InputStream in) {
+		final TFloatList positions = new TFloatArrayList();
+		final TFloatList textureCoords = new TFloatArrayList();
+		final TFloatList normals = new TFloatArrayList();
+		final TIntList indices = new TIntArrayList();
+		return loadMesh(
+				ColladaFileLoader.loadMesh(in, positions, textureCoords, normals, indices),
+				positions, textureCoords, normals, indices
+		);
 	}
 
 	public static void saveScreenshot() {
