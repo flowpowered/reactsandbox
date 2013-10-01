@@ -26,6 +26,7 @@
  */
 package org.spout.reactsandbox;
 
+import javax.imageio.ImageIO;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
@@ -40,12 +41,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
-import javax.imageio.ImageIO;
 
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
+
 import org.lwjgl.opengl.GLContext;
 
 import org.spout.math.GenericMath;
@@ -1057,9 +1058,10 @@ public class SandboxRenderer {
 		final VertexArray vertexArray = glFactory.createVertexArray();
 		vertexArray.setData(loadCollada(Sandbox.class.getResourceAsStream("/models/suzanne.dae")));
 		vertexArray.create();
-		final Model mobModel = new Model(vertexArray, solidMaterial);
-		mobModel.setPosition(new Vector3(20, 20, 0));
-		addModel(mobModel);
+		final Model model = new Model(vertexArray, solidMaterial);
+		model.setPosition(new Vector3(0, 10, -10));
+		model.getUniforms().add(new ColorUniform("modelColor", sphereModelColor));
+		addModel(model);
 	}
 
 	public static void startFPSMonitor() {
