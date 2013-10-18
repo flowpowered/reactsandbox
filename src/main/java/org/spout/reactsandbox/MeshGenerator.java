@@ -36,7 +36,7 @@ import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 
-import org.spout.math.vector.Vector2;
+import org.spout.math.vector.Vector2f;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.data.VertexAttribute;
 import org.spout.renderer.data.VertexAttribute.DataType;
@@ -58,7 +58,7 @@ public class MeshGenerator {
 	  \ z
 	   V
 	The axis system
-	*/
+	 */
 
 	/**
 	 * Generates a crosshairs shaped wireframe in 3D. The center is at the intersection point of the three lines.
@@ -74,7 +74,7 @@ public class MeshGenerator {
 		----O-----
 		    |\
 		    | \
-		*/
+		 */
 		// Model data buffers
 		if (destination == null) {
 			destination = new VertexData();
@@ -114,7 +114,7 @@ public class MeshGenerator {
 		0-|----1 |
 		 \|     \|
 		  3------2
-		*/
+		 */
 		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
 		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());
@@ -178,15 +178,15 @@ public class MeshGenerator {
 	 * @param size The size of the plane to generate, on x and y
 	 * @return The vertex data
 	 */
-	public static VertexData generatePlane(VertexData destination, Vector2 size) {
+	public static VertexData generatePlane(VertexData destination, Vector2f size) {
 		/*
 		2-----3
 		|     |
 		|     |
 		0-----1
-		*/
+		 */
 		// Corner positions
-		final Vector2 p = size.div(2);
+		final Vector2f p = size.div(2);
 		final Vector3 p3 = new Vector3(p.getX(), p.getY(), 0);
 		final Vector3 p2 = new Vector3(-p.getX(), p.getY(), 0);
 		final Vector3 p1 = new Vector3(p.getX(), -p.getY(), 0);
@@ -227,7 +227,7 @@ public class MeshGenerator {
 	 * @param size The size of the plane to generate, on x and y
 	 * @return The vertex data
 	 */
-	public static VertexData generateTexturedPlane(VertexData destination, Vector2 size) {
+	public static VertexData generateTexturedPlane(VertexData destination, Vector2f size) {
 		destination = generatePlane(destination, size);
 		final VertexAttribute textureAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, 2);
 		destination.addAttribute(2, textureAttribute);
@@ -258,7 +258,7 @@ public class MeshGenerator {
 		0-|----1 |
 		 \|     \|
 		  3------2
-		*/
+		 */
 		// Corner positions
 		final Vector3 p = Vector3.divide(size, 2);
 		final Vector3 p6 = new Vector3(p.getX(), p.getY(), p.getZ());

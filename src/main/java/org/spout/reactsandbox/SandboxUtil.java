@@ -39,8 +39,8 @@ public class SandboxUtil {
 	 * @param v The React Vector3
 	 * @return The equivalent Math Vector3
 	 */
-	public static org.spout.math.vector.Vector3 toMathVector3(Vector3 v) {
-		return new org.spout.math.vector.Vector3(v.getX(), v.getY(), v.getZ());
+	public static org.spout.math.vector.Vector3f toMathVector3(Vector3 v) {
+		return new org.spout.math.vector.Vector3f(v.getX(), v.getY(), v.getZ());
 	}
 
 	/**
@@ -49,7 +49,7 @@ public class SandboxUtil {
 	 * @param v The Math Vector3
 	 * @return The equivalent React Vector3
 	 */
-	public static Vector3 toReactVector3(org.spout.math.vector.Vector3 v) {
+	public static Vector3 toReactVector3(org.spout.math.vector.Vector3f v) {
 		return new Vector3(v.getX(), v.getY(), v.getZ());
 	}
 
@@ -59,8 +59,8 @@ public class SandboxUtil {
 	 * @param q The React Quaternion
 	 * @return The equivalent Math Quaternion
 	 */
-	public static org.spout.math.imaginary.Quaternion toMathQuaternion(Quaternion q) {
-		return new org.spout.math.imaginary.Quaternion(q.getX(), q.getY(), q.getZ(), q.getW());
+	public static org.spout.math.imaginary.Quaternionf toMathQuaternion(Quaternion q) {
+		return new org.spout.math.imaginary.Quaternionf(q.getX(), q.getY(), q.getZ(), q.getW());
 	}
 
 	/**
@@ -69,7 +69,7 @@ public class SandboxUtil {
 	 * @param q The Math Quaternion
 	 * @return The equivalent React Quaternion
 	 */
-	public static Quaternion toReactQuaternion(org.spout.math.imaginary.Quaternion q) {
+	public static Quaternion toReactQuaternion(org.spout.math.imaginary.Quaternionf q) {
 		return new Quaternion(q.getX(), q.getY(), q.getZ(), q.getW());
 	}
 

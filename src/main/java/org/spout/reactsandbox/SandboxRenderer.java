@@ -26,7 +26,6 @@
  */
 package org.spout.reactsandbox;
 
-import javax.imageio.ImageIO;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
@@ -44,6 +43,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.imageio.ImageIO;
+
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
@@ -53,10 +54,10 @@ import org.lwjgl.opengl.GLContext;
 
 import org.spout.math.GenericMath;
 import org.spout.math.TrigMath;
-import org.spout.math.imaginary.Quaternion;
-import org.spout.math.matrix.Matrix4;
-import org.spout.math.vector.Vector2;
-import org.spout.math.vector.Vector3;
+import org.spout.math.imaginary.Quaternionf;
+import org.spout.math.matrix.Matrix4f;
+import org.spout.math.vector.Vector2f;
+import org.spout.math.vector.Vector3f;
 import org.spout.renderer.Action.RenderModelsAction;
 import org.spout.renderer.Camera;
 import org.spout.renderer.GLImplementation;
@@ -100,27 +101,27 @@ import org.spout.renderer.util.Rectangle;
 public class SandboxRenderer {
 	// CONSTANTS
 	private static final String WINDOW_TITLE = "Sandbox";
-	private static final Vector2 WINDOW_SIZE = new Vector2(1200, 800);
-	private static final Vector2 SHADOW_SIZE = new Vector2(2048, 2048);
+	private static final Vector2f WINDOW_SIZE = new Vector2f(1200, 800);
+	private static final Vector2f SHADOW_SIZE = new Vector2f(2048, 2048);
 	private static final float ASPECT_RATIO = WINDOW_SIZE.getX() / WINDOW_SIZE.getY();
 	private static final float FIELD_OF_VIEW = 60;
 	private static final float TAN_HALF_FOV = (float) Math.tan(Math.toRadians(FIELD_OF_VIEW) / 2);
 	private static final float NEAR_PLANE = 0.1f;
 	private static final float FAR_PLANE = 1000;
-	private static final Vector2 PROJECTION = new Vector2(FAR_PLANE / (FAR_PLANE - NEAR_PLANE), (-FAR_PLANE * NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE));
+	private static final Vector2f PROJECTION = new Vector2f(FAR_PLANE / (FAR_PLANE - NEAR_PLANE), (-FAR_PLANE * NEAR_PLANE) / (FAR_PLANE - NEAR_PLANE));
 	private static final DateFormat SCREENSHOT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
 	// SETTINGS
 	private static Color backgroundColor = Color.DARK_GRAY;
 	private static boolean cullBackFaces = true;
 	// EFFECT UNIFORMS
-	private static final Vector3Uniform lightPositionUniform = new Vector3Uniform("lightPosition", Vector3.ZERO);
-	private static final Vector3Uniform spotDirectionUniform = new Vector3Uniform("spotDirection", new Vector3(0, 0, -1));
+	private static final Vector3Uniform lightPositionUniform = new Vector3Uniform("lightPosition", Vector3f.ZERO);
+	private static final Vector3Uniform spotDirectionUniform = new Vector3Uniform("spotDirection", new Vector3f(0, 0, -1));
 	private static final FloatUniform lightAttenuationUniform = new FloatUniform("lightAttenuation", 0.03f);
-	private static final Matrix4Uniform inverseViewMatrixUniform = new Matrix4Uniform("inverseViewMatrix", new Matrix4());
-	private static final Matrix4Uniform lightViewMatrixUniform = new Matrix4Uniform("lightViewMatrix", new Matrix4());
-	private static final Matrix4Uniform lightProjectionMatrixUniform = new Matrix4Uniform("lightProjectionMatrix", new Matrix4());
-	private static final Matrix4Uniform previousViewMatrixUniform = new Matrix4Uniform("previousViewMatrix", new Matrix4());
-	private static final Matrix4Uniform previousProjectionMatrixUniform = new Matrix4Uniform("previousProjectionMatrix", new Matrix4());
+	private static final Matrix4Uniform inverseViewMatrixUniform = new Matrix4Uniform("inverseViewMatrix", new Matrix4f());
+	private static final Matrix4Uniform lightViewMatrixUniform = new Matrix4Uniform("lightViewMatrix", new Matrix4f());
+	private static final Matrix4Uniform lightProjectionMatrixUniform = new Matrix4Uniform("lightProjectionMatrix", new Matrix4f());
+	private static final Matrix4Uniform previousViewMatrixUniform = new Matrix4Uniform("previousViewMatrix", new Matrix4f());
+	private static final Matrix4Uniform previousProjectionMatrixUniform = new Matrix4Uniform("previousProjectionMatrix", new Matrix4f());
 	private static final FloatUniform blurStrengthUniform = new FloatUniform("blurStrength", 1);
 	// CAMERAS
 	private static final Camera modelCamera = Camera.createPerspective(FIELD_OF_VIEW, WINDOW_SIZE.getFloorX(), WINDOW_SIZE.getFloorY(), NEAR_PLANE, FAR_PLANE);
@@ -242,8 +243,8 @@ public class SandboxRenderer {
 		// MODEL
 		pipelineBuilder = pipelineBuilder.bindFrameBuffer(modelFrameBuffer).clearBuffer().renderModels(modelRenderList).unbindFrameBuffer(modelFrameBuffer);
 		// LIGHT MODEL
-		pipelineBuilder = pipelineBuilder.useViewPort(new Rectangle(Vector2.ZERO, SHADOW_SIZE)).useCamera(lightCamera).bindFrameBuffer(lightModelFrameBuffer).clearBuffer()
-				.renderModels(modelRenderList).unbindFrameBuffer(lightModelFrameBuffer).useViewPort(new Rectangle(Vector2.ZERO, WINDOW_SIZE)).useCamera(modelCamera);
+		pipelineBuilder = pipelineBuilder.useViewPort(new Rectangle(Vector2f.ZERO, SHADOW_SIZE)).useCamera(lightCamera).bindFrameBuffer(lightModelFrameBuffer).clearBuffer()
+				.renderModels(modelRenderList).unbindFrameBuffer(lightModelFrameBuffer).useViewPort(new Rectangle(Vector2f.ZERO, WINDOW_SIZE)).useCamera(modelCamera);
 		// SSAO
 		if (glVersion == GLVersion.GL30 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
 			pipelineBuilder = pipelineBuilder.disableCapabilities(Capability.DEPTH_CLAMP);
@@ -535,8 +536,8 @@ public class SandboxRenderer {
 		uniforms.add(new Vector2Uniform("projection", PROJECTION));
 		uniforms.add(new Vector2Uniform("resolution", WINDOW_SIZE));
 		uniforms.add(new FloatUniform("maxSpan", 8));
-		uniforms.add(new Vector2Uniform("barriers", new Vector2(0.8f, 0.5f)));
-		uniforms.add(new Vector2Uniform("weights", new Vector2(0.25f, 0.6f)));
+		uniforms.add(new Vector2Uniform("barriers", new Vector2f(0.8f, 0.5f)));
+		uniforms.add(new Vector2Uniform("weights", new Vector2f(0.25f, 0.6f)));
 		uniforms.add(new FloatUniform("kernel", 0.75f));
 		// SCREEN
 		screenMaterial = createMaterial("screen");
@@ -600,7 +601,7 @@ public class SandboxRenderer {
 		diamondModelVertexArray.create();
 		// DEFERRED STAGE SCREEN
 		deferredStageScreenVertexArray = glFactory.createVertexArray();
-		deferredStageScreenVertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2(2, 2)));
+		deferredStageScreenVertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2f(2, 2)));
 		deferredStageScreenVertexArray.create();
 	}
 
@@ -756,18 +757,18 @@ public class SandboxRenderer {
 		return modelCamera;
 	}
 
-	public static void setLightPosition(Vector3 position) {
+	public static void setLightPosition(Vector3f position) {
 		lightPositionUniform.set(position);
 		lightCamera.setPosition(position);
 	}
 
-	public static void setLightDirection(Vector3 direction) {
+	public static void setLightDirection(Vector3f direction) {
 		direction = direction.normalize();
 		spotDirectionUniform.set(direction);
-		lightCamera.setRotation(Quaternion.fromRotationTo(Vector3.FORWARD.negate(), direction));
+		lightCamera.setRotation(Quaternionf.fromRotationTo(Vector3f.FORWARD.negate(), direction));
 	}
 
-	public static Model addAABB(Vector3 position, Vector3 size) {
+	public static Model addAABB(Vector3f position, Vector3f size) {
 		final Model model = new Model(unitCubeWireVertexArray, wireframeMaterial);
 		model.setPosition(position);
 		model.setScale(size);
@@ -776,7 +777,7 @@ public class SandboxRenderer {
 		return model;
 	}
 
-	public static Model addBox(Vector3 position, Quaternion orientation, Vector3 size) {
+	public static Model addBox(Vector3f position, Quaternionf orientation, Vector3f size) {
 		final VertexArray vertexArray = glFactory.createVertexArray();
 		vertexArray.setData(MeshGenerator.generateCuboid(null, SandboxUtil.toReactVector3(size.mul(2))));
 		vertexArray.create();
@@ -787,7 +788,7 @@ public class SandboxRenderer {
 		return model;
 	}
 
-	public static Model addDiamond(Vector3 position, Quaternion orientation) {
+	public static Model addDiamond(Vector3f position, Quaternionf orientation) {
 		final Model model = new Model(diamondModelVertexArray, solidMaterial);
 		model.setPosition(position);
 		model.setRotation(orientation);
@@ -796,7 +797,7 @@ public class SandboxRenderer {
 		return model;
 	}
 
-	public static Model addCylinder(Vector3 position, Quaternion orientation, float radius, float height) {
+	public static Model addCylinder(Vector3f position, Quaternionf orientation, float radius, float height) {
 		final VertexArray vertexArray = glFactory.createVertexArray();
 		vertexArray.setData(MeshGenerator.generateCylinder(null, radius, height));
 		vertexArray.create();
@@ -808,7 +809,7 @@ public class SandboxRenderer {
 		return model;
 	}
 
-	public static Model addSphere(Vector3 position, Quaternion orientation, float radius) {
+	public static Model addSphere(Vector3f position, Quaternionf orientation, float radius) {
 		final VertexArray vertexArray = glFactory.createVertexArray();
 		vertexArray.setData(MeshGenerator.generateSphere(null, radius));
 		vertexArray.create();
@@ -848,7 +849,7 @@ public class SandboxRenderer {
 		final Model model = new Model(vertexArray, wireframeMaterial);
 		vertexArray.setDrawingMode(DrawingMode.LINES);
 		model.getUniforms().add(new ColorUniform("modelColor", Color.WHITE));
-		model.setPosition(new Vector3(0.5, (1 / ASPECT_RATIO) / 2, -0.1));
+		model.setPosition(new Vector3f(0.5, (1 / ASPECT_RATIO) / 2, -0.1));
 		guiRenderList.add(model);
 	}
 
@@ -862,12 +863,12 @@ public class SandboxRenderer {
 		}
 		final StringModel sandboxModel = new StringModel(glFactory, programs.get("font"), "SandboxPweryCusticRF0123456789,&: ", ubuntu.deriveFont(Font.PLAIN, 15), WINDOW_SIZE.getFloorX());
 		final float aspect = 1 / ASPECT_RATIO;
-		sandboxModel.setPosition(new Vector3(0.005, aspect / 2 + 0.315, -0.1));
+		sandboxModel.setPosition(new Vector3f(0.005, aspect / 2 + 0.315, -0.1));
 		final String white = "#ffffffff", brown = "#ffC19953", green = "#ff00ff00", cyan = "#ff4fB5ff";
 		sandboxModel.setString(brown + "Sandbox\n" + white + "Powered by " + green + "Caustic" + white + " & " + cyan + "React");
 		guiRenderList.add(sandboxModel);
 		final StringModel fpsModel = sandboxModel.getInstance();
-		fpsModel.setPosition(new Vector3(0.005, aspect / 2 + 0.285, -0.1));
+		fpsModel.setPosition(new Vector3f(0.005, aspect / 2 + 0.285, -0.1));
 		fpsModel.setString("FPS: " + fpsMonitor.getFPS());
 		guiRenderList.add(fpsModel);
 		fpsMonitorModel = fpsModel;
@@ -878,8 +879,8 @@ public class SandboxRenderer {
 		vertexArray.setData(loadOBJ(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
 		vertexArray.create();
 		final Model mobModel = new Model(vertexArray, creeperMaterial);
-		mobModel.setPosition(new Vector3(10, 10, 0));
-		mobModel.setRotation(org.spout.math.imaginary.Quaternion.fromAngleDegAxis(-90, 0, 1, 0));
+		mobModel.setPosition(new Vector3f(10, 10, 0));
+		mobModel.setRotation(org.spout.math.imaginary.Quaternionf.fromAngleDegAxis(-90, 0, 1, 0));
 		addModel(mobModel);
 		// Add a second mob, instanced from the first one
 		movingMobModel = mobModel.getInstance();
@@ -891,7 +892,7 @@ public class SandboxRenderer {
 		vertexArray.setData(loadCollada(Sandbox.class.getResourceAsStream("/models/suzanne.dae")));
 		vertexArray.create();
 		final Model model = new Model(vertexArray, solidMaterial);
-		model.setPosition(new Vector3(0, 10, -10));
+		model.setPosition(new Vector3f(0, 10, -10));
 		model.getUniforms().add(new ColorUniform("modelColor", sphereModelColor));
 		addModel(model);
 	}
@@ -908,8 +909,8 @@ public class SandboxRenderer {
 		blurStrengthUniform.set((float) fpsMonitor.getFPS() / Sandbox.TARGET_FPS);
 		// ANIMATE MOVING MOB
 		final float time = (System.currentTimeMillis() % 1000) / 1000f;
-		movingMobModel.setPosition(new Vector3(2 * TrigMath.sin(2 * (float) TrigMath.PI * time), 0, 0).add(-10, 10, 0));
-		movingMobModel.setRotation(Quaternion.fromAngleDegAxis(time * 360, 1, 1, 1));
+		movingMobModel.setPosition(new Vector3f(2 * TrigMath.sin(2 * (float) TrigMath.PI * time), 0, 0).add(-10, 10, 0));
+		movingMobModel.setRotation(Quaternionf.fromAngleDegAxis(time * 360, 1, 1, 1));
 		// RENDER
 		pipeline.run(context);
 		// UPDATE PREVIOUS FRAME UNIFORMS
@@ -931,7 +932,7 @@ public class SandboxRenderer {
 		fpsMonitorModel.setString("FPS: " + fpsMonitor.getFPS());
 	}
 
-	private static VertexData loadMesh(Vector3 sizes, TFloatList positions, TFloatList textureCoords, TFloatList normals, TIntList indices) {
+	private static VertexData loadMesh(Vector3f sizes, TFloatList positions, TFloatList textureCoords, TFloatList normals, TIntList indices) {
 		final VertexData vertexData = new VertexData();
 		// POSITIONS
 		final VertexAttribute positionAttribute = new VertexAttribute("positions", DataType.FLOAT, sizes.getFloorX());
@@ -968,7 +969,7 @@ public class SandboxRenderer {
 		final TFloatList textureCoords = new TFloatArrayList();
 		final TFloatList normals = new TFloatArrayList();
 		final TIntList indices = new TIntArrayList();
-		final Vector3 sizes = ObjFileLoader.load(file, positions, textureCoords, normals, indices);
+		final Vector3f sizes = ObjFileLoader.load(file, positions, textureCoords, normals, indices);
 		return loadMesh(sizes, positions, textureCoords, normals, indices);
 	}
 
@@ -980,11 +981,11 @@ public class SandboxRenderer {
 		return loadMesh(
 				ColladaFileLoader.loadMesh(in, positions, textureCoords, normals, indices),
 				positions, textureCoords, normals, indices
-		);
+				);
 	}
 
 	public static void saveScreenshot() {
-		final ByteBuffer buffer = context.readCurrentFrame(new Rectangle(Vector2.ZERO, WINDOW_SIZE), Format.RGB);
+		final ByteBuffer buffer = context.readCurrentFrame(new Rectangle(Vector2f.ZERO, WINDOW_SIZE), Format.RGB);
 		final int width = context.getWindowWidth();
 		final int height = context.getWindowHeight();
 		final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
