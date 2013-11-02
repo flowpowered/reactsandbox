@@ -40,7 +40,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -135,37 +137,7 @@ public class SandboxRenderer {
 	// PIPELINE
 	private static Pipeline pipeline;
 	// SHADERS
-	private static Shader solidVert;
-	private static Shader solidFrag;
-	private static Shader texturedVert;
-	private static Shader texturedFrag;
-	private static Shader fontVert;
-	private static Shader fontFrag;
-	private static Shader ssaoVert;
-	private static Shader ssaoFrag;
-	private static Shader blurVert;
-	private static Shader blurFrag;
-	private static Shader shadowVert;
-	private static Shader shadowFrag;
-	private static Shader lightingVert;
-	private static Shader lightingFrag;
-	private static Shader motionBlurVert;
-	private static Shader motionBlurFrag;
-	private static Shader antiAliasingVert;
-	private static Shader antiAliasingFrag;
-	private static Shader screenVert;
-	private static Shader screenFrag;
-	// PROGRAMS
-	private static Program solidProgram;
-	private static Program texturedProgram;
-	private static Program fontProgram;
-	private static Program ssaoProgram;
-	private static Program blurProgram;
-	private static Program shadowProgram;
-	private static Program lightingProgram;
-	private static Program motionBlurProgram;
-	private static Program antiAliasingProgram;
-	private static Program screenProgram;
+	private static final Map<String, Program> programs = new HashMap<>();
 	// TEXTURES
 	private static Texture creeperDiffuseTexture;
 	private static Texture creeperNormalsTexture;
@@ -227,7 +199,6 @@ public class SandboxRenderer {
 	public static void init() {
 		initContext();
 		initEffects();
-		initShaders();
 		initPrograms();
 		initTextures();
 		initMaterials();
@@ -297,141 +268,44 @@ public class SandboxRenderer {
 		pipeline = pipelineBuilder.build();
 	}
 
-	private static void initShaders() {
-		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/";
-		// SOLID VERT
-		solidVert = glFactory.createShader();
-		solidVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "solid.vert"));
-		solidVert.create();
-		// SOLID FRAG
-		solidFrag = glFactory.createShader();
-		solidFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "solid.frag"));
-		solidFrag.create();
-		// TEXTURED VERT
-		texturedVert = glFactory.createShader();
-		texturedVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "textured.vert"));
-		texturedVert.create();
-		// TEXTURED FRAG
-		texturedFrag = glFactory.createShader();
-		texturedFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "textured.frag"));
-		texturedFrag.create();
-		// FONT VERT
-		fontVert = glFactory.createShader();
-		fontVert.setSource(StringModel.class.getResourceAsStream(shaderPath + "font.vert"));
-		fontVert.create();
-		// FONT FRAG
-		fontFrag = glFactory.createShader();
-		fontFrag.setSource(StringModel.class.getResourceAsStream(shaderPath + "font.frag"));
-		fontFrag.create();
-		// SSAO VERT
-		ssaoVert = glFactory.createShader();
-		ssaoVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssao.vert"));
-		ssaoVert.create();
-		// SSAO FRAG
-		ssaoFrag = glFactory.createShader();
-		ssaoFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "ssao.frag"));
-		ssaoFrag.create();
-		// SHADOW VERT
-		shadowVert = glFactory.createShader();
-		shadowVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "shadow.vert"));
-		shadowVert.create();
-		// SHADOW FRAG
-		shadowFrag = glFactory.createShader();
-		shadowFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "shadow.frag"));
-		shadowFrag.create();
-		// BLUR VERT
-		blurVert = glFactory.createShader();
-		blurVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "blur.vert"));
-		blurVert.create();
-		// BLUR FRAG
-		blurFrag = glFactory.createShader();
-		blurFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "blur.frag"));
-		blurFrag.create();
-		// LIGHTING VERT
-		lightingVert = glFactory.createShader();
-		lightingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.vert"));
-		lightingVert.create();
-		// LIGHTING FRAG
-		lightingFrag = glFactory.createShader();
-		lightingFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "lighting.frag"));
-		lightingFrag.create();
-		// MOTION BLUR VERT
-		motionBlurVert = glFactory.createShader();
-		motionBlurVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "motionBlur.vert"));
-		motionBlurVert.create();
-		// MOTION BLUR FRAG
-		motionBlurFrag = glFactory.createShader();
-		motionBlurFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "motionBlur.frag"));
-		motionBlurFrag.create();
-		// ANTI ALIASING VERT
-		antiAliasingVert = glFactory.createShader();
-		antiAliasingVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "edaa.vert"));
-		antiAliasingVert.create();
-		// ANTI ALIASING FRAG
-		antiAliasingFrag = glFactory.createShader();
-		antiAliasingFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "edaa.frag"));
-		antiAliasingFrag.create();
-		// SCREEN VERT
-		screenVert = glFactory.createShader();
-		screenVert.setSource(Sandbox.class.getResourceAsStream(shaderPath + "screen.vert"));
-		screenVert.create();
-		// SCREEN FRAG
-		screenFrag = glFactory.createShader();
-		screenFrag.setSource(Sandbox.class.getResourceAsStream(shaderPath + "screen.frag"));
-		screenFrag.create();
-	}
-
 	private static void initPrograms() {
 		// SOLID
-		solidProgram = glFactory.createProgram();
-		solidProgram.addShader(solidVert);
-		solidProgram.addShader(solidFrag);
-		solidProgram.create();
+		loadProgram("solid");
 		// TEXTURED
-		texturedProgram = glFactory.createProgram();
-		texturedProgram.addShader(texturedVert);
-		texturedProgram.addShader(texturedFrag);
-		texturedProgram.create();
+		loadProgram("textured");
 		/// FONT
-		fontProgram = glFactory.createProgram();
-		fontProgram.addShader(fontVert);
-		fontProgram.addShader(fontFrag);
-		fontProgram.create();
+		loadProgram("font");
 		// SSAO
-		ssaoProgram = glFactory.createProgram();
-		ssaoProgram.addShader(ssaoVert);
-		ssaoProgram.addShader(ssaoFrag);
-		ssaoProgram.create();
+		loadProgram("ssao");
 		// SHADOW
-		shadowProgram = glFactory.createProgram();
-		shadowProgram.addShader(shadowVert);
-		shadowProgram.addShader(shadowFrag);
-		shadowProgram.create();
+		loadProgram("shadow");
 		// BLUR
-		blurProgram = glFactory.createProgram();
-		blurProgram.addShader(blurVert);
-		blurProgram.addShader(blurFrag);
-		blurProgram.create();
+		loadProgram("blur");
 		// LIGHTING
-		lightingProgram = glFactory.createProgram();
-		lightingProgram.addShader(lightingVert);
-		lightingProgram.addShader(lightingFrag);
-		lightingProgram.create();
+		loadProgram("lighting");
 		// MOTION BLUR
-		motionBlurProgram = glFactory.createProgram();
-		motionBlurProgram.addShader(motionBlurVert);
-		motionBlurProgram.addShader(motionBlurFrag);
-		motionBlurProgram.create();
+		loadProgram("motionBlur");
 		// ANTI ALIASING
-		antiAliasingProgram = glFactory.createProgram();
-		antiAliasingProgram.addShader(antiAliasingVert);
-		antiAliasingProgram.addShader(antiAliasingFrag);
-		antiAliasingProgram.create();
+		loadProgram("edaa");
 		// SCREEN
-		screenProgram = glFactory.createProgram();
-		screenProgram.addShader(screenVert);
-		screenProgram.addShader(screenFrag);
-		screenProgram.create();
+		loadProgram("screen");
+	}
+
+	private static void loadProgram(String name) {
+		final String shaderPath = "/shaders/" + glVersion.toString().toLowerCase() + "/" + name;
+		// SHADERS
+		final Shader vert = glFactory.createShader();
+		vert.setSource(Sandbox.class.getResourceAsStream(shaderPath + ".vert"));
+		vert.create();
+		final Shader frag = glFactory.createShader();
+		frag.setSource(Sandbox.class.getResourceAsStream(shaderPath + ".frag"));
+		frag.create();
+		// PROGRAM
+		final Program program = glFactory.createProgram();
+		program.addShader(vert);
+		program.addShader(frag);
+		program.create();
+		programs.put(name, program);
 	}
 
 	private static void initTextures() {
@@ -570,19 +444,19 @@ public class SandboxRenderer {
 	private static void initMaterials() {
 		UniformHolder uniforms;
 		// SOLID
-		solidMaterial = new Material(solidProgram);
+		solidMaterial = createMaterial("solid");
 		uniforms = solidMaterial.getUniforms();
 		uniforms.add(new FloatUniform("diffuseIntensity", 0.8f));
 		uniforms.add(new FloatUniform("specularIntensity", 1));
 		uniforms.add(new FloatUniform("ambientIntensity", 0.2f));
 		// WIREFRAME
-		wireframeMaterial = new Material(solidProgram);
+		wireframeMaterial = createMaterial("solid");
 		uniforms = wireframeMaterial.getUniforms();
 		uniforms.add(new FloatUniform("diffuseIntensity", 0));
 		uniforms.add(new FloatUniform("specularIntensity", 0));
 		uniforms.add(new FloatUniform("ambientIntensity", 1));
 		// CREEPER
-		creeperMaterial = new Material(texturedProgram);
+		creeperMaterial = createMaterial("textured");
 		creeperMaterial.addTexture(0, creeperDiffuseTexture);
 		creeperMaterial.addTexture(1, creeperNormalsTexture);
 		creeperMaterial.addTexture(2, creeperSpecularTexture);
@@ -590,7 +464,7 @@ public class SandboxRenderer {
 		uniforms.add(new FloatUniform("diffuseIntensity", 0.8f));
 		uniforms.add(new FloatUniform("ambientIntensity", 0.2f));
 		// WOOD
-		woodMaterial = new Material(texturedProgram);
+		woodMaterial = createMaterial("textured");
 		woodMaterial.addTexture(0, woodDiffuseTexture);
 		woodMaterial.addTexture(1, woodNormalsTexture);
 		woodMaterial.addTexture(2, woodSpecularTexture);
@@ -598,7 +472,7 @@ public class SandboxRenderer {
 		uniforms.add(new FloatUniform("diffuseIntensity", 0.8f));
 		uniforms.add(new FloatUniform("ambientIntensity", 0.2f));
 		// SSAO
-		ssaoMaterial = new Material(ssaoProgram);
+		ssaoMaterial = createMaterial("ssao");
 		ssaoMaterial.addTexture(0, normalsTexture);
 		ssaoMaterial.addTexture(1, depthsTexture);
 		ssaoMaterial.addTexture(2, ssaoEffect.getNoiseTexture());
@@ -608,7 +482,7 @@ public class SandboxRenderer {
 		uniforms.add(new FloatUniform("aspectRatio", ASPECT_RATIO));
 		ssaoEffect.addUniforms(uniforms);
 		// SHADOW
-		shadowMaterial = new Material(shadowProgram);
+		shadowMaterial = createMaterial("shadow");
 		shadowMaterial.addTexture(0, vertexNormals);
 		shadowMaterial.addTexture(1, depthsTexture);
 		shadowMaterial.addTexture(2, lightDepthsTexture);
@@ -623,13 +497,13 @@ public class SandboxRenderer {
 		uniforms.add(lightProjectionMatrixUniform);
 		shadowMappingEffect.addUniforms(uniforms);
 		// BLUR
-		blurMaterial = new Material(blurProgram);
+		blurMaterial = createMaterial("blur");
 		blurMaterial.addTexture(0, auxRTexture);
 		blurMaterial.addTexture(1, auxRGBATexture);
 		uniforms = blurMaterial.getUniforms();
 		blurEffect.addUniforms(uniforms);
 		// LIGHTING
-		lightingMaterial = new Material(lightingProgram);
+		lightingMaterial = createMaterial("lighting");
 		lightingMaterial.addTexture(0, colorsTexture);
 		lightingMaterial.addTexture(1, normalsTexture);
 		lightingMaterial.addTexture(2, depthsTexture);
@@ -645,7 +519,7 @@ public class SandboxRenderer {
 		uniforms.add(new FloatUniform("spotCutoff", TrigMath.cos(Sandbox.SPOT_CUTOFF)));
 		uniforms.add(spotDirectionUniform);
 		// MOTION BLUR
-		motionBlurMaterial = new Material(motionBlurProgram);
+		motionBlurMaterial = createMaterial("motionBlur");
 		motionBlurMaterial.addTexture(0, auxRGBATexture);
 		motionBlurMaterial.addTexture(1, velocitiesTexture);
 		uniforms = motionBlurMaterial.getUniforms();
@@ -653,7 +527,7 @@ public class SandboxRenderer {
 		uniforms.add(new IntUniform("sampleCount", 8));
 		uniforms.add(blurStrengthUniform);
 		// ANTI ALIASING
-		antiAliasingMaterial = new Material(antiAliasingProgram);
+		antiAliasingMaterial = createMaterial("edaa");
 		antiAliasingMaterial.addTexture(0, colorsTexture);
 		antiAliasingMaterial.addTexture(1, vertexNormals);
 		antiAliasingMaterial.addTexture(2, depthsTexture);
@@ -665,8 +539,12 @@ public class SandboxRenderer {
 		uniforms.add(new Vector2Uniform("weights", new Vector2(0.25f, 0.6f)));
 		uniforms.add(new FloatUniform("kernel", 0.75f));
 		// SCREEN
-		screenMaterial = new Material(screenProgram);
+		screenMaterial = createMaterial("screen");
 		screenMaterial.addTexture(0, auxRGBATexture);
+	}
+
+	private static Material createMaterial(String program) {
+		return new Material(programs.get(program));
 	}
 
 	private static void initFrameBuffers() {
@@ -728,7 +606,6 @@ public class SandboxRenderer {
 
 	public static void dispose() {
 		disposeEffects();
-		disposeShaders();
 		disposePrograms();
 		disposeTextures();
 		disposeFrameBuffers();
@@ -750,60 +627,15 @@ public class SandboxRenderer {
 		blurEffect.dispose();
 	}
 
-	private static void disposeShaders() {
-		// SOLID
-		solidVert.destroy();
-		solidFrag.destroy();
-		// TEXTURED
-		texturedVert.destroy();
-		texturedFrag.destroy();
-		// FONT
-		fontVert.destroy();
-		fontFrag.destroy();
-		// SSAO
-		ssaoVert.destroy();
-		ssaoFrag.destroy();
-		// SHADOW
-		shadowVert.destroy();
-		shadowFrag.destroy();
-		// BLUR
-		blurVert.destroy();
-		blurFrag.destroy();
-		// LIGHTING
-		lightingVert.destroy();
-		lightingFrag.destroy();
-		// MOTION BLUR
-		motionBlurVert.destroy();
-		motionBlurFrag.destroy();
-		// ANTI ALIASING
-		antiAliasingVert.destroy();
-		antiAliasingFrag.destroy();
-		// SCREEN
-		screenVert.destroy();
-		screenFrag.destroy();
-	}
-
 	private static void disposePrograms() {
-		// SOLID
-		solidProgram.destroy();
-		// TEXTURED
-		texturedProgram.destroy();
-		// FONT
-		fontProgram.destroy();
-		// SSAO
-		ssaoProgram.destroy();
-		// SHADOW
-		shadowProgram.destroy();
-		// BLUR
-		blurProgram.destroy();
-		// LIGHTING
-		lightingProgram.destroy();
-		// MOTION BLUR
-		motionBlurProgram.destroy();
-		// ANTI ALIASING
-		antiAliasingProgram.destroy();
-		// SCREEN
-		screenProgram.destroy();
+		for (Program program : programs.values()) {
+			// SHADERS
+			for (Shader shader : program.getShaders()) {
+				shader.destroy();
+			}
+			// PROGRAM
+			program.destroy();
+		}
 	}
 
 	private static void disposeTextures() {
@@ -1028,7 +860,7 @@ public class SandboxRenderer {
 			System.out.println(e);
 			return;
 		}
-		final StringModel sandboxModel = new StringModel(glFactory, fontProgram, "SandboxPweryCusticRF0123456789,&: ", ubuntu.deriveFont(Font.PLAIN, 15), WINDOW_SIZE.getFloorX());
+		final StringModel sandboxModel = new StringModel(glFactory, programs.get("font"), "SandboxPweryCusticRF0123456789,&: ", ubuntu.deriveFont(Font.PLAIN, 15), WINDOW_SIZE.getFloorX());
 		final float aspect = 1 / ASPECT_RATIO;
 		sandboxModel.setPosition(new Vector3(0.005, aspect / 2 + 0.315, -0.1));
 		final String white = "#ffffffff", brown = "#ffC19953", green = "#ff00ff00", cyan = "#ff4fB5ff";
