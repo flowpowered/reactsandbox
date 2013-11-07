@@ -103,9 +103,9 @@ public class Sandbox {
 			SandboxRenderer.addDefaultObjects();
 			setupPhysics();
 			startupLog();
-			SandboxRenderer.getCamera().setPosition(new org.spout.math.vector.Vector3(0, 5, 10));
-			SandboxRenderer.setLightPosition(new org.spout.math.vector.Vector3(0, 50, 50));
-			SandboxRenderer.setLightDirection(new org.spout.math.vector.Vector3(0, -TrigMath.cos(SPOT_CUTOFF), -TrigMath.sin(SPOT_CUTOFF)));
+			SandboxRenderer.getCamera().setPosition(new org.spout.math.vector.Vector3f(0, 5, 10));
+			SandboxRenderer.setLightPosition(new org.spout.math.vector.Vector3f(0, 50, 50));
+			SandboxRenderer.setLightDirection(new org.spout.math.vector.Vector3f(0, -TrigMath.cos(SPOT_CUTOFF), -TrigMath.sin(SPOT_CUTOFF)));
 			Mouse.setGrabbed(true);
 			SandboxRenderer.startFPSMonitor();
 			long lastTime = System.currentTimeMillis();

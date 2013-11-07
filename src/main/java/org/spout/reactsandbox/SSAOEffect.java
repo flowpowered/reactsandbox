@@ -30,8 +30,8 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.spout.math.GenericMath;
-import org.spout.math.vector.Vector2;
-import org.spout.math.vector.Vector3;
+import org.spout.math.vector.Vector2f;
+import org.spout.math.vector.Vector3f;
 import org.spout.renderer.data.Uniform.FloatUniform;
 import org.spout.renderer.data.Uniform.IntUniform;
 import org.spout.renderer.data.Uniform.Vector2Uniform;
@@ -45,16 +45,16 @@ import org.spout.renderer.util.CausticUtil;
 
 public class SSAOEffect {
 	private final int kernelSize;
-	private final Vector3[] kernel;
+	private final Vector3f[] kernel;
 	private final float radius;
 	private final float threshold;
-	private final Vector2 noiseScale;
+	private final Vector2f noiseScale;
 	private final Texture noiseTexture;
 	private final float power;
 
-	public SSAOEffect(GLFactory glFactory, Vector2 resolution, int kernelSize, int noiseSize, float radius, float threshold, float power) {
+	public SSAOEffect(GLFactory glFactory, Vector2f resolution, int kernelSize, int noiseSize, float radius, float threshold, float power) {
 		this.kernelSize = kernelSize;
-		this.kernel = new Vector3[kernelSize];
+		this.kernel = new Vector3f[kernelSize];
 		this.radius = radius;
 		this.threshold = threshold;
 		this.noiseScale = resolution.div(noiseSize);
@@ -67,14 +67,14 @@ public class SSAOEffect {
 			scale = GenericMath.lerp(threshold, 1, scale * scale);
 			// Create a set of random unit vectors inside a hemisphere
 			// The vectors are scaled so that the amount falls of as we get further away from the center
-			kernel[i] = new Vector3(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, random.nextFloat()).normalize().mul(scale);
+			kernel[i] = new Vector3f(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, random.nextFloat()).normalize().mul(scale);
 		}
 		// Generate the noise texture
 		final int noiseTextureSize = noiseSize * noiseSize;
 		final ByteBuffer noiseTextureBuffer = CausticUtil.createByteBuffer(noiseTextureSize * 3);
 		for (int i = 0; i < noiseTextureSize; i++) {
 			// Random unit vectors around the z axis
-			Vector3 noise = new Vector3(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, 0).normalize();
+			Vector3f noise = new Vector3f(random.nextFloat() * 2 - 1, random.nextFloat() * 2 - 1, 0).normalize();
 			// Encode to unsigned byte, and place in buffer
 			noise = noise.mul(128).add(128, 128, 128);
 			noiseTextureBuffer.put((byte) (noise.getFloorX() & 0xff));
