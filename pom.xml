@@ -8,7 +8,7 @@
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<inceptionYear>2013</inceptionYear>
-	<url>http://www.spout.org</url>
+	<url>https://github.com/ReactPhysics/ReactSandbox</url>
 	<description>Visual debugging and testing for the React physics library.</description>
 
 	<!-- Build properties -->
@@ -57,21 +57,21 @@
 
 	<!-- Source code access -->
 	<scm>
-		<connection>scm:git:git://github.com/SpoutDev/ReactSandbox.git</connection>
-		<developerConnection>scm:git:git@github.com:SpoutDev/ReactSandbox.git</developerConnection>
-		<url>https://github.com/SpoutDev/ReactSandbox</url>
+		<connection>scm:git:git://github.com/ReactPhysics/ReactSandbox.git</connection>
+		<developerConnection>scm:git:git@github.com:ReactPhysics/ReactSandbox.git</developerConnection>
+		<url>https://github.com/ReactPhysics/ReactSandbox</url>
 	</scm>
 
 	<!-- Continuous integration -->
 	<ciManagement>
 		<system>travis</system>
-		<url>https://travis-ci.org/SpoutDev/ReactSandbox</url>
+		<url>https://travis-ci.org/ReactPhysics/ReactSandbox</url>
 	</ciManagement>
 
 	<!-- Issue management -->
 	<issueManagement>
-		<system>jira</system>
-		<url>http://spoutdev.atlassian.net/browse/REACT</url>
+		<system>github</system>
+		<url>https://github.com/ReactPhysics/ReactSandbox/issues</url>
 	</issueManagement>
 
 	<!-- Dependency repositories -->
@@ -136,7 +136,7 @@
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
-			<version>1.12</version>
+			<version>1.13</version>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
@@ -238,7 +238,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>2.1</version>
+				<version>2.2</version>
 				<executions>
 					<execution>
 						<configuration>
@@ -264,6 +264,22 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<!-- Coveralls reporting plugin  -->
+			<plugin>
+				<groupId>org.eluder.coveralls</groupId>
+				<artifactId>coveralls-maven-plugin</artifactId>
+				<version>2.0.1</version>
+			</plugin>
+			<!-- Cobertura test coverage plugin -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>cobertura-maven-plugin</artifactId>
+				<version>2.6</version>
+				<configuration>
+					<format>xml</format>
+					<maxmem>256m</maxmem>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
