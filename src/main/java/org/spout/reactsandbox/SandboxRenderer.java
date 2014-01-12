@@ -26,6 +26,7 @@
  */
 package org.spout.reactsandbox;
 
+import javax.imageio.ImageIO;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
@@ -43,8 +44,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.imageio.ImageIO;
-
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
@@ -58,45 +57,46 @@ import org.spout.math.imaginary.Quaternionf;
 import org.spout.math.matrix.Matrix4f;
 import org.spout.math.vector.Vector2f;
 import org.spout.math.vector.Vector3f;
-import org.spout.renderer.Action.RenderModelsAction;
-import org.spout.renderer.Camera;
-import org.spout.renderer.GLImplementation;
-import org.spout.renderer.GLVersioned.GLVersion;
-import org.spout.renderer.Material;
-import org.spout.renderer.Pipeline;
-import org.spout.renderer.Pipeline.PipelineBuilder;
-import org.spout.renderer.data.Color;
-import org.spout.renderer.data.Uniform.ColorUniform;
-import org.spout.renderer.data.Uniform.FloatUniform;
-import org.spout.renderer.data.Uniform.IntUniform;
-import org.spout.renderer.data.Uniform.Matrix4Uniform;
-import org.spout.renderer.data.Uniform.Vector2Uniform;
-import org.spout.renderer.data.Uniform.Vector3Uniform;
-import org.spout.renderer.data.UniformHolder;
-import org.spout.renderer.data.VertexAttribute;
-import org.spout.renderer.data.VertexAttribute.DataType;
-import org.spout.renderer.data.VertexData;
-import org.spout.renderer.gl.Context;
-import org.spout.renderer.gl.Context.Capability;
-import org.spout.renderer.gl.FrameBuffer;
-import org.spout.renderer.gl.FrameBuffer.AttachmentPoint;
-import org.spout.renderer.gl.GLFactory;
-import org.spout.renderer.gl.Program;
-import org.spout.renderer.gl.Shader;
-import org.spout.renderer.gl.Texture;
-import org.spout.renderer.gl.Texture.CompareMode;
-import org.spout.renderer.gl.Texture.FilterMode;
-import org.spout.renderer.gl.Texture.Format;
-import org.spout.renderer.gl.Texture.InternalFormat;
-import org.spout.renderer.gl.Texture.WrapMode;
-import org.spout.renderer.gl.VertexArray;
-import org.spout.renderer.gl.VertexArray.DrawingMode;
-import org.spout.renderer.model.Model;
-import org.spout.renderer.model.StringModel;
-import org.spout.renderer.util.CausticUtil;
-import org.spout.renderer.util.ColladaFileLoader;
-import org.spout.renderer.util.ObjFileLoader;
-import org.spout.renderer.util.Rectangle;
+import org.spout.renderer.api.Action.RenderModelsAction;
+import org.spout.renderer.api.Camera;
+import org.spout.renderer.api.GLImplementation;
+import org.spout.renderer.api.GLVersioned.GLVersion;
+import org.spout.renderer.api.Material;
+import org.spout.renderer.api.Pipeline;
+import org.spout.renderer.api.Pipeline.PipelineBuilder;
+import org.spout.renderer.api.data.Color;
+import org.spout.renderer.api.data.Uniform.ColorUniform;
+import org.spout.renderer.api.data.Uniform.FloatUniform;
+import org.spout.renderer.api.data.Uniform.IntUniform;
+import org.spout.renderer.api.data.Uniform.Matrix4Uniform;
+import org.spout.renderer.api.data.Uniform.Vector2Uniform;
+import org.spout.renderer.api.data.Uniform.Vector3Uniform;
+import org.spout.renderer.api.data.UniformHolder;
+import org.spout.renderer.api.data.VertexAttribute;
+import org.spout.renderer.api.data.VertexAttribute.DataType;
+import org.spout.renderer.api.data.VertexData;
+import org.spout.renderer.api.gl.Context;
+import org.spout.renderer.api.gl.Context.Capability;
+import org.spout.renderer.api.gl.FrameBuffer;
+import org.spout.renderer.api.gl.FrameBuffer.AttachmentPoint;
+import org.spout.renderer.api.gl.GLFactory;
+import org.spout.renderer.api.gl.Program;
+import org.spout.renderer.api.gl.Shader;
+import org.spout.renderer.api.gl.Texture;
+import org.spout.renderer.api.gl.Texture.CompareMode;
+import org.spout.renderer.api.gl.Texture.FilterMode;
+import org.spout.renderer.api.gl.Texture.Format;
+import org.spout.renderer.api.gl.Texture.InternalFormat;
+import org.spout.renderer.api.gl.Texture.WrapMode;
+import org.spout.renderer.api.gl.VertexArray;
+import org.spout.renderer.api.gl.VertexArray.DrawingMode;
+import org.spout.renderer.api.model.Model;
+import org.spout.renderer.api.model.StringModel;
+import org.spout.renderer.api.util.CausticUtil;
+import org.spout.renderer.api.util.ColladaFileLoader;
+import org.spout.renderer.api.util.ObjFileLoader;
+import org.spout.renderer.api.util.Rectangle;
+import org.spout.renderer.lwjgl.LWJGLUtil;
 
 public class SandboxRenderer {
 	// CONSTANTS
@@ -220,7 +220,7 @@ public class SandboxRenderer {
 			context.enableCapability(Capability.CULL_FACE);
 		}
 		context.enableCapability(Capability.DEPTH_TEST);
-		if (glVersion == GLVersion.GL30 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
+		if (glVersion == GLVersion.GL32 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
 			context.enableCapability(Capability.DEPTH_CLAMP);
 		}
 		final UniformHolder uniforms = context.getUniforms();
@@ -246,7 +246,7 @@ public class SandboxRenderer {
 		pipelineBuilder = pipelineBuilder.useViewPort(new Rectangle(Vector2f.ZERO, SHADOW_SIZE)).useCamera(lightCamera).bindFrameBuffer(lightModelFrameBuffer).clearBuffer()
 				.renderModels(modelRenderList).unbindFrameBuffer(lightModelFrameBuffer).useViewPort(new Rectangle(Vector2f.ZERO, WINDOW_SIZE)).useCamera(modelCamera);
 		// SSAO
-		if (glVersion == GLVersion.GL30 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
+		if (glVersion == GLVersion.GL32 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
 			pipelineBuilder = pipelineBuilder.disableCapabilities(Capability.DEPTH_CLAMP);
 		}
 		pipelineBuilder = pipelineBuilder.disableCapabilities(Capability.DEPTH_TEST).doAction(new DoDeferredStageAction(ssaoFrameBuffer, deferredStageScreenVertexArray, ssaoMaterial));
@@ -261,7 +261,7 @@ public class SandboxRenderer {
 		// ANTI ALIASING
 		pipelineBuilder = pipelineBuilder.doAction(new DoDeferredStageAction(antiAliasingFrameBuffer, deferredStageScreenVertexArray, antiAliasingMaterial))
 				.unbindFrameBuffer(antiAliasingFrameBuffer).enableCapabilities(Capability.DEPTH_TEST);
-		if (glVersion == GLVersion.GL30 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
+		if (glVersion == GLVersion.GL32 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
 			pipelineBuilder = pipelineBuilder.enableCapabilities(Capability.DEPTH_CLAMP);
 		}
 		// GUI
@@ -705,9 +705,19 @@ public class SandboxRenderer {
 	}
 
 	public static void setGLVersion(GLVersion version) {
-		glVersion = version;
-		glFactory = GLImplementation.get(version);
-	}
+        switch (version) {
+            case GL20:
+            case GL21:
+                glFactory = GLImplementation.get(LWJGLUtil.GL21_IMPL);
+                glVersion = GLVersion.GL21;
+                break;
+            case GL30:
+            case GL31:
+            case GL32:
+                glFactory = GLImplementation.get(LWJGLUtil.GL32_IMPL);
+                glVersion = GLVersion.GL32;
+        }
+    }
 
 	public static void setCullBackFaces(boolean cull) {
 		cullBackFaces = cull;

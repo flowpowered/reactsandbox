@@ -59,10 +59,10 @@ import org.spout.physics.engine.DynamicsWorld;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
-import org.spout.renderer.Camera;
-import org.spout.renderer.GLVersioned.GLVersion;
-import org.spout.renderer.data.Color;
-import org.spout.renderer.model.Model;
+import org.spout.renderer.api.Camera;
+import org.spout.renderer.api.GLVersioned.GLVersion;
+import org.spout.renderer.api.data.Color;
+import org.spout.renderer.api.model.Model;
 
 /**
  * The main class of the ReactSandbox.
@@ -279,10 +279,10 @@ public class Sandbox {
 			position.add(Vector3.multiply(forward, -speed));
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
-			position.add(Vector3.multiply(right, speed));
+			position.add(Vector3.multiply(right, -speed));
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
-			position.add(Vector3.multiply(right, -speed));
+			position.add(Vector3.multiply(right, speed));
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
 			position.add(Vector3.multiply(up, speed));
