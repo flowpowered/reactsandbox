@@ -30,39 +30,39 @@ package org.spout.reactsandbox;
  * A basic FPS monitor.
  */
 public class FPSMonitor {
-	private long lastUpdateTime;
-	private long elapsedTime = 0;
-	private int frameCount = 0;
-	private int framesPerSecond;
+    private long lastUpdateTime;
+    private long elapsedTime = 0;
+    private int frameCount = 0;
+    private int framesPerSecond;
 
-	/**
-	 * Starts the FPS monitor.
-	 */
-	public void start() {
-		lastUpdateTime = System.currentTimeMillis();
-	}
+    /**
+     * Starts the FPS monitor.
+     */
+    public void start() {
+        lastUpdateTime = System.currentTimeMillis();
+    }
 
-	/**
-	 * Updates the frames per seconds.
-	 */
-	public void update() {
-		final long time = System.currentTimeMillis();
-		elapsedTime += time - lastUpdateTime;
-		lastUpdateTime = time;
-		frameCount++;
-		if (elapsedTime >= 1000) {
-			framesPerSecond = frameCount;
-			frameCount = 0;
-			elapsedTime = 0;
-		}
-	}
+    /**
+     * Updates the frames per seconds.
+     */
+    public void update() {
+        final long time = System.currentTimeMillis();
+        elapsedTime += time - lastUpdateTime;
+        lastUpdateTime = time;
+        frameCount++;
+        if (elapsedTime >= 1000) {
+            framesPerSecond = frameCount;
+            frameCount = 0;
+            elapsedTime = 0;
+        }
+    }
 
-	/**
-	 * Returns the FPS.
-	 *
-	 * @return The FPS
-	 */
-	public int getFPS() {
-		return framesPerSecond;
-	}
+    /**
+     * Returns the FPS.
+     *
+     * @return The FPS
+     */
+    public int getFPS() {
+        return framesPerSecond;
+    }
 }

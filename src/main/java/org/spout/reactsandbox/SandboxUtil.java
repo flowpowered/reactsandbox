@@ -33,58 +33,58 @@ import org.spout.physics.math.Vector3;
  * Various utility function for the sandbox.
  */
 public class SandboxUtil {
-	/**
-	 * Converts from Math to React Vector3.
-	 *
-	 * @param v The React Vector3
-	 * @return The equivalent Math Vector3
-	 */
-	public static org.spout.math.vector.Vector3f toMathVector3(Vector3 v) {
-		return new org.spout.math.vector.Vector3f(v.getX(), v.getY(), v.getZ());
-	}
+    /**
+     * Converts from Math to React Vector3.
+     *
+     * @param v The React Vector3
+     * @return The equivalent Math Vector3
+     */
+    public static com.flowpowered.math.vector.Vector3f toMathVector3(Vector3 v) {
+        return new com.flowpowered.math.vector.Vector3f(v.getX(), v.getY(), v.getZ());
+    }
 
-	/**
-	 * Converts from React to Math Vector3.
-	 *
-	 * @param v The Math Vector3
-	 * @return The equivalent React Vector3
-	 */
-	public static Vector3 toReactVector3(org.spout.math.vector.Vector3f v) {
-		return new Vector3(v.getX(), v.getY(), v.getZ());
-	}
+    /**
+     * Converts from React to Math Vector3.
+     *
+     * @param v The Math Vector3
+     * @return The equivalent React Vector3
+     */
+    public static Vector3 toReactVector3(com.flowpowered.math.vector.Vector3f v) {
+        return new Vector3(v.getX(), v.getY(), v.getZ());
+    }
 
-	/**
-	 * Converts from React to Math Quaternion.
-	 *
-	 * @param q The React Quaternion
-	 * @return The equivalent Math Quaternion
-	 */
-	public static org.spout.math.imaginary.Quaternionf toMathQuaternion(Quaternion q) {
-		return new org.spout.math.imaginary.Quaternionf(q.getX(), q.getY(), q.getZ(), q.getW());
-	}
+    /**
+     * Converts from React to Math Quaternion.
+     *
+     * @param q The React Quaternion
+     * @return The equivalent Math Quaternion
+     */
+    public static com.flowpowered.math.imaginary.Quaternionf toMathQuaternion(Quaternion q) {
+        return new com.flowpowered.math.imaginary.Quaternionf(q.getX(), q.getY(), q.getZ(), q.getW());
+    }
 
-	/**
-	 * Converts from Math to React Quaternion
-	 *
-	 * @param q The Math Quaternion
-	 * @return The equivalent React Quaternion
-	 */
-	public static Quaternion toReactQuaternion(org.spout.math.imaginary.Quaternionf q) {
-		return new Quaternion(q.getX(), q.getY(), q.getZ(), q.getW());
-	}
+    /**
+     * Converts from Math to React Quaternion
+     *
+     * @param q The Math Quaternion
+     * @return The equivalent React Quaternion
+     */
+    public static Quaternion toReactQuaternion(com.flowpowered.math.imaginary.Quaternionf q) {
+        return new Quaternion(q.getX(), q.getY(), q.getZ(), q.getW());
+    }
 
-	/**
-	 * Creates a new quaternion from the rotation around the axis.
-	 *
-	 * @param angle The angle of the rotation
-	 * @param x The x component of the axis
-	 * @param y The y component of the axis
-	 * @param z The z component of the axis
-	 * @return The quaternion
-	 */
-	public static Quaternion angleAxisToQuaternion(float angle, float x, float y, float z) {
-		final float halfAngle = (float) (Math.toRadians(angle) / 2);
-		final float q = (float) (Math.sin(halfAngle) / Math.sqrt(x * x + y * y + z * z));
-		return new Quaternion(x * q, y * q, z * q, (float) Math.cos(halfAngle));
-	}
+    /**
+     * Creates a new quaternion from the rotation around the axis.
+     *
+     * @param angle The angle of the rotation
+     * @param x The x component of the axis
+     * @param y The y component of the axis
+     * @param z The z component of the axis
+     * @return The quaternion
+     */
+    public static Quaternion angleAxisToQuaternion(float angle, float x, float y, float z) {
+        final float halfAngle = (float) (Math.toRadians(angle) / 2);
+        final float q = (float) (Math.sin(halfAngle) / Math.sqrt(x * x + y * y + z * z));
+        return new Quaternion(x * q, y * q, z * q, (float) Math.cos(halfAngle));
+    }
 }

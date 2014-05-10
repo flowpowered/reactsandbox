@@ -4,8 +4,10 @@ Input:
     # Speed of the camera for moving about.
     CameraSpeed: 0.2
 Appearance:
-    # OpenGL versions: GL20 or GL30
-    GLVersion: GL30
+    # Enable or disable debug output
+    Debug: true
+    # OpenGL versions: GL20, GL21, GL30 or GL32
+    GLVersion: GL32
     # Back ground color in RGB float components.
     BackgroundColor: 0.2, 0.2, 0.2
     # AABB color in RGB floats.

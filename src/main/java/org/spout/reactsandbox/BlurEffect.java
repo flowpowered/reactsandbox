@@ -26,25 +26,27 @@
  */
 package org.spout.reactsandbox;
 
-import org.spout.math.vector.Vector2f;
+import com.flowpowered.math.vector.Vector2f;
+import com.flowpowered.math.vector.Vector2i;
+
 import org.spout.renderer.api.data.Uniform.IntUniform;
 import org.spout.renderer.api.data.Uniform.Vector2Uniform;
 import org.spout.renderer.api.data.UniformHolder;
 
 public class BlurEffect {
-	private final int blurSize;
-	private final Vector2f texelSize;
+    private final int blurSize;
+    private final Vector2f texelSize;
 
-	public BlurEffect(Vector2f resolution, int blurSize) {
-		this.blurSize = blurSize;
-		this.texelSize = Vector2f.ONE.div(resolution);
-	}
+    public BlurEffect(Vector2i resolution, int blurSize) {
+        this.blurSize = blurSize;
+        this.texelSize = Vector2f.ONE.div(resolution.toFloat());
+    }
 
-	public void dispose() {
-	}
+    public void dispose() {
+    }
 
-	public void addUniforms(UniformHolder destination) {
-		destination.add(new IntUniform("blurSize", blurSize));
-		destination.add(new Vector2Uniform("texelSize", texelSize));
-	}
+    public void addUniforms(UniformHolder destination) {
+        destination.add(new IntUniform("blurSize", blurSize));
+        destination.add(new Vector2Uniform("texelSize", texelSize));
+    }
 }
