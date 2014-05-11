@@ -1,13 +1,14 @@
-# Source language and JDK version to use.
+# Source language and JDK version to use
 language: java
 jdk: oraclejdk7
 
-# Compile and package JAR and set build properties.
+# Compile and package JAR and set build properties
 install: mvn package cobertura:cobertura coveralls:cobertura -DbuildNumber=$TRAVIS_BUILD_NUMBER -DciSystem=travis -Dcommit=${TRAVIS_COMMIT:0:7} -DserviceJobId=$TRAVIS_JOB_ID
 
+# Notification services
 notifications:
-  # Disable build status email notifications, until the issue with forks is fixed.
+  # Disable build status email notifications, until the issue with forks is fixed
   email: false
   webhooks:
-    # Send build information and status to Notifico.
-    - http://n.tkte.ch/h/1149/nXcJTK9aTwXpdxYs4NjH-rbc
+    # Send build information and status to Notifico
+    - http://n.tkte.ch/h/2707/mfmEnE9MDQ_TM3wnkGLiXq3p
