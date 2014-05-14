@@ -877,7 +877,7 @@ public class SandboxRenderer {
         vertexArray.setData(loadOBJ(Sandbox.class.getResourceAsStream("/models/creeper.obj")));
         final Model mobModel = new Model(vertexArray, creeperMaterial);
         mobModel.setPosition(new Vector3f(10, 10, 0));
-        mobModel.setRotation(com.flowpowered.math.imaginary.Quaternionf.fromAngleDegAxis(-90, 0, 1, 0));
+        mobModel.setRotation(Quaternionf.fromAngleDegAxis(-90, 0, 1, 0));
         addModel(mobModel);
         // Add a second mob, instanced from the first one
         movingMobModel = mobModel.getInstance();

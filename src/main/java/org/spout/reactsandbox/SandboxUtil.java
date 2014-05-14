@@ -26,6 +26,9 @@
  */
 package org.spout.reactsandbox;
 
+import com.flowpowered.math.imaginary.Quaternionf;
+import com.flowpowered.math.vector.Vector3f;
+
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Vector3;
 
@@ -39,8 +42,8 @@ public class SandboxUtil {
      * @param v The React Vector3
      * @return The equivalent Math Vector3
      */
-    public static com.flowpowered.math.vector.Vector3f toMathVector3(Vector3 v) {
-        return new com.flowpowered.math.vector.Vector3f(v.getX(), v.getY(), v.getZ());
+    public static Vector3f toMathVector3(Vector3 v) {
+        return new Vector3f(v.getX(), v.getY(), v.getZ());
     }
 
     /**
@@ -49,7 +52,7 @@ public class SandboxUtil {
      * @param v The Math Vector3
      * @return The equivalent React Vector3
      */
-    public static Vector3 toReactVector3(com.flowpowered.math.vector.Vector3f v) {
+    public static Vector3 toReactVector3(Vector3f v) {
         return new Vector3(v.getX(), v.getY(), v.getZ());
     }
 
@@ -59,8 +62,8 @@ public class SandboxUtil {
      * @param q The React Quaternion
      * @return The equivalent Math Quaternion
      */
-    public static com.flowpowered.math.imaginary.Quaternionf toMathQuaternion(Quaternion q) {
-        return new com.flowpowered.math.imaginary.Quaternionf(q.getX(), q.getY(), q.getZ(), q.getW());
+    public static Quaternionf toMathQuaternion(Quaternion q) {
+        return new Quaternionf(q.getX(), q.getY(), q.getZ(), q.getW());
     }
 
     /**
@@ -69,7 +72,7 @@ public class SandboxUtil {
      * @param q The Math Quaternion
      * @return The equivalent React Quaternion
      */
-    public static Quaternion toReactQuaternion(com.flowpowered.math.imaginary.Quaternionf q) {
+    public static Quaternion toReactQuaternion(Quaternionf q) {
         return new Quaternion(q.getX(), q.getY(), q.getZ(), q.getW());
     }
 

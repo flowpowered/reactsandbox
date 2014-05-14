@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.flowpowered.math.TrigMath;
+import com.flowpowered.math.vector.Vector3f;
 import com.flowpowered.math.vector.Vector4f;
 
 import org.apache.commons.io.FileUtils;
@@ -57,6 +58,7 @@ import org.spout.physics.collision.shape.CollisionShape.CollisionShapeType;
 import org.spout.physics.collision.shape.ConeShape;
 import org.spout.physics.collision.shape.CylinderShape;
 import org.spout.physics.collision.shape.SphereShape;
+import org.spout.physics.constraint.SliderJoint.SliderJointInfo;
 import org.spout.physics.engine.DynamicsWorld;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
@@ -105,9 +107,9 @@ public class Sandbox {
             SandboxRenderer.addDefaultObjects();
             setupPhysics();
             startupLog();
-            SandboxRenderer.getCamera().setPosition(new com.flowpowered.math.vector.Vector3f(0, 5, 10));
-            SandboxRenderer.setLightPosition(new com.flowpowered.math.vector.Vector3f(0, 50, 50));
-            SandboxRenderer.setLightDirection(new com.flowpowered.math.vector.Vector3f(0, -TrigMath.cos(SPOT_CUTOFF), -TrigMath.sin(SPOT_CUTOFF)));
+            SandboxRenderer.getCamera().setPosition(new Vector3f(0, 5, 10));
+            SandboxRenderer.setLightPosition(new Vector3f(0, 50, 50));
+            SandboxRenderer.setLightDirection(new Vector3f(0, -TrigMath.cos(SPOT_CUTOFF), -TrigMath.sin(SPOT_CUTOFF)));
             Mouse.setGrabbed(true);
             SandboxRenderer.startFPSMonitor();
             long lastTime = System.currentTimeMillis();
@@ -322,13 +324,22 @@ public class Sandbox {
 
     private static void setupPhysics() {
         world = new DynamicsWorld(gravity, TIMESTEP);
-        addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
+        final MobileRigidBody box = addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
+        box.setMaterial(PHYSICS_MATERIAL);
         addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
         addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1)).setMaterial(PHYSICS_MATERIAL);
         addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
-        addMobileBody(new SphereShape(1), 1, new Vector3(0, 15, 0), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
+        final MobileRigidBody sphere = addMobileBody(new SphereShape(1), 1, new Vector3(0, 6, 7), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
+        sphere.setMaterial(PHYSICS_MATERIAL);
         addImmobileBody(new BoxShape(new Vector3(25, 1, 25)), 100, new Vector3(0, 1.8f, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
         addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
+
+        final Vector3 boxPosition = box.getTransform().getPosition();
+        final Vector3 spherePosition = sphere.getTransform().getPosition();
+        final SliderJointInfo info = new SliderJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), Vector3.subtract(spherePosition, boxPosition));
+        world.createJoint(info);
+        box.setMotionEnabled(false);
+
         world.start();
     }
 
