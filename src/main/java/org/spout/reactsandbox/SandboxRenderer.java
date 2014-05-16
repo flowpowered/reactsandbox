@@ -79,6 +79,7 @@ import org.spout.renderer.api.data.VertexAttribute;
 import org.spout.renderer.api.data.VertexAttribute.DataType;
 import org.spout.renderer.api.data.VertexData;
 import org.spout.renderer.api.gl.Context;
+import org.spout.renderer.api.gl.Context.BlendFunction;
 import org.spout.renderer.api.gl.Context.Capability;
 import org.spout.renderer.api.gl.FrameBuffer;
 import org.spout.renderer.api.gl.FrameBuffer.AttachmentPoint;
@@ -94,6 +95,7 @@ import org.spout.renderer.api.gl.VertexArray;
 import org.spout.renderer.api.gl.VertexArray.DrawingMode;
 import org.spout.renderer.api.model.Model;
 import org.spout.renderer.api.model.StringModel;
+import org.spout.renderer.api.model.StringModel.AntiAliasing;
 import org.spout.renderer.api.util.CausticUtil;
 import org.spout.renderer.api.util.ColladaFileLoader;
 import org.spout.renderer.api.util.MeshGenerator;
@@ -222,6 +224,7 @@ public class SandboxRenderer {
         if (context.getGLVersion() == GLVersion.GL32 || GLContext.getCapabilities().GL_ARB_depth_clamp) {
             context.enableCapability(Capability.DEPTH_CLAMP);
         }
+        context.setBlendingFunctions(BlendFunction.GL_SRC_ALPHA, BlendFunction.GL_ONE_MINUS_SRC_ALPHA);
         final UniformHolder uniforms = context.getUniforms();
         uniforms.add(previousViewMatrixUniform);
         uniforms.add(previousProjectionMatrixUniform);
@@ -265,7 +268,8 @@ public class SandboxRenderer {
             pipelineBuilder = pipelineBuilder.enableCapabilities(Capability.DEPTH_CLAMP);
         }
         // GUI
-        pipelineBuilder = pipelineBuilder.useCamera(guiCamera).clearBuffer().renderModels(guiRenderList).useCamera(modelCamera).updateDisplay();
+        pipelineBuilder = pipelineBuilder.useCamera(guiCamera).enableCapabilities(Capability.BLEND).clearBuffer().renderModels(guiRenderList).disableCapabilities(Capability.BLEND)
+                .useCamera(modelCamera).updateDisplay();
         pipeline = pipelineBuilder.build();
     }
 
@@ -858,14 +862,14 @@ public class SandboxRenderer {
             System.out.println(e);
             return;
         }
-        final StringModel sandboxModel = new StringModel(context, programs.get("font"), "SandboxPweryCusticRF0123456789,&: ", ubuntu.deriveFont(Font.PLAIN, 15), WINDOW_SIZE.getX());
+        final StringModel sandboxModel = new StringModel(context, programs.get("font"), "SandboxPweryCusticRF0123456789,&: ", ubuntu.deriveFont(Font.PLAIN, 16), AntiAliasing.ON, WINDOW_SIZE.getX());
         final float aspect = 1 / ASPECT_RATIO;
         sandboxModel.setPosition(new Vector3f(0.005, aspect / 2 + 0.315, -0.1));
         final String white = "#ffffffff", brown = "#ffC19953", green = "#ff00ff00", cyan = "#ff4fB5ff";
         sandboxModel.setString(brown + "Sandbox\n" + white + "Powered by " + green + "Caustic" + white + " & " + cyan + "React");
         guiRenderList.add(sandboxModel);
         final StringModel fpsModel = sandboxModel.getInstance();
-        fpsModel.setPosition(new Vector3f(0.005, aspect / 2 + 0.285, -0.1));
+        fpsModel.setPosition(new Vector3f(0.005, aspect / 2 + 0.28, -0.1));
         fpsModel.setString("FPS: " + fpsMonitor.getFPS());
         guiRenderList.add(fpsModel);
         fpsMonitorModel = fpsModel;

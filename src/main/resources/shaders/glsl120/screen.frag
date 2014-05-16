@@ -9,5 +9,5 @@ varying vec2 textureUV;
 uniform sampler2D diffuse;
 
 void main() {
-    gl_FragColor = texture2D(diffuse, textureUV);
+    gl_FragColor = vec4(texture2D(diffuse, textureUV).rgb, 1);
 }

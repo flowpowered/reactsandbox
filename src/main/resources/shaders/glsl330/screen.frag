@@ -11,5 +11,5 @@ layout(location = 0) out vec4 outputColor;
 uniform sampler2D diffuse;
 
 void main() {
-    outputColor = texture(diffuse, textureUV);
+    outputColor = vec4(texture(diffuse, textureUV).rgb, 1);
 }
