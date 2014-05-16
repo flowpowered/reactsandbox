@@ -336,11 +336,22 @@ public class Sandbox {
 
         final Vector3 boxPosition = box.getTransform().getPosition();
         final Vector3 spherePosition = sphere.getTransform().getPosition();
-        final SliderJointInfo info = new SliderJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), Vector3.subtract(spherePosition, boxPosition));
+        //final BallAndSocketJointInfo info = new BallAndSocketJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2));
+        final SliderJointInfo info = new SliderJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), Vector3.subtract(spherePosition, boxPosition), 0, 10, 1, 1);
+        //final HingeJointInfo info = new HingeJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), new Vector3(0, 1, 0));
+        //final FixedJointInfo info = new FixedJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2));
         world.createJoint(info);
         box.setMotionEnabled(false);
 
         world.start();
+
+        /*
+         Broken:
+            Ball and socket joint
+            Hinge joint
+            Fixed joint warm starting
+         */
+
     }
 
     @SuppressWarnings("unchecked")
