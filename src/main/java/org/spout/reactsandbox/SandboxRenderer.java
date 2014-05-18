@@ -297,7 +297,7 @@ public class SandboxRenderer {
     }
 
     private static void loadProgram(String name) {
-        final String shaderPath = "/shaders/glsl" + (context.getGLVersion().getMajor() == 3 ? GLVersion.GL33.getGLSLFull() : GLVersion.GL21.getGLSLFull()) + "/" + name;
+        final String shaderPath = "/shaders/glsl" + (context.getGLVersion().getGLSLFull() >= 150 ? 330 : 120) + "/" + name;
         // SHADERS
         final Shader vert = context.newShader();
         vert.create();
