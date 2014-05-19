@@ -45,9 +45,8 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 import org.yaml.snakeyaml.Yaml;
 
+import org.spout.physics.ReactDefaults.JointsPositionCorrectionTechnique;
 import org.spout.physics.body.CollisionBody;
-import org.spout.physics.body.ImmobileRigidBody;
-import org.spout.physics.body.MobileRigidBody;
 import org.spout.physics.body.RigidBody;
 import org.spout.physics.body.RigidBodyMaterial;
 import org.spout.physics.collision.RayCaster.IntersectedBody;
@@ -135,14 +134,14 @@ public class Sandbox {
         }
     }
 
-    private static ImmobileRigidBody addImmobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
-        final ImmobileRigidBody body = world.createImmobileRigidBody(new Transform(position, orientation), mass, shape);
-        addBody(body);
+    private static RigidBody addImmobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
+        final RigidBody body = addMobileBody(shape, mass, position, orientation);
+        body.setIsMotionEnabled(false);
         return body;
     }
 
-    private static MobileRigidBody addMobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
-        final MobileRigidBody body = world.createMobileRigidBody(new Transform(position, orientation), mass, shape);
+    private static RigidBody addMobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
+        final RigidBody body = world.createRigidBody(new Transform(position, orientation), mass, shape);
         addBody(body);
         return body;
     }
@@ -324,12 +323,12 @@ public class Sandbox {
 
     private static void setupPhysics() {
         world = new DynamicsWorld(gravity, TIMESTEP);
-        final MobileRigidBody box = addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
+        final RigidBody box = addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
         box.setMaterial(PHYSICS_MATERIAL);
         addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
         addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1)).setMaterial(PHYSICS_MATERIAL);
         addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
-        final MobileRigidBody sphere = addMobileBody(new SphereShape(1), 1, new Vector3(0, 6, 7), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
+        final RigidBody sphere = addMobileBody(new SphereShape(1), 1, new Vector3(0, 6, 7), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
         sphere.setMaterial(PHYSICS_MATERIAL);
         addImmobileBody(new BoxShape(new Vector3(25, 1, 25)), 100, new Vector3(0, 1.8f, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
         addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
@@ -340,8 +339,9 @@ public class Sandbox {
         final SliderJointInfo info = new SliderJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), Vector3.subtract(spherePosition, boxPosition), 0, 10, 1, 1);
         //final HingeJointInfo info = new HingeJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), new Vector3(0, 1, 0));
         //final FixedJointInfo info = new FixedJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2));
+        info.setPositionCorrectionTechnique(JointsPositionCorrectionTechnique.NON_LINEAR_GAUSS_SEIDEL);
         world.createJoint(info);
-        box.setMotionEnabled(false);
+        box.setIsMotionEnabled(false);
 
         world.start();
 
