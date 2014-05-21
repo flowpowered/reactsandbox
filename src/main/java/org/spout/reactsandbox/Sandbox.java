@@ -26,7 +26,6 @@
  */
 package org.spout.reactsandbox;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,8 +35,6 @@ import com.flowpowered.math.TrigMath;
 import com.flowpowered.math.vector.Vector3f;
 import com.flowpowered.math.vector.Vector4f;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
@@ -66,6 +63,7 @@ import org.spout.renderer.api.Camera;
 import org.spout.renderer.api.GLVersioned.GLVersion;
 import org.spout.renderer.api.model.Model;
 import org.spout.renderer.api.util.CausticUtil;
+import org.spout.renderer.lwjgl.LWJGLUtil;
 
 /**
  * The main class of the ReactSandbox.
@@ -100,7 +98,7 @@ public class Sandbox {
      */
     public static void main(String[] args) {
         try {
-            deploy();
+            LWJGLUtil.deployNatives(null);
             loadConfiguration();
             SandboxRenderer.init();
             SandboxRenderer.addDefaultObjects();
@@ -323,11 +321,12 @@ public class Sandbox {
 
     private static void setupPhysics() {
         world = new DynamicsWorld(gravity, TIMESTEP);
-        final RigidBody box = addMobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
+
+        final RigidBody box = addImmobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
         box.setMaterial(PHYSICS_MATERIAL);
-        addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
-        addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1)).setMaterial(PHYSICS_MATERIAL);
-        addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
+        //addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
+        //addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1)).setMaterial(PHYSICS_MATERIAL);
+        //addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
         final RigidBody sphere = addMobileBody(new SphereShape(1), 1, new Vector3(0, 6, 7), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
         sphere.setMaterial(PHYSICS_MATERIAL);
         addImmobileBody(new BoxShape(new Vector3(25, 1, 25)), 100, new Vector3(0, 1.8f, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
@@ -337,21 +336,20 @@ public class Sandbox {
         final Vector3 spherePosition = sphere.getTransform().getPosition();
         //final BallAndSocketJointInfo info = new BallAndSocketJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2));
         final SliderJointInfo info = new SliderJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), Vector3.subtract(spherePosition, boxPosition), 0, 10, 1, 1);
-        //final HingeJointInfo info = new HingeJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), new Vector3(0, 1, 0));
+        //final HingeJointInfo info = new HingeJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), new Vector3(0, 1, 0), (float) -Math.PI / 2, (float) Math.PI / 2, 1, 1);
         //final FixedJointInfo info = new FixedJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2));
         info.setPositionCorrectionTechnique(JointsPositionCorrectionTechnique.NON_LINEAR_GAUSS_SEIDEL);
         world.createJoint(info);
-        box.setIsMotionEnabled(false);
 
         world.start();
 
         /*
          Broken:
-            Ball and socket joint
-            Hinge joint
-            Fixed joint warm starting
+            Slider joint non-linear Gauss-Seidel
+            Hinge joint Baumgarte
+            Hinge joint motor
+            Hinge joint non-linear Gauss-Seidel?
          */
-
     }
 
     @SuppressWarnings("unchecked")
@@ -375,50 +373,6 @@ public class Sandbox {
             SandboxRenderer.setCullBackFaces((Boolean) appearanceConfig.get("CullingEnabled"));
         } catch (Exception ex) {
             throw new IllegalStateException("Malformed config.yml: \"" + ex.getMessage() + "\".", ex);
-        }
-    }
-
-    private static void deploy() throws Exception {
-        final File configFile = new File("config.yml");
-        if (!configFile.exists()) {
-            FileUtils.copyInputStreamToFile(Sandbox.class.getResourceAsStream("/config.yml"), configFile);
-        }
-        final String osPath;
-        final String[] nativeLibs;
-        if (SystemUtils.IS_OS_WINDOWS) {
-            nativeLibs = new String[]{
-                    "jinput-dx8_64.dll", "jinput-dx8.dll", "jinput-raw_64.dll", "jinput-raw.dll",
-                    "jinput-wintab.dll", "lwjgl.dll", "lwjgl64.dll", "OpenAL32.dll", "OpenAL64.dll"
-            };
-            osPath = "windows/";
-        } else if (SystemUtils.IS_OS_MAC) {
-            nativeLibs = new String[]{
-                    "libjinput-osx.jnilib", "liblwjgl.jnilib", "openal.dylib"
-            };
-            osPath = "mac/";
-        } else if (SystemUtils.IS_OS_LINUX) {
-            nativeLibs = new String[]{
-                    "liblwjgl.so", "liblwjgl64.so", "libopenal.so", "libopenal64.so", "libjinput-linux.so",
-                    "libjinput-linux64.so"
-            };
-            osPath = "linux/";
-        } else {
-            throw new IllegalStateException("Could not get lwjgl natives for OS \"" + SystemUtils.OS_NAME + "\".");
-        }
-        final File nativesDir = new File("natives" + File.separator + osPath);
-        nativesDir.mkdirs();
-        for (String nativeLib : nativeLibs) {
-            final File nativeFile = new File(nativesDir, nativeLib);
-            if (!nativeFile.exists()) {
-                FileUtils.copyInputStreamToFile(Sandbox.class.getResourceAsStream("/" + nativeLib), nativeFile);
-            }
-        }
-        final String nativesPath = nativesDir.getAbsolutePath();
-        System.setProperty("org.lwjgl.librarypath", nativesPath);
-        System.setProperty("net.java.games.input.librarypath", nativesPath);
-        final File screenshotDir = new File("screenshots");
-        if (!screenshotDir.exists()) {
-            screenshotDir.mkdir();
         }
     }
 
