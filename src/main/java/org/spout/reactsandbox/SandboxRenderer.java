@@ -193,6 +193,7 @@ public class SandboxRenderer {
     private static Vector4f diamondModelColor;
     private static Vector4f cylinderModelColor;
     private static Vector4f sphereModelColor;
+    private static Vector4f capsuleModelColor;
     // MODELS
     private static Model movingMobModel;
     // FPS MONITOR
@@ -754,6 +755,14 @@ public class SandboxRenderer {
         sphereModelColor = color;
     }
 
+    public static Vector4f getCapsuleModelColor() {
+        return capsuleModelColor;
+    }
+
+    public static void setCapsuleModelColor(Vector4f color) {
+        capsuleModelColor = color;
+    }
+
     public static Camera getCamera() {
         return modelCamera;
     }
@@ -818,6 +827,18 @@ public class SandboxRenderer {
         model.setPosition(position);
         model.setRotation(orientation);
         model.getUniforms().add(new Vector4Uniform("modelColor", sphereModelColor));
+        addModel(model);
+        return model;
+    }
+
+    public static Model addCapsule(Vector3f position, Quaternionf orientation, float radius, float height) {
+        final VertexArray vertexArray = context.newVertexArray();
+        vertexArray.create();
+        vertexArray.setData(MeshGenerator.generateCapsule(null, radius, height));
+        final Model model = new Model(vertexArray, solidMaterial);
+        model.setPosition(position);
+        model.setRotation(orientation);
+        model.getUniforms().add(new Vector4Uniform("modelColor", capsuleModelColor));
         addModel(model);
         return model;
     }

@@ -20,6 +20,8 @@ Appearance:
     CylinderShapeColor: 0.8, 0.1, 0.8
     # Shape color for "Sphere" in RGB floats.
     SphereShapeColor: 0.9, 0.9, 0.9
+    # Shape color for "Capsule" in RGB floats.
+    CapsuleShapeColor: 0.9, 0.7, 0
     # How much distance affects light intensity.
     LightAttenuation: 0.001
     # If back face culling is enabled

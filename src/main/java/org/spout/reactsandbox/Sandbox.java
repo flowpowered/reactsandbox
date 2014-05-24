@@ -45,10 +45,10 @@ import org.yaml.snakeyaml.Yaml;
 import org.spout.physics.ReactDefaults.JointsPositionCorrectionTechnique;
 import org.spout.physics.body.CollisionBody;
 import org.spout.physics.body.RigidBody;
-import org.spout.physics.body.RigidBodyMaterial;
 import org.spout.physics.collision.RayCaster.IntersectedBody;
 import org.spout.physics.collision.shape.AABB;
 import org.spout.physics.collision.shape.BoxShape;
+import org.spout.physics.collision.shape.CapsuleShape;
 import org.spout.physics.collision.shape.CollisionShape;
 import org.spout.physics.collision.shape.CollisionShape.CollisionShapeType;
 import org.spout.physics.collision.shape.ConeShape;
@@ -56,6 +56,7 @@ import org.spout.physics.collision.shape.CylinderShape;
 import org.spout.physics.collision.shape.SphereShape;
 import org.spout.physics.constraint.SliderJoint.SliderJointInfo;
 import org.spout.physics.engine.DynamicsWorld;
+import org.spout.physics.engine.Material;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
@@ -72,7 +73,7 @@ public class Sandbox {
     // Constants
     public static final int TARGET_FPS = 60;
     private static final float TIMESTEP = 1f / TARGET_FPS;
-    private static final RigidBodyMaterial PHYSICS_MATERIAL = RigidBodyMaterial.asUnmodifiableMaterial(new RigidBodyMaterial(0.2f, 0.8f));
+    private static final Material PHYSICS_MATERIAL = Material.asUnmodifiableMaterial(new Material(0.2f, 0.8f));
     public static final float SPOT_CUTOFF = (float) (TrigMath.atan(100 / 50) / 2);
     // Settings
     private static float mouseSensitivity = 0.08f;
@@ -169,6 +170,10 @@ public class Sandbox {
                 final SphereShape sphere = (SphereShape) shape;
                 shapeModel = SandboxRenderer.addSphere(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), sphere.getRadius());
                 break;
+            case CAPSULE:
+                final CapsuleShape capsule = (CapsuleShape) shape;
+                shapeModel = SandboxRenderer.addCapsule(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), capsule.getRadius(), capsule.getHeight());
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported collision shape: " + shape.getType());
         }
@@ -190,7 +195,7 @@ public class Sandbox {
     }
 
     private static void spawnBody(final CollisionShapeType type) {
-        CollisionShape shape = null;
+        final CollisionShape shape;
         switch (type) {
             case BOX:
                 shape = new BoxShape(1, 1, 1);
@@ -204,6 +209,11 @@ public class Sandbox {
             case SPHERE:
                 shape = new SphereShape(1);
                 break;
+            case CAPSULE:
+                shape = new CapsuleShape(1, 1);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported collision shape type: " + type);
         }
         final Camera camera = SandboxRenderer.getCamera();
         addMobileBody(shape, 10,
@@ -244,7 +254,7 @@ public class Sandbox {
             if (Mouse.getEventButtonState() && mouseGrabbed) {
                 switch (Mouse.getEventButton()) {
                     case 0: // Left Button
-                        spawnBody(CollisionShapeType.CONE);
+                        spawnBody(CollisionShapeType.CAPSULE);
                         break;
                     case 1: // Right Button
                         removeBody(selected);
@@ -321,35 +331,21 @@ public class Sandbox {
 
     private static void setupPhysics() {
         world = new DynamicsWorld(gravity, TIMESTEP);
-
         final RigidBody box = addImmobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
         box.setMaterial(PHYSICS_MATERIAL);
-        //addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
-        //addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1)).setMaterial(PHYSICS_MATERIAL);
-        //addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
+        addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
+        addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1)).setMaterial(PHYSICS_MATERIAL);
+        addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
         final RigidBody sphere = addMobileBody(new SphereShape(1), 1, new Vector3(0, 6, 7), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
         sphere.setMaterial(PHYSICS_MATERIAL);
         addImmobileBody(new BoxShape(new Vector3(25, 1, 25)), 100, new Vector3(0, 1.8f, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
         addImmobileBody(new BoxShape(new Vector3(50, 1, 50)), 100, new Vector3(0, 0, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
-
         final Vector3 boxPosition = box.getTransform().getPosition();
         final Vector3 spherePosition = sphere.getTransform().getPosition();
-        //final BallAndSocketJointInfo info = new BallAndSocketJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2));
         final SliderJointInfo info = new SliderJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), Vector3.subtract(spherePosition, boxPosition), 0, 10, 1, 1);
-        //final HingeJointInfo info = new HingeJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), new Vector3(0, 1, 0), (float) -Math.PI / 2, (float) Math.PI / 2, 1, 1);
-        //final FixedJointInfo info = new FixedJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2));
         info.setPositionCorrectionTechnique(JointsPositionCorrectionTechnique.NON_LINEAR_GAUSS_SEIDEL);
         world.createJoint(info);
-
         world.start();
-
-        /*
-         Broken:
-            Slider joint non-linear Gauss-Seidel
-            Hinge joint Baumgarte
-            Hinge joint motor
-            Hinge joint non-linear Gauss-Seidel?
-         */
     }
 
     @SuppressWarnings("unchecked")
@@ -369,6 +365,7 @@ public class Sandbox {
             SandboxRenderer.setDiamondColor(parseVector4f(((String) appearanceConfig.get("ConeShapeColor")), 1));
             SandboxRenderer.setSphereColor(parseVector4f(((String) appearanceConfig.get("SphereShapeColor")), 1));
             SandboxRenderer.setCylinderColor(parseVector4f(((String) appearanceConfig.get("CylinderShapeColor")), 1));
+            SandboxRenderer.setCapsuleModelColor(parseVector4f(((String) appearanceConfig.get("CapsuleShapeColor")), 1));
             SandboxRenderer.setLightAttenuation(((Number) appearanceConfig.get("LightAttenuation")).floatValue());
             SandboxRenderer.setCullBackFaces((Boolean) appearanceConfig.get("CullingEnabled"));
         } catch (Exception ex) {
