@@ -22,6 +22,8 @@ Appearance:
     SphereShapeColor: 0.9, 0.9, 0.9
     # Shape color for "Capsule" in RGB floats.
     CapsuleShapeColor: 0.9, 0.7, 0
+    # Shape color for "Mesh" in RGB floats.
+    MeshShapeColor: 0.1, 0.1, 0.9
     # How much distance affects light intensity.
     LightAttenuation: 0.001
     # If back face culling is enabled

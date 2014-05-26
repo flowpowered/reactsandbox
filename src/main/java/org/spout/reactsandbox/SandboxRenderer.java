@@ -51,6 +51,7 @@ import com.flowpowered.math.matrix.Matrix4f;
 import com.flowpowered.math.vector.Vector2f;
 import com.flowpowered.math.vector.Vector2i;
 import com.flowpowered.math.vector.Vector3f;
+import com.flowpowered.math.vector.Vector3i;
 import com.flowpowered.math.vector.Vector4f;
 
 import gnu.trove.list.TFloatList;
@@ -182,7 +183,6 @@ public class SandboxRenderer {
     private static FrameBuffer antiAliasingFrameBuffer;
     // VERTEX ARRAYS
     private static VertexArray unitCubeWireVertexArray;
-    private static VertexArray diamondModelVertexArray;
     private static VertexArray deferredStageScreenVertexArray;
     // EFFECTS
     private static SSAOEffect ssaoEffect;
@@ -190,10 +190,11 @@ public class SandboxRenderer {
     private static BlurEffect blurEffect;
     // MODEL PROPERTIES
     private static Vector4f aabbModelColor;
-    private static Vector4f diamondModelColor;
+    private static Vector4f coneModelColor;
     private static Vector4f cylinderModelColor;
     private static Vector4f sphereModelColor;
     private static Vector4f capsuleModelColor;
+    private static Vector4f meshShapeModelColor;
     // MODELS
     private static Model movingMobModel;
     // FPS MONITOR
@@ -585,10 +586,6 @@ public class SandboxRenderer {
         unitCubeWireVertexArray.create();
         unitCubeWireVertexArray.setData(MeshGenerator.generateWireCuboid(null, new Vector3f(1, 1, 1)));
         unitCubeWireVertexArray.setDrawingMode(DrawingMode.LINES);
-        // DIAMOND MODEL
-        diamondModelVertexArray = context.newVertexArray();
-        diamondModelVertexArray.create();
-        diamondModelVertexArray.setData(loadOBJ(Sandbox.class.getResourceAsStream("/models/diamond.obj")));
         // DEFERRED STAGE SCREEN
         deferredStageScreenVertexArray = context.newVertexArray();
         deferredStageScreenVertexArray.create();
@@ -688,8 +685,6 @@ public class SandboxRenderer {
     private static void disposeVertexArrays() {
         // UNIT WIRE CUBE
         unitCubeWireVertexArray.destroy();
-        // DIAMOND MODEL
-        diamondModelVertexArray.destroy();
         // DEFERRED STAGE SCREEN
         deferredStageScreenVertexArray.destroy();
     }
@@ -731,36 +726,24 @@ public class SandboxRenderer {
         aabbModelColor = color;
     }
 
-    public static Vector4f getDiamondColor() {
-        return diamondModelColor;
-    }
-
-    public static void setDiamondColor(Vector4f color) {
-        diamondModelColor = color;
-    }
-
-    public static Vector4f getCylinderColor() {
-        return cylinderModelColor;
+    public static void setConeModelColor(Vector4f color) {
+        coneModelColor = color;
     }
 
     public static void setCylinderColor(Vector4f color) {
         cylinderModelColor = color;
     }
 
-    public static Vector4f getSphereColor() {
-        return sphereModelColor;
-    }
-
     public static void setSphereColor(Vector4f color) {
         sphereModelColor = color;
     }
 
-    public static Vector4f getCapsuleModelColor() {
-        return capsuleModelColor;
-    }
-
     public static void setCapsuleModelColor(Vector4f color) {
         capsuleModelColor = color;
+    }
+
+    public static void setMeshShapeModelColor(Vector4f color) {
+        meshShapeModelColor = color;
     }
 
     public static Camera getCamera() {
@@ -798,11 +781,14 @@ public class SandboxRenderer {
         return model;
     }
 
-    public static Model addDiamond(Vector3f position, Quaternionf orientation) {
-        final Model model = new Model(diamondModelVertexArray, solidMaterial);
+    public static Model addCone(Vector3f position, Quaternionf orientation, float radius, float height) {
+        final VertexArray vertexArray = context.newVertexArray();
+        vertexArray.create();
+        vertexArray.setData(MeshGenerator.generateCone(null, radius, height));
+        final Model model = new Model(vertexArray, solidMaterial);
         model.setPosition(position);
         model.setRotation(orientation);
-        model.getUniforms().add(new Vector4Uniform("modelColor", diamondModelColor));
+        model.getUniforms().add(new Vector4Uniform("modelColor", coneModelColor));
         addModel(model);
         return model;
     }
@@ -839,6 +825,18 @@ public class SandboxRenderer {
         model.setPosition(position);
         model.setRotation(orientation);
         model.getUniforms().add(new Vector4Uniform("modelColor", capsuleModelColor));
+        addModel(model);
+        return model;
+    }
+
+    public static Model addMeshShape(Vector3f position, Quaternionf orientation, TFloatList positions, TIntList indices) {
+        final VertexArray vertexArray = context.newVertexArray();
+        vertexArray.create();
+        vertexArray.setData(loadMesh(new Vector3i(3, 0, 0), positions, null, null, indices));
+        final Model model = new Model(vertexArray, solidMaterial);
+        model.setPosition(position);
+        model.setRotation(orientation);
+        model.getUniforms().add(new Vector4Uniform("modelColor", meshShapeModelColor));
         addModel(model);
         return model;
     }
@@ -954,25 +952,28 @@ public class SandboxRenderer {
         fpsMonitorModel.setString("FPS: " + fpsMonitor.getFPS());
     }
 
-    private static VertexData loadMesh(Vector3f sizes, TFloatList positions, TFloatList textureCoords, TFloatList normals, TIntList indices) {
+    private static VertexData loadMesh(Vector3i sizes, TFloatList positions, TFloatList textureCoords, TFloatList normals, TIntList indices) {
         final VertexData vertexData = new VertexData();
         // POSITIONS
-        final VertexAttribute positionAttribute = new VertexAttribute("positions", DataType.FLOAT, sizes.getFloorX());
+        final VertexAttribute positionAttribute = new VertexAttribute("positions", DataType.FLOAT, sizes.getX());
         positionAttribute.setData(positions);
         vertexData.addAttribute(0, positionAttribute);
         // NORMALS
         final VertexAttribute normalAttribute;
         if (sizes.getZ() <= 0) {
             normalAttribute = new VertexAttribute("normals", DataType.FLOAT, 3);
+            if (normals == null) {
+                normals = new TFloatArrayList();
+            }
             CausticUtil.generateNormals(positions, indices, normals);
         } else {
-            normalAttribute = new VertexAttribute("normals", DataType.FLOAT, sizes.getFloorZ());
+            normalAttribute = new VertexAttribute("normals", DataType.FLOAT, sizes.getZ());
         }
         normalAttribute.setData(normals);
         vertexData.addAttribute(1, normalAttribute);
         // TEXTURE COORDS
         if (sizes.getY() > 0) {
-            final VertexAttribute textureCoordAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, sizes.getFloorY());
+            final VertexAttribute textureCoordAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, sizes.getY());
             textureCoordAttribute.setData(textureCoords);
             vertexData.addAttribute(2, textureCoordAttribute);
             // TANGENTS
@@ -985,14 +986,12 @@ public class SandboxRenderer {
         return vertexData;
     }
 
-    private static VertexData loadOBJ(InputStream file) {
-        // LOAD
+    private static VertexData loadOBJ(InputStream in) {
         final TFloatList positions = new TFloatArrayList();
         final TFloatList textureCoords = new TFloatArrayList();
         final TFloatList normals = new TFloatArrayList();
         final TIntList indices = new TIntArrayList();
-        final Vector3f sizes = ObjFileLoader.load(file, positions, textureCoords, normals, indices);
-        return loadMesh(sizes, positions, textureCoords, normals, indices);
+        return loadMesh(ObjFileLoader.load(in, positions, textureCoords, normals, indices), positions, textureCoords, normals, indices);
     }
 
     private static VertexData loadCollada(InputStream in) {
@@ -1000,10 +999,7 @@ public class SandboxRenderer {
         final TFloatList textureCoords = new TFloatArrayList();
         final TFloatList normals = new TFloatArrayList();
         final TIntList indices = new TIntArrayList();
-        return loadMesh(
-                ColladaFileLoader.loadMesh(in, positions, textureCoords, normals, indices),
-                positions, textureCoords, normals, indices
-        );
+        return loadMesh(ColladaFileLoader.loadMesh(in, positions, textureCoords, normals, indices), positions, textureCoords, normals, indices);
     }
 
     public static void saveScreenshot() {

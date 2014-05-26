@@ -35,6 +35,11 @@ import com.flowpowered.math.TrigMath;
 import com.flowpowered.math.vector.Vector3f;
 import com.flowpowered.math.vector.Vector4f;
 
+import gnu.trove.list.TFloatList;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TFloatArrayList;
+import gnu.trove.list.array.TIntArrayList;
+
 import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
@@ -52,6 +57,7 @@ import org.spout.physics.collision.shape.CapsuleShape;
 import org.spout.physics.collision.shape.CollisionShape;
 import org.spout.physics.collision.shape.CollisionShape.CollisionShapeType;
 import org.spout.physics.collision.shape.ConeShape;
+import org.spout.physics.collision.shape.ConvexMeshShape;
 import org.spout.physics.collision.shape.CylinderShape;
 import org.spout.physics.collision.shape.SphereShape;
 import org.spout.physics.constraint.SliderJoint.SliderJointInfo;
@@ -64,6 +70,7 @@ import org.spout.renderer.api.Camera;
 import org.spout.renderer.api.GLVersioned.GLVersion;
 import org.spout.renderer.api.model.Model;
 import org.spout.renderer.api.util.CausticUtil;
+import org.spout.renderer.api.util.ObjFileLoader;
 import org.spout.renderer.lwjgl.LWJGLUtil;
 
 /**
@@ -83,6 +90,8 @@ public class Sandbox {
     private static final Vector3 gravity = new Vector3(0, -9.81f, 0);
     private static final Map<CollisionBody, Model> shapes = new HashMap<>();
     private static final Map<CollisionBody, Model> aabbs = new HashMap<>();
+    private static final TFloatList meshPositions = new TFloatArrayList();
+    private static final TIntList meshIndices = new TIntArrayList();
     // Input
     private static boolean mouseGrabbed = true;
     private static float cameraPitch = 0;
@@ -160,7 +169,8 @@ public class Sandbox {
                 shapeModel = SandboxRenderer.addBox(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), SandboxUtil.toMathVector3(box.getExtent()));
                 break;
             case CONE:
-                shapeModel = SandboxRenderer.addDiamond(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation));
+                final ConeShape cone = (ConeShape) shape;
+                shapeModel = SandboxRenderer.addCone(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), cone.getRadius(), cone.getHeight());
                 break;
             case CYLINDER:
                 final CylinderShape cylinder = (CylinderShape) shape;
@@ -173,6 +183,9 @@ public class Sandbox {
             case CAPSULE:
                 final CapsuleShape capsule = (CapsuleShape) shape;
                 shapeModel = SandboxRenderer.addCapsule(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), capsule.getRadius(), capsule.getHeight());
+                break;
+            case CONVEX_MESH:
+                shapeModel = SandboxRenderer.addMeshShape(SandboxUtil.toMathVector3(bodyPosition), SandboxUtil.toMathQuaternion(bodyOrientation), meshPositions, meshIndices);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported collision shape: " + shape.getType());
@@ -211,6 +224,11 @@ public class Sandbox {
                 break;
             case CAPSULE:
                 shape = new CapsuleShape(1, 1);
+                break;
+            case CONVEX_MESH:
+                shape = new ConvexMeshShape(meshPositions.toArray(), meshPositions.size() / 3, 12);
+                // TODO: add edge data
+                // TODO: remove duplicate vertices
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported collision shape type: " + type);
@@ -254,7 +272,7 @@ public class Sandbox {
             if (Mouse.getEventButtonState() && mouseGrabbed) {
                 switch (Mouse.getEventButton()) {
                     case 0: // Left Button
-                        spawnBody(CollisionShapeType.CAPSULE);
+                        spawnBody(CollisionShapeType.CONVEX_MESH);
                         break;
                     case 1: // Right Button
                         removeBody(selected);
@@ -330,12 +348,14 @@ public class Sandbox {
     }
 
     private static void setupPhysics() {
+        ObjFileLoader.load(Sandbox.class.getResourceAsStream("/models/diamond.obj"), meshPositions, null, null, meshIndices);
         world = new DynamicsWorld(gravity, TIMESTEP);
         final RigidBody box = addImmobileBody(new BoxShape(new Vector3(1, 1, 1)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1));
         box.setMaterial(PHYSICS_MATERIAL);
         addMobileBody(new BoxShape(new Vector3(0.28f, 0.28f, 0.28f)), 1, new Vector3(0, 6, 0), SandboxUtil.angleAxisToQuaternion(45, 1, 1, 1)).setMaterial(PHYSICS_MATERIAL);
         addMobileBody(new ConeShape(1, 2), 1, new Vector3(0, 9, 0), SandboxUtil.angleAxisToQuaternion(89, -1, -1, -1)).setMaterial(PHYSICS_MATERIAL);
         addMobileBody(new CylinderShape(1, 2), 1, new Vector3(0, 12, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, 1)).setMaterial(PHYSICS_MATERIAL);
+        addMobileBody(new CapsuleShape(1, 1), 1, new Vector3(4, 9, 0), SandboxUtil.angleAxisToQuaternion(-15, 1, -1, -1)).setMaterial(PHYSICS_MATERIAL);
         final RigidBody sphere = addMobileBody(new SphereShape(1), 1, new Vector3(0, 6, 7), SandboxUtil.angleAxisToQuaternion(32, -1, -1, 1));
         sphere.setMaterial(PHYSICS_MATERIAL);
         addImmobileBody(new BoxShape(new Vector3(25, 1, 25)), 100, new Vector3(0, 1.8f, 0), Quaternion.identity()).setMaterial(PHYSICS_MATERIAL);
@@ -343,7 +363,7 @@ public class Sandbox {
         final Vector3 boxPosition = box.getTransform().getPosition();
         final Vector3 spherePosition = sphere.getTransform().getPosition();
         final SliderJointInfo info = new SliderJointInfo(box, sphere, Vector3.add(boxPosition, spherePosition).divide(2), Vector3.subtract(spherePosition, boxPosition), 0, 10, 1, 1);
-        info.setPositionCorrectionTechnique(JointsPositionCorrectionTechnique.NON_LINEAR_GAUSS_SEIDEL);
+        info.setPositionCorrectionTechnique(JointsPositionCorrectionTechnique.BAUMGARTE_JOINTS);
         world.createJoint(info);
         world.start();
     }
@@ -362,10 +382,11 @@ public class Sandbox {
             SandboxRenderer.setGLVersion(glVersion);
             SandboxRenderer.setBackgroundColor(parseVector4f(((String) appearanceConfig.get("BackgroundColor")), 0));
             SandboxRenderer.setAABBColor(parseVector4f(((String) appearanceConfig.get("AABBColor")), 1));
-            SandboxRenderer.setDiamondColor(parseVector4f(((String) appearanceConfig.get("ConeShapeColor")), 1));
+            SandboxRenderer.setConeModelColor(parseVector4f(((String) appearanceConfig.get("ConeShapeColor")), 1));
             SandboxRenderer.setSphereColor(parseVector4f(((String) appearanceConfig.get("SphereShapeColor")), 1));
             SandboxRenderer.setCylinderColor(parseVector4f(((String) appearanceConfig.get("CylinderShapeColor")), 1));
             SandboxRenderer.setCapsuleModelColor(parseVector4f(((String) appearanceConfig.get("CapsuleShapeColor")), 1));
+            SandboxRenderer.setMeshShapeModelColor(parseVector4f(((String) appearanceConfig.get("MeshShapeColor")), 1));
             SandboxRenderer.setLightAttenuation(((Number) appearanceConfig.get("LightAttenuation")).floatValue());
             SandboxRenderer.setCullBackFaces((Boolean) appearanceConfig.get("CullingEnabled"));
         } catch (Exception ex) {
