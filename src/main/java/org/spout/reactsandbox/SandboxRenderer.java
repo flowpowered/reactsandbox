@@ -51,8 +51,8 @@ import com.flowpowered.math.matrix.Matrix4f;
 import com.flowpowered.math.vector.Vector2f;
 import com.flowpowered.math.vector.Vector2i;
 import com.flowpowered.math.vector.Vector3f;
-import com.flowpowered.math.vector.Vector3i;
 import com.flowpowered.math.vector.Vector4f;
+import com.flowpowered.math.vector.Vector4i;
 
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -76,8 +76,6 @@ import org.spout.renderer.api.data.Uniform.Vector2Uniform;
 import org.spout.renderer.api.data.Uniform.Vector3Uniform;
 import org.spout.renderer.api.data.Uniform.Vector4Uniform;
 import org.spout.renderer.api.data.UniformHolder;
-import org.spout.renderer.api.data.VertexAttribute;
-import org.spout.renderer.api.data.VertexAttribute.DataType;
 import org.spout.renderer.api.data.VertexData;
 import org.spout.renderer.api.gl.Context;
 import org.spout.renderer.api.gl.Context.BlendFunction;
@@ -584,12 +582,12 @@ public class SandboxRenderer {
         // UNIT WIRE CUBE
         unitCubeWireVertexArray = context.newVertexArray();
         unitCubeWireVertexArray.create();
-        unitCubeWireVertexArray.setData(MeshGenerator.generateWireCuboid(null, new Vector3f(1, 1, 1)));
+        unitCubeWireVertexArray.setData(MeshGenerator.generateWireCuboid(new Vector3f(1, 1, 1)));
         unitCubeWireVertexArray.setDrawingMode(DrawingMode.LINES);
         // DEFERRED STAGE SCREEN
         deferredStageScreenVertexArray = context.newVertexArray();
         deferredStageScreenVertexArray.create();
-        deferredStageScreenVertexArray.setData(MeshGenerator.generateTexturedPlane(null, new Vector2f(2, 2)));
+        deferredStageScreenVertexArray.setData(MeshGenerator.generatePlane(new Vector2f(2, 2)));
     }
 
     public static void dispose() {
@@ -773,7 +771,12 @@ public class SandboxRenderer {
     public static Model addBox(Vector3f position, Quaternionf orientation, Vector3f size) {
         final VertexArray vertexArray = context.newVertexArray();
         vertexArray.create();
-        vertexArray.setData(MeshGenerator.generateCuboid(null, size.mul(2)));
+        final TFloatList positions = new TFloatArrayList();
+        final TFloatList normals = new TFloatArrayList();
+        final TFloatList textureCoords = new TFloatArrayList();
+        final TIntList indices = new TIntArrayList();
+        MeshGenerator.generateCuboid(positions, normals, textureCoords, indices, size.mul(2));
+        vertexArray.setData(MeshGenerator.buildMesh(new Vector4i(3, 3, 2, 4), positions, normals, textureCoords, indices));
         final Model model = new Model(vertexArray, woodMaterial);
         model.setPosition(position);
         model.setRotation(orientation);
@@ -784,7 +787,7 @@ public class SandboxRenderer {
     public static Model addCone(Vector3f position, Quaternionf orientation, float radius, float height) {
         final VertexArray vertexArray = context.newVertexArray();
         vertexArray.create();
-        vertexArray.setData(MeshGenerator.generateCone(null, radius, height));
+        vertexArray.setData(MeshGenerator.generateCone(radius, height));
         final Model model = new Model(vertexArray, solidMaterial);
         model.setPosition(position);
         model.setRotation(orientation);
@@ -796,7 +799,7 @@ public class SandboxRenderer {
     public static Model addCylinder(Vector3f position, Quaternionf orientation, float radius, float height) {
         final VertexArray vertexArray = context.newVertexArray();
         vertexArray.create();
-        vertexArray.setData(MeshGenerator.generateCylinder(null, radius, height));
+        vertexArray.setData(MeshGenerator.generateCylinder(radius, height));
         final Model model = new Model(vertexArray, solidMaterial);
         model.setPosition(position);
         model.setRotation(orientation);
@@ -808,7 +811,7 @@ public class SandboxRenderer {
     public static Model addSphere(Vector3f position, Quaternionf orientation, float radius) {
         final VertexArray vertexArray = context.newVertexArray();
         vertexArray.create();
-        vertexArray.setData(MeshGenerator.generateSphere(null, radius));
+        vertexArray.setData(MeshGenerator.generateSphere(radius));
         final Model model = new Model(vertexArray, solidMaterial);
         model.setPosition(position);
         model.setRotation(orientation);
@@ -820,7 +823,7 @@ public class SandboxRenderer {
     public static Model addCapsule(Vector3f position, Quaternionf orientation, float radius, float height) {
         final VertexArray vertexArray = context.newVertexArray();
         vertexArray.create();
-        vertexArray.setData(MeshGenerator.generateCapsule(null, radius, height));
+        vertexArray.setData(MeshGenerator.generateCapsule(radius, height));
         final Model model = new Model(vertexArray, solidMaterial);
         model.setPosition(position);
         model.setRotation(orientation);
@@ -832,7 +835,7 @@ public class SandboxRenderer {
     public static Model addMeshShape(Vector3f position, Quaternionf orientation, TFloatList positions, TIntList indices) {
         final VertexArray vertexArray = context.newVertexArray();
         vertexArray.create();
-        vertexArray.setData(loadMesh(new Vector3i(3, 0, 0), positions, null, null, indices));
+        vertexArray.setData(MeshGenerator.buildMesh(new Vector4i(3, 3, 0, 0), positions, null, null, indices));
         final Model model = new Model(vertexArray, solidMaterial);
         model.setPosition(position);
         model.setRotation(orientation);
@@ -865,7 +868,7 @@ public class SandboxRenderer {
     private static void addCrosshairs() {
         final VertexArray vertexArray = context.newVertexArray();
         vertexArray.create();
-        vertexArray.setData(MeshGenerator.generateCrosshairs(null, 0.02f));
+        vertexArray.setData(MeshGenerator.generateCrosshairs(0.02f));
         final Model model = new Model(vertexArray, wireframeMaterial);
         vertexArray.setDrawingMode(DrawingMode.LINES);
         model.getUniforms().add(new Vector4Uniform("modelColor", CausticUtil.WHITE));
@@ -952,54 +955,20 @@ public class SandboxRenderer {
         fpsMonitorModel.setString("FPS: " + fpsMonitor.getFPS());
     }
 
-    private static VertexData loadMesh(Vector3i sizes, TFloatList positions, TFloatList textureCoords, TFloatList normals, TIntList indices) {
-        final VertexData vertexData = new VertexData();
-        // POSITIONS
-        final VertexAttribute positionAttribute = new VertexAttribute("positions", DataType.FLOAT, sizes.getX());
-        positionAttribute.setData(positions);
-        vertexData.addAttribute(0, positionAttribute);
-        // NORMALS
-        final VertexAttribute normalAttribute;
-        if (sizes.getZ() <= 0) {
-            normalAttribute = new VertexAttribute("normals", DataType.FLOAT, 3);
-            if (normals == null) {
-                normals = new TFloatArrayList();
-            }
-            CausticUtil.generateNormals(positions, indices, normals);
-        } else {
-            normalAttribute = new VertexAttribute("normals", DataType.FLOAT, sizes.getZ());
-        }
-        normalAttribute.setData(normals);
-        vertexData.addAttribute(1, normalAttribute);
-        // TEXTURE COORDS
-        if (sizes.getY() > 0) {
-            final VertexAttribute textureCoordAttribute = new VertexAttribute("textureCoords", DataType.FLOAT, sizes.getY());
-            textureCoordAttribute.setData(textureCoords);
-            vertexData.addAttribute(2, textureCoordAttribute);
-            // TANGENTS
-            final VertexAttribute tangentAttribute = new VertexAttribute("tangents", DataType.FLOAT, 4);
-            tangentAttribute.setData(CausticUtil.generateTangents(positions, normals, textureCoords, indices));
-            vertexData.addAttribute(3, tangentAttribute);
-        }
-        // INDICES
-        vertexData.getIndices().addAll(indices);
-        return vertexData;
-    }
-
     private static VertexData loadOBJ(InputStream in) {
         final TFloatList positions = new TFloatArrayList();
-        final TFloatList textureCoords = new TFloatArrayList();
         final TFloatList normals = new TFloatArrayList();
+        final TFloatList textureCoords = new TFloatArrayList();
         final TIntList indices = new TIntArrayList();
-        return loadMesh(ObjFileLoader.load(in, positions, textureCoords, normals, indices), positions, textureCoords, normals, indices);
+        return MeshGenerator.buildMesh(ObjFileLoader.load(in, positions, normals, textureCoords, indices).toVector4(0), positions, normals, textureCoords, indices);
     }
 
     private static VertexData loadCollada(InputStream in) {
         final TFloatList positions = new TFloatArrayList();
-        final TFloatList textureCoords = new TFloatArrayList();
         final TFloatList normals = new TFloatArrayList();
+        final TFloatList textureCoords = new TFloatArrayList();
         final TIntList indices = new TIntArrayList();
-        return loadMesh(ColladaFileLoader.loadMesh(in, positions, textureCoords, normals, indices), positions, textureCoords, normals, indices);
+        return MeshGenerator.buildMesh(ColladaFileLoader.load(in, positions, normals, textureCoords, indices).toVector4(0), positions, normals, textureCoords, indices);
     }
 
     public static void saveScreenshot() {
