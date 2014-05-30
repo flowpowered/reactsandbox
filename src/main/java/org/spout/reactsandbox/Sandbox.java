@@ -70,6 +70,7 @@ import org.spout.renderer.api.Camera;
 import org.spout.renderer.api.GLVersioned.GLVersion;
 import org.spout.renderer.api.model.Model;
 import org.spout.renderer.api.util.CausticUtil;
+import org.spout.renderer.api.util.MeshGenerator;
 import org.spout.renderer.api.util.ObjFileLoader;
 import org.spout.renderer.lwjgl.LWJGLUtil;
 
@@ -194,7 +195,7 @@ public class Sandbox {
         return body;
     }
 
-    private static void removeBody(final CollisionBody body) {
+    private static void removeBody(CollisionBody body) {
         if (body == null) {
             return;
         }
@@ -207,7 +208,7 @@ public class Sandbox {
         }
     }
 
-    private static void spawnBody(final CollisionShapeType type) {
+    private static void spawnBody(CollisionShapeType type) {
         final CollisionShape shape;
         switch (type) {
             case BOX:
@@ -226,9 +227,15 @@ public class Sandbox {
                 shape = new CapsuleShape(1, 1);
                 break;
             case CONVEX_MESH:
-                shape = new ConvexMeshShape(meshPositions.toArray(), meshPositions.size() / 3, 12);
-                // TODO: add edge data
-                // TODO: remove duplicate vertices
+                final TFloatList positions = new TFloatArrayList(meshPositions);
+                final TIntList indices = new TIntArrayList(meshIndices);
+                MeshGenerator.toWireframe(positions, indices, false);
+                final ConvexMeshShape meshShape = new ConvexMeshShape(positions.toArray(), positions.size() / 3, 12);
+                for (int i = 0; i < indices.size(); i += 2) {
+                    meshShape.addEdge(indices.get(i), indices.get(i + 1));
+                }
+                meshShape.setIsEdgesInformationUsed(true);
+                shape = meshShape;
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported collision shape type: " + type);
