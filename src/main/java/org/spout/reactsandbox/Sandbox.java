@@ -68,6 +68,7 @@ import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
 import org.spout.renderer.api.Camera;
 import org.spout.renderer.api.GLVersioned.GLVersion;
+import org.spout.renderer.api.data.Uniform.Vector4Uniform;
 import org.spout.renderer.api.model.Model;
 import org.spout.renderer.api.util.CausticUtil;
 import org.spout.renderer.api.util.MeshGenerator;
@@ -331,7 +332,7 @@ public class Sandbox {
 
     private static void handleSelection() {
         if (selected != null) {
-            aabbs.get(selected).getUniforms().getVector4("modelColor").set(SandboxRenderer.getAABBColor());
+            aabbs.get(selected).getUniforms().<Vector4Uniform>get("modelColor").set(SandboxRenderer.getAABBColor());
             selected = null;
         }
         final Camera camera = SandboxRenderer.getCamera();
@@ -340,7 +341,7 @@ public class Sandbox {
                 SandboxUtil.toReactVector3(camera.getForward()));
         if (targeted != null && targeted.getBody() instanceof RigidBody) {
             selected = targeted.getBody();
-            aabbs.get(selected).getUniforms().getVector4("modelColor").set(CausticUtil.BLUE);
+            aabbs.get(selected).getUniforms().<Vector4Uniform>get("modelColor").set(CausticUtil.BLUE);
         }
     }
 

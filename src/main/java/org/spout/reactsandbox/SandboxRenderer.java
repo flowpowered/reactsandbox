@@ -946,7 +946,7 @@ public class SandboxRenderer {
 
     private static void setPreviousModelMatrices() {
         for (Model model : modelRenderList) {
-            model.getUniforms().getMatrix4("previousModelMatrix").set(model.getMatrix());
+            model.getUniforms().<Matrix4Uniform>get("previousModelMatrix").set(model.getMatrix());
         }
     }
 
