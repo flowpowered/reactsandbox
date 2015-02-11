@@ -31,6 +31,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.flowpowered.caustic.api.Camera;
+import com.flowpowered.caustic.api.GLVersioned.GLVersion;
+import com.flowpowered.caustic.api.data.Uniform.Vector4Uniform;
+import com.flowpowered.caustic.api.model.Model;
+import com.flowpowered.caustic.api.util.CausticUtil;
+import com.flowpowered.caustic.api.util.MeshGenerator;
+import com.flowpowered.caustic.api.util.ObjFileLoader;
+import com.flowpowered.caustic.lwjgl.LWJGLUtil;
 import com.flowpowered.math.TrigMath;
 import com.flowpowered.math.vector.Vector3f;
 import com.flowpowered.math.vector.Vector4f;
@@ -66,14 +74,7 @@ import org.spout.physics.engine.Material;
 import org.spout.physics.math.Quaternion;
 import org.spout.physics.math.Transform;
 import org.spout.physics.math.Vector3;
-import org.spout.renderer.api.Camera;
-import org.spout.renderer.api.GLVersioned.GLVersion;
-import org.spout.renderer.api.data.Uniform.Vector4Uniform;
-import org.spout.renderer.api.model.Model;
-import org.spout.renderer.api.util.CausticUtil;
-import org.spout.renderer.api.util.MeshGenerator;
-import org.spout.renderer.api.util.ObjFileLoader;
-import org.spout.renderer.lwjgl.LWJGLUtil;
+
 
 /**
  * The main class of the ReactSandbox.
@@ -146,7 +147,7 @@ public class Sandbox {
 
     private static RigidBody addImmobileBody(CollisionShape shape, float mass, Vector3 position, Quaternion orientation) {
         final RigidBody body = addMobileBody(shape, mass, position, orientation);
-        body.setIsMotionEnabled(false);
+        body.enableMotion(false);
         return body;
     }
 

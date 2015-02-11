@@ -110,13 +110,13 @@
 	<dependencies>
 		<!-- Include in final JAR -->
 		<dependency>
-			<groupId>org.spout</groupId>
+			<groupId>com.flowpowered</groupId>
 			<artifactId>caustic-api</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.spout</groupId>
+			<groupId>com.flowpowered</groupId>
 			<artifactId>caustic-lwjgl</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 			<scope>compile</scope>

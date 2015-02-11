@@ -29,9 +29,9 @@ package org.spout.reactsandbox;
 import com.flowpowered.math.vector.Vector2f;
 import com.flowpowered.math.vector.Vector2i;
 
-import org.spout.renderer.api.data.Uniform.IntUniform;
-import org.spout.renderer.api.data.Uniform.Vector2Uniform;
-import org.spout.renderer.api.data.UniformHolder;
+import com.flowpowered.caustic.api.data.Uniform.IntUniform;
+import com.flowpowered.caustic.api.data.Uniform.Vector2Uniform;
+import com.flowpowered.caustic.api.data.UniformHolder;
 
 public class BlurEffect {
     private final int blurSize;

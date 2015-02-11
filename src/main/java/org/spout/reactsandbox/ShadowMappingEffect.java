@@ -32,17 +32,17 @@ import java.util.Random;
 import com.flowpowered.math.vector.Vector2f;
 import com.flowpowered.math.vector.Vector2i;
 
-import org.spout.renderer.api.data.Uniform.FloatUniform;
-import org.spout.renderer.api.data.Uniform.IntUniform;
-import org.spout.renderer.api.data.Uniform.Vector2ArrayUniform;
-import org.spout.renderer.api.data.Uniform.Vector2Uniform;
-import org.spout.renderer.api.data.UniformHolder;
-import org.spout.renderer.api.gl.Context;
-import org.spout.renderer.api.gl.Texture;
-import org.spout.renderer.api.gl.Texture.FilterMode;
-import org.spout.renderer.api.gl.Texture.Format;
-import org.spout.renderer.api.gl.Texture.InternalFormat;
-import org.spout.renderer.api.util.CausticUtil;
+import com.flowpowered.caustic.api.data.Uniform.FloatUniform;
+import com.flowpowered.caustic.api.data.Uniform.IntUniform;
+import com.flowpowered.caustic.api.data.Uniform.Vector2ArrayUniform;
+import com.flowpowered.caustic.api.data.Uniform.Vector2Uniform;
+import com.flowpowered.caustic.api.data.UniformHolder;
+import com.flowpowered.caustic.api.gl.Context;
+import com.flowpowered.caustic.api.gl.Texture;
+import com.flowpowered.caustic.api.gl.Texture.FilterMode;
+import com.flowpowered.caustic.api.gl.Texture.Format;
+import com.flowpowered.caustic.api.gl.Texture.InternalFormat;
+import com.flowpowered.caustic.api.util.CausticUtil;
 
 public class ShadowMappingEffect {
     private final int kernelSize;
